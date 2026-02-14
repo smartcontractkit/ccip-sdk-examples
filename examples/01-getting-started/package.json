@@ -1,0 +1,43 @@
+{
+  "name": "@ccip-examples/01-getting-started",
+  "version": "1.0.0",
+  "description": "Getting started with CCIP SDK - Node.js scripts for basic operations",
+  "type": "module",
+  "scripts": {
+    "transfer": "npx tsx src/transfer-tokens.ts",
+    "status": "npx tsx src/get-status.ts",
+    "fees": "npx tsx src/estimate-fees.ts",
+    "tokens": "npx tsx src/supported-tokens.ts",
+    "pools": "npx tsx src/inspect-pools.ts",
+    "chains": "npx tsx src/list-chains.ts",
+    "dev": "echo 'Run individual scripts: pnpm transfer, pnpm status, pnpm fees, pnpm tokens, pnpm pools, pnpm chains'",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "lint:fix": "eslint src --fix",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@ccip-examples/shared-config": "workspace:*",
+    "@ccip-examples/shared-utils": "workspace:*",
+    "@chainlink/ccip-sdk": "0.96.0",
+    "@coral-xyz/anchor": "^0.30.1",
+    "@solana/web3.js": "^1.98.0",
+    "bs58": "^6.0.0",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "ccip",
+    "sdk",
+    "getting-started",
+    "node",
+    "scripts"
+  ]
+}

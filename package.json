@@ -1,0 +1,62 @@
+{
+  "name": "ccip-sdk-examples",
+  "version": "1.0.0",
+  "description": "Educational examples for @chainlink/ccip-sdk - Cross-Chain Interoperability Protocol",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.9.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev:01": "pnpm -F 01-getting-started dev",
+    "dev:02": "pnpm -F 02-evm-simple-bridge dev",
+    "dev:03": "pnpm -F 03-multichain-bridge-dapp dev",
+    "build": "pnpm -r build",
+    "build:examples": "pnpm -F './examples/*' build",
+    "build:packages": "pnpm -F './packages/*' build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint:fix",
+    "fix": "pnpm format && pnpm lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check",
+    "clean": "pnpm -r clean && rm -rf node_modules .pnpm-store",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "^22.15.29",
+    "eslint": "^10.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.55.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yaml,yml,css}": [
+      "prettier --write"
+    ]
+  },
+  "keywords": [
+    "chainlink",
+    "ccip",
+    "cross-chain",
+    "interoperability",
+    "sdk",
+    "examples",
+    "ethereum",
+    "solana",
+    "blockchain"
+  ],
+  "author": "Chainlink",
+  "license": "MIT"
+}

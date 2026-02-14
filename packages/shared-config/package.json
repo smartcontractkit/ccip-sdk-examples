@@ -1,0 +1,45 @@
+{
+  "name": "@ccip-examples/shared-config",
+  "version": "1.0.0",
+  "description": "Shared network and token configuration for CCIP SDK examples",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./networks": {
+      "types": "./dist/networks.d.ts",
+      "import": "./dist/networks.js"
+    },
+    "./tokens": {
+      "types": "./dist/tokens.d.ts",
+      "import": "./dist/tokens.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "lint:fix": "eslint src --fix",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@chainlink/ccip-sdk": "0.96.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "ccip",
+    "config",
+    "networks",
+    "tokens"
+  ]
+}
