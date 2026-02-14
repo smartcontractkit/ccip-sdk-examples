@@ -22,20 +22,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { fromViemClient } from "@chainlink/ccip-sdk/viem";
+import type { TokenInfo } from "@chainlink/ccip-sdk";
 import { networkInfo, ChainFamily } from "@chainlink/ccip-sdk";
 import { getPublicClient } from "wagmi/actions";
 import { NETWORKS } from "@ccip-examples/shared-config";
 import { toGenericPublicClient, formatAmount } from "@ccip-examples/shared-utils";
 import { wagmiConfig, NETWORK_TO_CHAIN_ID } from "../config/wagmi.js";
 
-/**
- * Token info returned by SDK
- */
-export interface TokenInfo {
-  symbol: string;
-  name: string;
-  decimals: number;
-}
+// Re-export SDK's TokenInfo so consumers don't need a direct SDK import
+export type { TokenInfo };
 
 /**
  * Hook result
@@ -109,11 +104,9 @@ export function useTokenInfo(
 
       // Fetch token info from SDK
       const info = await chain.getTokenInfo(tokenAddress);
-      // Use symbol as fallback for name if not provided (some tokens don't set name)
-      const tokenName = info.name || info.symbol;
       setTokenInfo({
         symbol: info.symbol,
-        name: tokenName,
+        name: info.name || info.symbol,
         decimals: info.decimals,
       });
 

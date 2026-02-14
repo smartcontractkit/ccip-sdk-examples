@@ -1,8 +1,12 @@
 /**
  * Hook for tracking CCIP message status
  *
- * Polls the CCIP API via the SDK to get real-time message status updates.
- * Uses exponential backoff to reduce API load while maintaining responsiveness.
+ * Polls the CCIP API via CCIPAPIClient to get real-time message status updates.
+ * Uses incremental backoff to reduce API load while maintaining responsiveness.
+ *
+ * The CCIP API is a centralized index — a single call can locate any message
+ * regardless of which chain it was sent from. No chain instance or RPC
+ * connection is needed.
  *
  * CCIP Message Lifecycle:
  * 1. SENT - Message submitted on source chain
@@ -16,13 +20,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { fromViemClient } from "@chainlink/ccip-sdk/viem";
-import { MessageStatus, networkInfo, ChainFamily } from "@chainlink/ccip-sdk";
-import type { CCIPRequest } from "@chainlink/ccip-sdk";
-import { getPublicClient } from "wagmi/actions";
-import { NETWORKS, POLLING_CONFIG } from "@ccip-examples/shared-config";
-import { toGenericPublicClient } from "@ccip-examples/shared-utils";
-import { wagmiConfig, NETWORK_TO_CHAIN_ID } from "../config/wagmi.js";
+import { CCIPAPIClient, MessageStatus } from "@chainlink/ccip-sdk";
+import { POLLING_CONFIG } from "@ccip-examples/shared-config";
 
 /**
  * Message status result from the hook
@@ -102,33 +101,21 @@ function formatElapsedTime(ms: number): string {
 }
 
 /**
- * Type for chain IDs configured in wagmi
- */
-type ConfiguredChainId = (typeof wagmiConfig)["chains"][number]["id"];
-
-/**
  * Hook for tracking CCIP message status
  *
- * @param sourceNetwork - Source network key (e.g., "ethereum-sepolia")
  * @param messageId - CCIP message ID to track (null to disable polling)
  * @returns Message status information and controls
  *
  * @example
  * ```tsx
- * const { status, description, isFinal } = useMessageStatus(
- *   "ethereum-sepolia",
- *   "0x1234..."
- * );
+ * const { status, description, isFinal } = useMessageStatus("0x1234...");
  *
  * if (isFinal) {
  *   console.log("Transfer complete:", status);
  * }
  * ```
  */
-export function useMessageStatus(
-  sourceNetwork: string | null,
-  messageId: string | null
-): MessageStatusResult {
+export function useMessageStatus(messageId: string | null): MessageStatusResult {
   const [status, setStatus] = useState<MessageStatus | null>(null);
   const [destTxHash, setDestTxHash] = useState<string | null>(null);
   const [isPolling, setIsPolling] = useState(false);
@@ -141,6 +128,9 @@ export function useMessageStatus(
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentDelayRef = useRef<number>(POLLING_CONFIG.initialDelay);
   const shouldStopRef = useRef(false);
+
+  // Stable API client ref — created once, reused across polls
+  const apiClientRef = useRef<CCIPAPIClient | null>(null);
 
   /**
    * Stop polling
@@ -155,27 +145,15 @@ export function useMessageStatus(
   }, []);
 
   /**
-   * Fetch message status from SDK
+   * Fetch message status from CCIP API
    */
-  const fetchStatus = useCallback(async (): Promise<CCIPRequest | null> => {
-    if (!sourceNetwork || !messageId) return null;
+  const fetchStatus = useCallback(async () => {
+    if (!messageId) return null;
 
-    const config = NETWORKS[sourceNetwork];
-    if (!config || networkInfo(sourceNetwork).family !== ChainFamily.EVM) {
-      throw new Error(`Invalid EVM network: ${sourceNetwork}`);
-    }
+    apiClientRef.current ??= new CCIPAPIClient();
 
-    // Verify network is configured in wagmi before lookup
-    if (!(sourceNetwork in NETWORK_TO_CHAIN_ID)) {
-      throw new Error(`Network not configured in wagmi: ${sourceNetwork}`);
-    }
-    const chainId = NETWORK_TO_CHAIN_ID[sourceNetwork] as ConfiguredChainId;
-
-    const client = getPublicClient(wagmiConfig, { chainId });
-    const chain = await fromViemClient(toGenericPublicClient(client));
-
-    return chain.getMessageById(messageId);
-  }, [sourceNetwork, messageId]);
+    return apiClientRef.current.getMessageById(messageId);
+  }, [messageId]);
 
   /**
    * Poll for status updates
@@ -209,7 +187,7 @@ export function useMessageStatus(
       console.warn("Status poll error:", err);
     }
 
-    // Schedule next poll with exponential backoff
+    // Schedule next poll with incremental backoff
     // Re-check ref as it may have changed during async operations above
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ref can change async
     if (!shouldStopRef.current) {
@@ -228,7 +206,7 @@ export function useMessageStatus(
    * Start polling when messageId changes
    */
   useEffect(() => {
-    if (!messageId || !sourceNetwork) {
+    if (!messageId) {
       // Reset state when no message to track
       setStatus(null);
       setDestTxHash(null);
@@ -257,7 +235,7 @@ export function useMessageStatus(
     return () => {
       stopPolling();
     };
-  }, [messageId, sourceNetwork, poll, stopPolling]);
+  }, [messageId, poll, stopPolling]);
 
   /**
    * Update elapsed time and check for timeout

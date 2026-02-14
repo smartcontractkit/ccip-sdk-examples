@@ -12,10 +12,11 @@
  * @see https://docs.chain.link/ccip
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useAccount, useWalletClient } from "wagmi";
 import { fromViemClient, viemWallet } from "@chainlink/ccip-sdk/viem";
-import { CCIPError } from "@chainlink/ccip-sdk";
+import { networkInfo, CCIPError } from "@chainlink/ccip-sdk";
+import type { Chain } from "@chainlink/ccip-sdk";
 import { getPublicClient } from "wagmi/actions";
 import { NETWORKS, getTokenAddress } from "@ccip-examples/shared-config";
 import {
@@ -23,6 +24,7 @@ import {
   formatAmount,
   toGenericPublicClient,
   getErrorMessage,
+  buildTokenTransferMessage,
 } from "@ccip-examples/shared-utils";
 import { wagmiConfig, NETWORK_TO_CHAIN_ID } from "../config/wagmi.js";
 
@@ -36,7 +38,7 @@ type ConfiguredChainId = (typeof wagmiConfig)["chains"][number]["id"];
  *
  * Simplified states since SDK handles the details:
  * - idle: Ready for new transfer
- * - estimating: Calculating CCIP fee
+ * - estimating: Calculating CCIP fee + lane latency
  * - sending: SDK is handling approvals and sending (wallet prompts appear)
  * - success: Transfer initiated on source chain
  * - failed: Error occurred
@@ -53,6 +55,8 @@ export interface TransferState {
   messageId: string | null;
   fee: bigint | null;
   feeFormatted: string | null;
+  /** Estimated delivery time from getLaneLatency (e.g. "~17 min") */
+  estimatedTime: string | null;
 }
 
 const initialState: TransferState = {
@@ -62,7 +66,17 @@ const initialState: TransferState = {
   messageId: null,
   fee: null,
   feeFormatted: null,
+  estimatedTime: null,
 };
+
+/**
+ * Format milliseconds as a human-friendly estimate string.
+ */
+function formatLatency(totalMs: number): string {
+  const minutes = Math.round(totalMs / 60_000);
+  if (minutes < 1) return "~<1 min";
+  return `~${minutes} min`;
+}
 
 export function useTransfer() {
   const [state, setState] = useState<TransferState>(initialState);
@@ -70,6 +84,10 @@ export function useTransfer() {
   // Wagmi hooks for wallet interaction
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
+
+  // Memoized chain instances — reused across estimateFee / transfer calls
+  // for the same network to avoid repeated RPC handshakes.
+  const chainCacheRef = useRef<Map<string, Chain>>(new Map());
 
   /**
    * Reset transfer state to initial values
@@ -79,19 +97,24 @@ export function useTransfer() {
   }, []);
 
   /**
-   * Get SDK chain instance for a network (read-only)
+   * Get (or reuse) an SDK chain instance for a network.
    */
-  const getChainInstance = useCallback(async (networkId: string) => {
+  const getChainInstance = useCallback(async (networkId: string): Promise<Chain> => {
+    const cached = chainCacheRef.current.get(networkId);
+    if (cached) return cached;
+
     if (!(networkId in NETWORK_TO_CHAIN_ID)) {
       throw new Error(`Network not configured: ${networkId}`);
     }
     const chainId = NETWORK_TO_CHAIN_ID[networkId] as ConfiguredChainId;
     const client = getPublicClient(wagmiConfig, { chainId });
-    return fromViemClient(toGenericPublicClient(client));
+    const chain = await fromViemClient(toGenericPublicClient(client));
+    chainCacheRef.current.set(networkId, chain);
+    return chain;
   }, []);
 
   /**
-   * Estimate the transfer fee without executing
+   * Estimate the transfer fee and lane latency without executing.
    *
    * @param sourceNetwork - Source network ID (e.g., "ethereum-testnet-sepolia")
    * @param destNetwork - Destination network ID
@@ -120,44 +143,45 @@ export function useTransfer() {
           throw new Error(`Token ${tokenSymbol} not found on ${sourceNetwork}`);
         }
 
-        // Get SDK chain instances (read-only for fee estimation)
         const sourceChain = await getChainInstance(sourceNetwork);
-        const destChain = await getChainInstance(destNetwork);
 
-        // Get destination chainSelector from SDK
-        const destChainSelector = destChain.network.chainSelector;
+        // Destination chain selector from static metadata — no RPC needed
+        const destChainSelector = networkInfo(destNetwork).chainSelector;
 
         // Get token decimals from SDK
         const tokenInfo = await sourceChain.getTokenInfo(tokenAddress);
         const amountWei = parseAmount(amount, tokenInfo.decimals);
 
-        // Build CCIP message for fee estimation
-        const message = {
+        // Build message using shared utility
+        const message = buildTokenTransferMessage({
           receiver,
-          data: "0x" as const,
-          tokenAmounts: [{ token: tokenAddress, amount: amountWei }],
-          extraArgs: { gasLimit: 0n },
-        };
-
-        // Get fee estimate from SDK
-        const fee = await sourceChain.getFee({
-          router: sourceConfig.routerAddress,
-          destChainSelector,
-          message,
+          tokenAddress,
+          amount: amountWei,
         });
 
+        // Fetch fee and lane latency in parallel
+        const [fee, latency] = await Promise.all([
+          sourceChain.getFee({
+            router: sourceConfig.routerAddress,
+            destChainSelector,
+            message,
+          }),
+          sourceChain.getLaneLatency(destChainSelector).catch(() => null), // Non-critical — don't fail if latency unavailable
+        ]);
+
         const feeFormatted = formatAmount(fee, sourceConfig.nativeCurrency.decimals);
+        const estimatedTime = latency ? formatLatency(latency.totalMs) : null;
 
         setState((prev) => ({
           ...prev,
           status: "idle",
           fee,
           feeFormatted,
+          estimatedTime,
         }));
 
-        return { fee, feeFormatted };
+        return { fee, feeFormatted, estimatedTime };
       } catch (err) {
-        // Use SDK error handling for CCIP errors, fallback to generic message extraction
         const errorMessage = CCIPError.isCCIPError(err)
           ? (err.recovery ?? err.message)
           : getErrorMessage(err);
@@ -217,24 +241,22 @@ export function useTransfer() {
           throw new Error(`Token ${tokenSymbol} not found on ${sourceNetwork}`);
         }
 
-        // Get SDK chain instances
+        // Reuse cached chain instance
         const sourceChain = await getChainInstance(sourceNetwork);
-        const destChain = await getChainInstance(destNetwork);
 
-        // Get destination chainSelector from SDK
-        const destChainSelector = destChain.network.chainSelector;
+        // Destination chain selector from static metadata
+        const destChainSelector = networkInfo(destNetwork).chainSelector;
 
         // Get token decimals from SDK
         const tokenInfo = await sourceChain.getTokenInfo(tokenAddress);
         const amountWei = parseAmount(amount, tokenInfo.decimals);
 
-        // Build CCIP message
-        const message = {
+        // Build message using shared utility
+        const message = buildTokenTransferMessage({
           receiver,
-          data: "0x" as const,
-          tokenAmounts: [{ token: tokenAddress, amount: amountWei }],
-          extraArgs: { gasLimit: 0n },
-        };
+          tokenAddress,
+          amount: amountWei,
+        });
 
         // Get fee
         const fee = await sourceChain.getFee({
@@ -265,22 +287,19 @@ export function useTransfer() {
           wallet: viemWallet(walletClient),
         });
 
-        // Extract tx hash and message ID from the CCIPRequest
         const txHash = request.tx.hash;
         const messageId = request.message.messageId;
 
-        setState({
+        setState((prev) => ({
+          ...prev,
           status: "success",
           error: null,
           txHash,
           messageId,
-          fee,
-          feeFormatted: formatAmount(fee, sourceConfig.nativeCurrency.decimals),
-        });
+        }));
 
         return { txHash, messageId };
       } catch (err) {
-        // Use SDK error handling for CCIP errors, fallback to generic message extraction
         const errorMessage = CCIPError.isCCIPError(err)
           ? (err.recovery ?? err.message)
           : getErrorMessage(err);

@@ -18,8 +18,6 @@ import { MESSAGE_STAGES } from "@ccip-examples/shared-config";
 import styles from "./MessageProgress.module.css";
 
 interface MessageProgressProps {
-  /** Source network ID for API calls */
-  sourceNetwork: string;
   /** CCIP message ID to track */
   messageId: string;
 }
@@ -49,7 +47,7 @@ function getStageIndex(status: MessageStatus | null): number {
   }
 }
 
-export function MessageProgress({ sourceNetwork, messageId }: MessageProgressProps) {
+export function MessageProgress({ messageId }: MessageProgressProps) {
   const {
     status,
     description,
@@ -60,7 +58,7 @@ export function MessageProgress({ sourceNetwork, messageId }: MessageProgressPro
     destTxHash,
     elapsedTime,
     error,
-  } = useMessageStatus(sourceNetwork, messageId);
+  } = useMessageStatus(messageId);
 
   const currentStage = getStageIndex(status);
 

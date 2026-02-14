@@ -1,5 +1,7 @@
 # 02-evm-simple-bridge
 
+> **CCIP SDK** [`@chainlink/ccip-sdk@0.96.0`](https://www.npmjs.com/package/@chainlink/ccip-sdk/v/0.96.0) | **Testnet only** | [CCIP Docs](https://docs.chain.link/ccip) | [CCIP Explorer](https://ccip.chain.link)
+
 A minimal EVM-to-EVM token bridge using the Chainlink CCIP SDK with modern React tooling.
 
 ## Architecture
@@ -100,17 +102,17 @@ This example demonstrates the modern EVM wallet stack integrated with the CCIP S
 
 ### Data Flow Summary
 
-| Step | Component            | Action                                  |
-| ---- | -------------------- | --------------------------------------- |
-| 1    | **RainbowKit**       | User connects wallet                    |
-| 2    | **wagmi**            | Manages wallet state, provides hooks    |
-| 3    | **BridgeForm**       | User enters transfer details            |
-| 4    | **useTokenInfo**     | Fetches balance via SDK → viem → RPC    |
-| 5    | **useTransfer**      | Estimates fee via `chain.getFee()`      |
-| 6    | **wagmi**            | Prompts wallet for signature            |
-| 7    | **CCIP SDK**         | `sendMessage()` handles approval + send |
-| 8    | **useMessageStatus** | Polls `getMessageById()` for progress   |
-| 9    | **MessageProgress**  | Displays visual stepper until complete  |
+| Step | Component            | Action                                                              |
+| ---- | -------------------- | ------------------------------------------------------------------- |
+| 1    | **RainbowKit**       | User connects wallet                                                |
+| 2    | **wagmi**            | Manages wallet state, provides hooks                                |
+| 3    | **BridgeForm**       | User enters transfer details                                        |
+| 4    | **useTokenInfo**     | Fetches balance via SDK → viem → RPC                                |
+| 5    | **useTransfer**      | Estimates fee via `getFee()` + delivery time via `getLaneLatency()` |
+| 6    | **wagmi**            | Prompts wallet for signature                                        |
+| 7    | **CCIP SDK**         | `sendMessage()` handles approval + send                             |
+| 8    | **useMessageStatus** | Polls `CCIPAPIClient.getMessageById()` (no chain instance needed)   |
+| 9    | **MessageProgress**  | Displays visual stepper until complete                              |
 
 ### Key Adapters
 
@@ -121,12 +123,29 @@ const walletClient = useWalletClient();
 
 // 2. viem → CCIP SDK (adapters from SDK)
 import { fromViemClient, viemWallet } from "@chainlink/ccip-sdk/viem";
+import { CCIPAPIClient, networkInfo } from "@chainlink/ccip-sdk";
 
+// Chain instance for on-chain operations (fee, send)
 const chain = await fromViemClient(toGenericPublicClient(publicClient));
+
+// Destination chain selector from static metadata — no RPC needed
+const destChainSelector = networkInfo(destNetworkId).chainSelector;
+
+// Fee + estimated delivery time (parallel)
+const [fee, latency] = await Promise.all([
+  chain.getFee({ router, destChainSelector, message }),
+  chain.getLaneLatency(destChainSelector),
+]);
+
+// Send (SDK handles approvals + tx)
 const request = await chain.sendMessage({
+  wallet: viemWallet(walletClient),
   // ...
-  wallet: viemWallet(walletClient), // Wraps viem wallet for SDK
 });
+
+// Status tracking — centralized API, no chain instance needed
+const api = new CCIPAPIClient();
+const status = await api.getMessageById(request.message.messageId);
 ```
 
 ## What You'll Learn
@@ -229,7 +248,7 @@ If your wallet is on a different network than the source, click "Switch to [Netw
 
 ### Step 4: Estimate Fee
 
-Click "Estimate Fee" to see the CCIP fee in native tokens (ETH/AVAX).
+Click "Estimate Fee" to see the CCIP fee in native tokens (ETH/AVAX) and the estimated delivery time.
 
 ### Step 5: Execute Transfer
 
@@ -242,10 +261,8 @@ Click "Transfer" and approve the transactions in your wallet:
 
 After the transaction confirms:
 
-- View the source transaction on the block explorer
-- Track cross-chain progress on [CCIP Explorer](https://ccip.chain.link)
-
-Cross-chain transfers typically take **15-30 minutes** to complete.
+- View the estimated delivery time (from `getLaneLatency`)
+- Track cross-chain progress via the live stepper and [CCIP Explorer](https://ccip.chain.link)
 
 ## Project Structure
 
@@ -286,29 +303,39 @@ The SDK integrates with viem via adapters:
 
 ```typescript
 import { fromViemClient, viemWallet } from "@chainlink/ccip-sdk/viem";
-import { toGenericPublicClient } from "@ccip-examples/shared-utils";
+import { CCIPAPIClient, networkInfo } from "@chainlink/ccip-sdk";
+import { buildTokenTransferMessage, toGenericPublicClient } from "@ccip-examples/shared-utils";
 
 // Create SDK chain from wagmi's public client
 const publicClient = getPublicClient(wagmiConfig, { chainId });
 const chain = await fromViemClient(toGenericPublicClient(publicClient));
 
-// Get token info from on-chain
-const tokenInfo = await chain.getTokenInfo(tokenAddress);
+// Destination selector from static metadata (no RPC call)
+const destChainSelector = networkInfo(destNetworkId).chainSelector;
 
-// Get fee estimate
-const fee = await chain.getFee({ router, destChainSelector, message });
+// Build message using shared utility
+const message = buildTokenTransferMessage({ receiver, tokenAddress, amount });
+
+// Get fee + estimated delivery time
+const [fee, latency] = await Promise.all([
+  chain.getFee({ router, destChainSelector, message }),
+  chain.getLaneLatency(destChainSelector),
+]);
+console.log(`Fee: ${fee}, Delivery: ~${Math.round(latency.totalMs / 60000)} min`);
 
 // Send message (SDK handles approval + transaction)
 const request = await chain.sendMessage({
   router,
   destChainSelector,
   message: { ...message, fee },
-  wallet: viemWallet(walletClient), // Wrap viem wallet for SDK
+  wallet: viemWallet(walletClient),
 });
+console.log(request.tx.hash, request.message.messageId);
 
-// Access results
-const { tx, message: ccipMessage } = request;
-console.log(tx.hash, ccipMessage.messageId);
+// Track status — centralized API, no chain instance needed
+const api = new CCIPAPIClient();
+const result = await api.getMessageById(request.message.messageId);
+console.log(result.metadata.status);
 ```
 
 ### Network Configuration
@@ -341,7 +368,7 @@ CCIP transfers involve multiple steps:
 3. Risk Management Network blessing
 4. Execution on destination
 
-Total time: 15-30 minutes depending on network conditions.
+The estimated delivery time shown in the UI comes from `getLaneLatency()` and varies by lane. Check the CCIP Explorer for real-time progress.
 
 ## Learn More
 

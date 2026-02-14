@@ -7,7 +7,6 @@
 
 import type { TransferStatus as TransferStatusType } from "../../hooks";
 import { getCCIPExplorerUrl } from "@chainlink/ccip-sdk";
-import { getExplorerTxUrl } from "@ccip-examples/shared-config";
 import { Button } from "../ui";
 import styles from "./TransferStatus.module.css";
 
@@ -16,7 +15,8 @@ interface TransferStatusProps {
   error: string | null;
   txHash: string | null;
   messageId: string | null;
-  sourceNetwork: string;
+  /** Estimated delivery time from getLaneLatency (e.g. "~17 min") */
+  estimatedTime: string | null;
   onReset: () => void;
 }
 
@@ -39,7 +39,7 @@ export function TransferStatus({
   error,
   txHash,
   messageId,
-  sourceNetwork,
+  estimatedTime,
   onReset,
 }: TransferStatusProps) {
   // Don't render if idle and no error
@@ -73,13 +73,9 @@ export function TransferStatus({
       {txHash && (
         <div className={styles.link}>
           <strong>Transaction: </strong>
-          <a
-            href={getExplorerTxUrl(sourceNetwork, txHash)}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <span>
             {txHash.slice(0, 10)}...{txHash.slice(-8)}
-          </a>
+          </span>
         </div>
       )}
 
@@ -94,8 +90,9 @@ export function TransferStatus({
 
       {isSuccess && (
         <p className={styles.note}>
-          Cross-chain transfers typically take 15-30 minutes to complete. Track the status using the
-          CCIP Explorer link above.
+          {estimatedTime
+            ? `Estimated delivery: ${estimatedTime}. Track progress below or on the CCIP Explorer.`
+            : "Track cross-chain progress below or on the CCIP Explorer."}
         </p>
       )}
 

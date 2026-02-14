@@ -6,9 +6,9 @@
  * This example demonstrates:
  * - Modern wallet integration with wagmi + RainbowKit
  * - CCIP SDK integration via viem adapter
- * - Fee estimation before transfer
+ * - Fee estimation with lane latency before transfer
  * - Token approval + CCIP send flow
- * - Transaction status tracking
+ * - Transaction status tracking via CCIPAPIClient
  *
  * Architecture:
  * - wagmi provides React hooks for wallet state
@@ -20,7 +20,6 @@
  * QueryClientProvider > WagmiProvider > RainbowKitProvider > App
  */
 
-import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
@@ -57,9 +56,6 @@ function AppContent() {
   const { switchChain } = useSwitchChain();
   const transfer = useTransfer();
 
-  // Track source network for explorer links and message tracking
-  const [sourceNetwork, setSourceNetwork] = useState("");
-
   // Determine if transfer is in progress
   const isLoading = ["estimating", "sending"].includes(transfer.status);
 
@@ -76,7 +72,6 @@ function AppContent() {
     amount: string,
     receiver: string
   ) => {
-    setSourceNetwork(source);
     await transfer.estimateFee(source, dest, token, amount, receiver);
   };
 
@@ -90,7 +85,6 @@ function AppContent() {
     amount: string,
     receiver: string
   ) => {
-    setSourceNetwork(source);
     await transfer.transfer(source, dest, token, amount, receiver);
   };
 
@@ -118,6 +112,7 @@ function AppContent() {
               walletAddress={address ?? null}
               currentChainId={chainId ?? null}
               feeFormatted={transfer.feeFormatted}
+              estimatedTime={transfer.estimatedTime}
               isLoading={isLoading}
               onEstimateFee={handleEstimateFee}
               onTransfer={handleTransfer}
@@ -129,13 +124,13 @@ function AppContent() {
               error={transfer.error}
               txHash={transfer.txHash}
               messageId={transfer.messageId}
-              sourceNetwork={sourceNetwork}
+              estimatedTime={transfer.estimatedTime}
               onReset={transfer.reset}
             />
 
             {/* Message progress stepper with real-time polling */}
             {showMessageProgress && transfer.messageId && (
-              <MessageProgress sourceNetwork={sourceNetwork} messageId={transfer.messageId} />
+              <MessageProgress messageId={transfer.messageId} />
             )}
           </>
         )}

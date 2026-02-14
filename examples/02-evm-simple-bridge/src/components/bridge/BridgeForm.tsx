@@ -66,6 +66,7 @@ interface BridgeFormProps {
   walletAddress: string | null;
   currentChainId: number | null;
   feeFormatted: string | null;
+  estimatedTime: string | null;
   isLoading: boolean;
   onEstimateFee: (
     sourceNetwork: string,
@@ -88,6 +89,7 @@ export function BridgeForm({
   walletAddress,
   currentChainId,
   feeFormatted,
+  estimatedTime,
   isLoading,
   onEstimateFee,
   onTransfer,
@@ -296,6 +298,12 @@ export function BridgeForm({
       {feeFormatted && sourceConfig && (
         <Alert variant="info">
           <strong>Estimated Fee:</strong> {feeFormatted} {sourceConfig.nativeCurrency.symbol}
+          {estimatedTime && (
+            <>
+              {" "}
+              &middot; <strong>Delivery:</strong> {estimatedTime}
+            </>
+          )}
         </Alert>
       )}
 
