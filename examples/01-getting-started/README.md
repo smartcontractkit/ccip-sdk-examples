@@ -104,11 +104,12 @@ cp .env.example .env
 # For Solana: base58 encoded secret key
 
 # Run scripts
+pnpm chains        # List all supported chains and their keys
 pnpm fees          # Estimate fees for all routes (EVM + Solana)
 pnpm tokens        # List supported tokens
 pnpm pools         # Inspect pool configurations
-pnpm transfer      # Send EVM → EVM transfer (default)
-pnpm transfer solana   # Send Solana → EVM transfer
+pnpm transfer      # Send EVM → EVM transfer (interactive, with defaults)
+pnpm transfer --source solana-devnet   # Send Solana → EVM transfer
 pnpm status <id>   # Check message status (searches EVM + Solana)
 ```
 
@@ -156,8 +157,12 @@ pnpm pools solana-devnet 3PjyGzj...                     # Solana token info
 Sends a cross-chain token transfer. Requires `PRIVATE_KEY` in `.env`.
 
 ```bash
-pnpm transfer          # EVM → EVM (Sepolia → Base Sepolia)
-pnpm transfer solana   # Solana → EVM (Solana Devnet → Sepolia)
+pnpm transfer                                    # EVM → EVM with defaults (Sepolia → Base Sepolia)
+pnpm transfer --source solana-devnet             # Solana → EVM (Solana Devnet → Sepolia)
+pnpm transfer --source ethereum-testnet-sepolia --dest avalanche-testnet-fuji  # Custom route
+pnpm transfer --amount 0.01 --receiver 0x...     # Custom amount and receiver
+pnpm transfer -v                                 # Verbose mode
+pnpm transfer -y                                 # Skip confirmation prompt
 ```
 
 ### `pnpm status <message_id>`
@@ -172,15 +177,16 @@ pnpm status 0x1234567890abcdef...
 
 ### EVM (EVMChain)
 
-| Function                      | Description                 |
-| ----------------------------- | --------------------------- |
-| `EVMChain.fromUrl()`          | Initialize SDK from RPC URL |
-| `chain.getFee()`              | Estimate transfer fee       |
-| `chain.sendMessage()`         | Send cross-chain message    |
-| `chain.getMessageById()`      | Get message status          |
-| `chain.getTokenInfo()`        | Get token metadata          |
-| `chain.getSupportedTokens()`  | List supported tokens       |
-| `chain.getTokenPoolRemotes()` | Get pool configuration      |
+| Function                     | Description                 |
+| ---------------------------- | --------------------------- |
+| `EVMChain.fromUrl()`         | Initialize SDK from RPC URL |
+| `chain.getFee()`             | Estimate transfer fee       |
+| `chain.sendMessage()`        | Send cross-chain message    |
+| `chain.getMessageById()`     | Get message status          |
+| `chain.getTokenInfo()`       | Get token metadata          |
+| `chain.getBalance()`         | Get native/token balance    |
+| `chain.getSupportedTokens()` | List supported tokens       |
+| `chain.getTokenPoolRemote()` | Get pool configuration      |
 
 ### Solana (SolanaChain)
 
@@ -191,7 +197,7 @@ pnpm status 0x1234567890abcdef...
 | `chain.sendMessage()`    | Send cross-chain message    |
 | `chain.getMessageById()` | Get message status          |
 | `chain.getTokenInfo()`   | Get token metadata          |
-| `chain.getBalance()`     | Get token balance           |
+| `chain.getBalance()`     | Get native/token balance    |
 
 ### Shared
 
@@ -242,7 +248,8 @@ const message = {
 │   ├── estimate-fees.ts      # Estimate fees (EVM + Solana)
 │   ├── get-status.ts         # Check message status (EVM + Solana)
 │   ├── supported-tokens.ts   # Discover tokens (EVM + Solana)
-│   └── inspect-pools.ts      # Inspect pool config (EVM + Solana)
+│   ├── inspect-pools.ts      # Inspect pool config (EVM + Solana)
+│   └── list-chains.ts        # List supported chains
 ├── .env.example              # Environment template
 ├── package.json
 ├── tsconfig.json
@@ -254,7 +261,6 @@ const message = {
 After understanding the basics:
 
 1. **[02-evm-simple-bridge](../02-evm-simple-bridge)** - Add browser UI with MetaMask (EVM only)
-2. **[03-multichain-bridge-dapp](../03-multichain-bridge-dapp)** - Full production app
 
 ## Troubleshooting
 

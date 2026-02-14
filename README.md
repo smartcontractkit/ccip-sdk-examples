@@ -99,7 +99,7 @@ Network and token configuration shared across all examples.
 import {
   NETWORKS, // All supported networks with config
   NETWORK_IDS, // Array of network keys
-  getAllNetworks, // Get networks with key, name, chainFamily
+  getAllNetworks, // Get networks with key, name, family
   getNetwork, // Get config by network key
   getEVMNetworks, // Filter EVM networks
   getSolanaNetworks, // Filter Solana networks
@@ -111,7 +111,7 @@ import {
 
 // Network keys match SDK networkIds
 const config = NETWORKS["ethereum-testnet-sepolia"];
-// { name, chainFamily, rpcUrl, explorerUrl, nativeCurrency, routerAddress }
+// { name, rpcUrl, explorerUrl, nativeCurrency, routerAddress }
 ```
 
 ### @ccip-examples/shared-utils
@@ -123,24 +123,27 @@ import {
   // Validation
   isValidEVMAddress, // Validate EVM address
   isValidSolanaAddress, // Validate Solana address
-  isValidMessageId, // Validate CCIP message ID
+  isValidAddress, // Validate address by chain type
   isValidAmount, // Validate amount string
+  isAmountWithinBalance, // Check amount doesn't exceed balance
 
   // Formatting
   parseAmount, // "1.5" + 18 decimals → bigint
   formatAmount, // bigint + 18 decimals → "1.5"
   truncateAddress, // "0x1234...5678"
-  normalizeMessageId, // Ensure 0x prefix
+  checksumAddress, // Checksum an EVM address
 
   // Error handling
-  categorizeError, // Classify errors with recovery suggestions
-  withRetry, // Retry with exponential backoff
-  isTransientError, // Check if error is retryable
+  getErrorMessage, // Extract error message from unknown errors
+
+  // SDK integration
+  toGenericPublicClient, // Bridge wagmi → CCIP SDK viem types
+  buildTokenTransferMessage, // Build CCIP token transfer message
 } from "@ccip-examples/shared-utils";
 
 // Error handling example
-const { message, category, recovery } = categorizeError(error);
-// category: "network" | "validation" | "balance" | "rate_limit" | "unknown"
+const message = getErrorMessage(error);
+// Returns a string extracted from Error, ethers errors, or unknown types
 ```
 
 ## Supported Networks

@@ -197,8 +197,7 @@ cd ccip-sdk-examples
 pnpm install
 
 # Build shared packages
-pnpm --filter @ccip-examples/shared-config build
-pnpm --filter @ccip-examples/shared-utils build
+pnpm build:packages
 ```
 
 ## Running the App
@@ -256,6 +255,7 @@ src/
 │   ├── bridge/           # Bridge-specific components
 │   │   ├── BridgeForm.tsx       # Main transfer form
 │   │   ├── TransferStatus.tsx   # Status display
+│   │   ├── MessageProgress.tsx  # Cross-chain progress stepper
 │   │   └── WalletConnect.tsx    # RainbowKit connect button
 │   ├── layout/           # Header, Footer
 │   └── ui/               # Reusable UI components
