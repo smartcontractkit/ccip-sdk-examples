@@ -21,6 +21,10 @@
     "./viem": {
       "types": "./dist/viem.d.ts",
       "import": "./dist/viem.js"
+    },
+    "./wallet": {
+      "types": "./dist/wallet.d.ts",
+      "import": "./dist/wallet.js"
     }
   },
   "files": [

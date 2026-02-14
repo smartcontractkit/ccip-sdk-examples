@@ -39,8 +39,8 @@ import {
   buildTokenTransferMessage,
   createChain,
   createLogger,
-  createWallet,
 } from "@ccip-examples/shared-utils";
+import { createWallet } from "@ccip-examples/shared-utils/wallet";
 
 config();
 

@@ -29,10 +29,6 @@ export { buildTokenTransferMessage } from "./message.js";
 // Chain factory utilities
 export { createChain, createLogger } from "./chain.js";
 
-// Wallet factory utilities
-export {
-  createWallet,
-  createSolanaWallet,
-  createEVMWallet,
-  getPrivateKeyForFamily,
-} from "./wallet.js";
+// NOTE: Wallet utilities (createWallet, createSolanaWallet, etc.) use Node.js
+// built-ins (fs, os, path) and are NOT re-exported here to keep the main
+// entry point browser-safe. Import them from "@ccip-examples/shared-utils/wallet".
