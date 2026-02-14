@@ -1,94 +1,72 @@
 # 01 - Getting Started with CCIP SDK
 
-This example contains Node.js scripts demonstrating the fundamental operations of the CCIP SDK. Start here to learn the basics without UI complexity.
+> **CCIP SDK** [`@chainlink/ccip-sdk@0.96.0`](https://www.npmjs.com/package/@chainlink/ccip-sdk/v/0.96.0) | **Testnet only** | [CCIP Docs](https://docs.chain.link/ccip) | [CCIP Explorer](https://ccip.chain.link)
 
-**Supports both EVM and Solana chains!**
+Node.js scripts demonstrating the fundamental operations of the CCIP SDK. Start here to learn the basics without UI complexity.
+
+All scripts are **chain-family-agnostic** — the same code path works for EVM, Solana, and any future chain family the SDK supports, through the unified `Chain` base class and `createChain` factory.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Your Node.js Script                        │
+│              (uses Chain base class everywhere)                  │
 └─────────────────────────────────────────────────────────────────┘
+                              │
+                 createChain(networkId, rpcUrl)
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                        CCIP SDK                                 │
-│  ┌──────────────────┐       ┌──────────────────┐               │
-│  │    EVMChain      │       │   SolanaChain    │               │
-│  │  ─────────────   │       │  ─────────────   │               │
-│  │  • getFee()      │       │  • getFee()      │               │
-│  │  • sendMessage() │       │  • sendMessage() │               │
-│  │  • getMessageById│       │  • getMessageById│               │
-│  │  • getTokenInfo()│       │  • getTokenInfo()│               │
-│  └──────────────────┘       └──────────────────┘               │
+│                          CCIP SDK                               │
+│                                                                 │
+│   Chain (abstract base)       CCIPAPIClient                     │
+│   ──────────────────────      ─────────────                     │
+│   • getFee()                  • getMessageById()                │
+│   • sendMessage()             • getLaneLatency()                │
+│   • getTokenInfo()                                              │
+│   • getSupportedTokens()                                        │
+│   • getTokenPoolRemote()                                        │
+│   • getBalance()                                                │
+│         │                                                       │
+│    ┌────┴────┬────────────┬──────────┬──────────┐               │
+│    │EVMChain │SolanaChain │AptosChain│TONChain  │  ...          │
+│    └─────────┴────────────┴──────────┴──────────┘               │
 └─────────────────────────────────────────────────────────────────┘
-           │                              │
-           ▼                              ▼
-┌──────────────────────┐      ┌──────────────────────┐
-│   ethers.js          │      │   @solana/web3.js    │
-│   (EVM Provider)     │      │   (Solana Connection)│
-└──────────────────────┘      └──────────────────────┘
-           │                              │
-           ▼                              ▼
-┌──────────────────────┐      ┌──────────────────────┐
-│   EVM RPC            │      │   Solana RPC         │
-│   (Sepolia, Base,    │      │   (Devnet)           │
-│    Fuji, etc.)       │      │                      │
-└──────────────────────┘      └──────────────────────┘
-           │                              │
-           └──────────────┬───────────────┘
-                          ▼
-           ┌──────────────────────────────┐
-           │     Chainlink CCIP           │
-           │   (Cross-Chain Protocol)     │
-           └──────────────────────────────┘
+                              │
+                              ▼
+                      Blockchain RPCs
 ```
 
 ## What You'll Learn
 
-- Initialize the CCIP SDK with ethers.js (EVM) or @solana/web3.js (Solana)
-- Estimate cross-chain transfer fees
+- Create chain instances with `createChain()` (family-agnostic)
+- Estimate cross-chain transfer fees (native or LINK)
 - Send token transfers across chains
-- Track message status
-- Discover supported tokens
-- Inspect token pool configurations
+- Track message status via the CCIP API
+- Discover supported tokens on a lane
+- Inspect token pool configurations and rate limits
 
 ## Prerequisites
 
 ### Node.js Version
 
-**Node.js v22+** is required for this project. We recommend using [nvm](https://github.com/nvm-sh/nvm) to manage Node.js versions:
+**Node.js v22+** is required. We recommend [nvm](https://github.com/nvm-sh/nvm):
 
 ```bash
-# Install nvm (if not already installed)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-
-# Install and use Node.js v22
 nvm install 22
 nvm use 22
-
-# Verify version
 node --version  # Should show v22.x.x
 ```
 
-### Testnet Wallet
+### Testnet Tokens
 
-**For EVM chains:**
-
-- Sepolia ETH (for gas fees)
-- CCIP-BnM tokens (for transfers)
-
-**For Solana:**
-
-- SOL on devnet (for gas fees)
-- CCIP-BnM tokens on Solana devnet (for transfers)
-
-### Getting Testnet Tokens
-
-- **Sepolia ETH**: [Chainlink Faucet](https://faucets.chain.link/sepolia)
-- **Solana Devnet SOL**: [Solana Faucet](https://faucet.solana.com/)
-- **CCIP-BnM**: [CCIP Faucet](https://docs.chain.link/ccip/test-tokens)
+| What                                  | Where                                                        |
+| ------------------------------------- | ------------------------------------------------------------ |
+| Sepolia ETH (gas)                     | [Chainlink Faucet](https://faucets.chain.link/sepolia)       |
+| Devnet SOL (gas)                      | [Solana Faucet](https://faucet.solana.com/)                  |
+| CCIP-BnM (transfer token)             | [CCIP Test Tokens](https://docs.chain.link/ccip/test-tokens) |
+| LINK (optional, for LINK fee payment) | [Chainlink Faucet](https://faucets.chain.link/)              |
 
 ## Quick Start
 
@@ -96,171 +74,216 @@ node --version  # Should show v22.x.x
 # From the monorepo root
 cd examples/01-getting-started
 
-# Copy environment file and add your private key
+# Copy environment file
 cp .env.example .env
 
-# Edit .env and add your PRIVATE_KEY
-# For EVM: hex private key (with or without 0x prefix)
-# For Solana: base58 encoded secret key
+# Edit .env — set the key(s) for your chain family:
+#   EVM_PRIVATE_KEY=0x...           (hex private key)
+#   SVM_PRIVATE_KEY=~/.config/solana/devnet.json  (keypair file or base58)
+#
+# Both can coexist — the script picks the right one based on --source.
+# See .env.example for full instructions.
 
-# Run scripts
-pnpm chains        # List all supported chains and their keys
-pnpm fees          # Estimate fees for all routes (EVM + Solana)
-pnpm tokens        # List supported tokens
-pnpm pools         # Inspect pool configurations
-pnpm transfer      # Send EVM → EVM transfer (interactive, with defaults)
-pnpm transfer --source solana-devnet   # Send Solana → EVM transfer
-pnpm status <id>   # Check message status (searches EVM + Solana)
+# Explore
+pnpm chains                                                              # List supported chains
+pnpm tokens  -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1  # Supported tokens on lane
+pnpm pools                                                               # Inspect all CCIP-BnM pools
+pnpm fees    -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1  # Estimate fee (native)
+pnpm fees    -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1 -f link  # Fee in LINK
+
+# Transfer (requires PRIVATE_KEY in .env)
+pnpm transfer -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1
+pnpm transfer -s solana-devnet -d ethereum-testnet-sepolia -f link
+
+# Track
+pnpm status 0x<message_id>
 ```
 
 ## Scripts
 
+### `pnpm chains`
+
+Lists all configured chains grouped by family.
+
 ### `pnpm fees`
 
-Estimates transfer fees across all available routes (EVM and Solana). No wallet required.
+Estimates the transfer fee for a specific route.
 
+```bash
+pnpm fees -s <source> -d <dest>                    # Native fee (default)
+pnpm fees -s <source> -d <dest> --fee-token link   # LINK fee
+pnpm fees -s <source> -d <dest> -t CCIP-BnM -a 5.0 # Custom token/amount
 ```
-CCIP SDK: Fee Estimation Across All Routes (EVM + Solana)
-======================================================================
-Estimating fees for transferring 1.0 CCIP-BnM
 
-Route                                         Fee                 Status
----------------------------------------------------------------------------
-Ethereum Sepolia → Base Sepolia               0.001234 ETH        OK
-Ethereum Sepolia → Avalanche Fuji             0.001456 ETH        OK
-Solana Devnet → Ethereum Sepolia              0.012345 SOL        OK
-...
-```
+| Flag              | Description                      | Default    |
+| ----------------- | -------------------------------- | ---------- |
+| `-s, --source`    | Source chain key (required)      | —          |
+| `-d, --dest`      | Destination chain key (required) | —          |
+| `-t, --token`     | Token symbol                     | `CCIP-BnM` |
+| `-a, --amount`    | Amount to estimate for           | `1.0`      |
+| `-f, --fee-token` | `native` or `link`               | `native`   |
 
 ### `pnpm tokens`
 
-Discovers supported tokens for a specific lane.
+Discovers supported tokens for a lane, including pool addresses and rate limits.
 
 ```bash
-pnpm tokens                                              # Show usage and example
-pnpm tokens ethereum-testnet-sepolia ethereum-testnet-sepolia-base-1  # EVM lane
-pnpm tokens solana-devnet ethereum-testnet-sepolia       # Solana → EVM lane
+pnpm tokens -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1
+pnpm tokens -s solana-devnet -d ethereum-testnet-sepolia
 ```
+
+| Flag           | Description                      |
+| -------------- | -------------------------------- |
+| `-s, --source` | Source chain key (required)      |
+| `-d, --dest`   | Destination chain key (required) |
 
 ### `pnpm pools`
 
-Inspects token pool configurations including rate limits.
+Inspects token pool configurations including rate limits for all destinations.
 
 ```bash
-pnpm pools                                              # All CCIP-BnM pools (EVM + Solana)
-pnpm pools ethereum-testnet-sepolia 0xFd57b...          # Specific EVM pool
-pnpm pools solana-devnet 3PjyGzj...                     # Solana token info
+pnpm pools                                                            # All CCIP-BnM pools
+pnpm pools ethereum-testnet-sepolia 0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05  # Specific pool
+pnpm pools solana-devnet 3PjyGzj1jGVgHSKS4VR1Hr1memm63PmN8L9rtPDKwzZ6
 ```
 
 ### `pnpm transfer`
 
-Sends a cross-chain token transfer. Requires `PRIVATE_KEY` in `.env`.
+Sends a cross-chain token transfer. Requires `EVM_PRIVATE_KEY` and/or `SVM_PRIVATE_KEY` in `.env`.
 
 ```bash
-pnpm transfer                                    # EVM → EVM with defaults (Sepolia → Base Sepolia)
-pnpm transfer --source solana-devnet             # Solana → EVM (Solana Devnet → Sepolia)
-pnpm transfer --source ethereum-testnet-sepolia --dest avalanche-testnet-fuji  # Custom route
-pnpm transfer --amount 0.01 --receiver 0x...     # Custom amount and receiver
-pnpm transfer -v                                 # Verbose mode
-pnpm transfer -y                                 # Skip confirmation prompt
+pnpm transfer -s <source> -d <dest>                       # Transfer with native fee
+pnpm transfer -s <source> -d <dest> -f link               # Pay fee in LINK
+pnpm transfer -s <source> -d <dest> -a 0.5 -r 0x...      # Custom amount & receiver
+pnpm transfer -s <source> -d <dest> -v                    # Verbose mode
+pnpm transfer -s <source> -d <dest> -y                    # Skip confirmation
 ```
+
+| Flag              | Description                                    | Default                     |
+| ----------------- | ---------------------------------------------- | --------------------------- |
+| `-s, --source`    | Source chain key (required)                    | —                           |
+| `-d, --dest`      | Destination chain key (required)               | —                           |
+| `-t, --token`     | Token symbol                                   | `CCIP-BnM`                  |
+| `-a, --amount`    | Amount to transfer                             | `0.001`                     |
+| `-r, --receiver`  | Receiver address                               | Self (same family) or dummy |
+| `-f, --fee-token` | `native` or `link`                             | `native`                    |
+| `-k, --keypair`   | Keypair file/key (overrides `SVM_PRIVATE_KEY`) | env var                     |
+| `-v, --verbose`   | Enable debug logging                           | `false`                     |
+| `-y, --yes`       | Skip confirmation prompt                       | `false`                     |
 
 ### `pnpm status <message_id>`
 
-Checks the status of a cross-chain message. Searches across both EVM and Solana networks.
+Checks the status of a cross-chain message via the CCIP API.
 
 ```bash
 pnpm status 0x1234567890abcdef...
 ```
 
-## Key SDK Functions Used
+The CCIP API is a centralized index — one call locates any message regardless of which chain it was sent from.
 
-### EVM (EVMChain)
+## Key SDK Concepts
 
-| Function                     | Description                 |
-| ---------------------------- | --------------------------- |
-| `EVMChain.fromUrl()`         | Initialize SDK from RPC URL |
-| `chain.getFee()`             | Estimate transfer fee       |
-| `chain.sendMessage()`        | Send cross-chain message    |
-| `chain.getMessageById()`     | Get message status          |
-| `chain.getTokenInfo()`       | Get token metadata          |
-| `chain.getBalance()`         | Get native/token balance    |
-| `chain.getSupportedTokens()` | List supported tokens       |
-| `chain.getTokenPoolRemote()` | Get pool configuration      |
+### Chain (base class)
 
-### Solana (SolanaChain)
+All scripts use the abstract `Chain` base class. Concrete instances are created via the `createChain(networkId, rpcUrl)` factory from `@ccip-examples/shared-utils`.
 
-| Function                 | Description                 |
-| ------------------------ | --------------------------- |
-| `SolanaChain.fromUrl()`  | Initialize SDK from RPC URL |
-| `chain.getFee()`         | Estimate transfer fee       |
-| `chain.sendMessage()`    | Send cross-chain message    |
-| `chain.getMessageById()` | Get message status          |
-| `chain.getTokenInfo()`   | Get token metadata          |
-| `chain.getBalance()`     | Get native/token balance    |
+| Method                             | Description                           |
+| ---------------------------------- | ------------------------------------- |
+| `chain.getFee()`                   | Estimate transfer fee                 |
+| `chain.sendMessage()`              | Send cross-chain message              |
+| `chain.getTokenInfo()`             | Get token metadata (symbol, decimals) |
+| `chain.getBalance()`               | Get native or token balance           |
+| `chain.getSupportedTokens()`       | List registered tokens                |
+| `chain.getTokenAdminRegistryFor()` | Get token registry address            |
+| `chain.getRegistryTokenConfig()`   | Get token's pool assignment           |
+| `chain.getTokenPoolRemote()`       | Get pool config for a destination     |
+| `chain.getTokenPoolConfig()`       | Get pool type and version             |
 
-### Shared
+### CCIPAPIClient
 
-| Function                 | Description                     |
-| ------------------------ | ------------------------------- |
-| `networkInfo(networkId)` | Get chain selector and metadata |
+Used by `get-status.ts` for message lookups. No chain instance needed.
+
+| Method                       | Description           |
+| ---------------------------- | --------------------- |
+| `apiClient.getMessageById()` | Look up message by ID |
+
+### Shared Utilities
+
+| Function                      | Package                        | Description                                       |
+| ----------------------------- | ------------------------------ | ------------------------------------------------- |
+| `createChain()`               | `@ccip-examples/shared-utils`  | Family-agnostic chain factory                     |
+| `createWallet()`              | `@ccip-examples/shared-utils`  | Family-agnostic wallet factory (reads env vars)   |
+| `createSolanaWallet()`        | `@ccip-examples/shared-utils`  | Solana wallet from file path, hex, or base58      |
+| `createLogger()`              | `@ccip-examples/shared-utils`  | Logger with configurable verbosity                |
+| `buildTokenTransferMessage()` | `@ccip-examples/shared-utils`  | Build a `MessageInput` for token transfers        |
+| `networkInfo()`               | `@chainlink/ccip-sdk`          | Get chain selector and metadata                   |
+| `resolveFeeTokenAddress()`    | `@ccip-examples/shared-config` | Resolve `"native"`/`"link"` to on-chain address   |
+| `getDummyReceiver()`          | `@ccip-examples/shared-config` | Get a format-valid dummy address per chain family |
 
 ## Solana-Specific Notes
 
-### Private Key Format
+### Private Key / Keypair
 
-Solana uses base58-encoded secret keys (not hex like EVM):
+`SVM_PRIVATE_KEY` supports multiple formats:
+
+**Option 1: Keypair file path (recommended)**
+
+Point directly to a `solana-keygen` JSON file — no manual conversion needed:
 
 ```bash
-# Generate a Solana keypair (if needed)
+# Generate a keypair (if you don't have one)
 solana-keygen new --outfile ~/.config/solana/devnet.json
 
-# Export the secret key in base58 format
-# The key is an array of bytes in the JSON file
-# Use a tool or script to convert it to base58
+# Set in .env
+SVM_PRIVATE_KEY=~/.config/solana/devnet.json
 ```
 
-### Extra Args for Solana
+**Option 2: Base58-encoded secret key**
 
-When sending from Solana, you need Solana-specific extra args:
-
-```typescript
-const message = {
-  receiver: evmAddress,
-  data: "0x",
-  tokenAmounts: [{ token: tokenAddress, amount }],
-  extraArgs: {
-    computeUnits: 0n, // Solana compute units
-    allowOutOfOrderExecution: true, // Allow parallel execution
-    tokenReceiver: solanaAddress, // Receiver for tokens
-    accounts: [], // Additional accounts
-    accountIsWritableBitmap: 0n, // Account permissions
-  },
-};
+```bash
+SVM_PRIVATE_KEY=4wBqpZM9k...
 ```
+
+**Option 3: Hex-encoded secret key**
+
+```bash
+SVM_PRIVATE_KEY=0x...
+```
+
+### Getting Devnet SOL
+
+You need SOL for gas fees on Solana Devnet. Use the Solana CLI airdrop:
+
+```bash
+# Airdrop 3 SOL to your devnet wallet
+solana airdrop 3 --url devnet
+
+# Or airdrop to a specific address
+solana airdrop 3 <YOUR_ADDRESS> --url devnet
+```
+
+You can also use the [Solana Faucet](https://faucet.solana.com/) web interface.
+
+### Extra Args
+
+When sending **to** Solana, the SDK's `buildMessageForDest` automatically populates Solana-specific extra args (`computeUnits`, `tokenReceiver`, `accounts`, etc.). You don't need to construct them manually.
 
 ## Project Structure
 
 ```
 01-getting-started/
 ├── src/
-│   ├── transfer-tokens.ts    # Send cross-chain transfer (EVM + Solana)
-│   ├── estimate-fees.ts      # Estimate fees (EVM + Solana)
-│   ├── get-status.ts         # Check message status (EVM + Solana)
-│   ├── supported-tokens.ts   # Discover tokens (EVM + Solana)
-│   ├── inspect-pools.ts      # Inspect pool config (EVM + Solana)
+│   ├── transfer-tokens.ts    # Send cross-chain transfer
+│   ├── estimate-fees.ts      # Estimate transfer fees
+│   ├── get-status.ts         # Check message status
+│   ├── supported-tokens.ts   # Discover tokens on a lane
+│   ├── inspect-pools.ts      # Inspect pool configurations
 │   └── list-chains.ts        # List supported chains
 ├── .env.example              # Environment template
 ├── package.json
 ├── tsconfig.json
 └── README.md
 ```
-
-## Next Steps
-
-After understanding the basics:
-
-1. **[02-evm-simple-bridge](../02-evm-simple-bridge)** - Add browser UI with MetaMask (EVM only)
 
 ## Troubleshooting
 
@@ -276,9 +299,9 @@ The token pool's rate limit bucket is depleted. Wait for it to refill or try a s
 
 CCIP messages take time to be indexed. Wait a few minutes and try again.
 
-### "Invalid Solana private key"
+### "SVM_PRIVATE_KEY is not set" / "Invalid Solana private key"
 
-Make sure your Solana private key is base58 encoded. If you have a keypair JSON file, you need to convert the byte array to base58 format.
+Set `SVM_PRIVATE_KEY` in `.env` to a keypair file path, base58, or hex key. See the Solana-Specific Notes section above.
 
 ### Node.js version errors
 
@@ -286,5 +309,5 @@ Ensure you're using Node.js v22+:
 
 ```bash
 node --version  # Should be v22.x.x or higher
-nvm use 22      # Switch to Node 22 if using nvm
+nvm use 22      # Switch if using nvm
 ```

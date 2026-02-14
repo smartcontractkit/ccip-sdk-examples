@@ -1,72 +1,51 @@
 /**
- * CCIP SDK Example: Transfer Tokens Cross-Chain (EVM + Solana)
+ * CCIP SDK Example: Transfer Tokens Cross-Chain
  *
  * This script demonstrates how to transfer tokens between chains
- * using the CCIP SDK. Supports both EVM and Solana as source chains.
+ * using the CCIP SDK. Works with any supported chain family.
  *
  * Usage:
- *   pnpm transfer                                    # Interactive with defaults
- *   pnpm transfer --source sepolia --dest base      # Custom source/dest
- *   pnpm transfer --amount 0.01 --receiver 0x...    # Custom amount and receiver
- *   pnpm transfer -v                                 # Verbose mode
+ *   pnpm transfer -s <source> -d <dest>                      # Required: source and dest
+ *   pnpm transfer -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1
+ *   pnpm transfer -s solana-devnet -d ethereum-testnet-sepolia
+ *   pnpm transfer -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1 -a 0.5
+ *   pnpm transfer -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1 -f link
+ *   pnpm transfer -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1 -v
  *
  * Prerequisites:
- *   - Set PRIVATE_KEY in .env file (EVM hex key or Solana base58 key)
+ *   - Set EVM_PRIVATE_KEY and/or SVM_PRIVATE_KEY in .env (see .env.example)
  *   - Have testnet tokens (ETH/SOL for gas, CCIP-BnM for transfer)
  *
  * Run `pnpm chains` to see all supported chain keys.
  */
 
 import { Command } from "commander";
-import { ethers } from "ethers";
-import {
-  EVMChain,
-  SolanaChain,
-  networkInfo,
-  ChainFamily,
-  getCCIPExplorerUrl,
-  CCIPError,
-} from "@chainlink/ccip-sdk";
-import { Keypair } from "@solana/web3.js";
-import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
+import { type ChainFamily, networkInfo, getCCIPExplorerUrl, CCIPError } from "@chainlink/ccip-sdk";
 import { config } from "dotenv";
-import bs58 from "bs58";
 import * as readline from "readline";
 import {
   NETWORKS,
   NETWORK_IDS,
+  CHAIN_FAMILY_LABELS,
   getTokenAddress,
   getExplorerTxUrl,
-  DUMMY_ADDRESSES,
+  getDummyReceiver,
+  resolveFeeTokenAddress,
+  type FeeTokenOption,
 } from "@ccip-examples/shared-config";
-import { formatAmount, parseAmount, buildTokenTransferMessage } from "@ccip-examples/shared-utils";
+import {
+  formatAmount,
+  parseAmount,
+  buildTokenTransferMessage,
+  createChain,
+  createLogger,
+  createWallet,
+} from "@ccip-examples/shared-utils";
 
 config();
 
-// Default configuration
-const DEFAULT_SOURCE_EVM = "ethereum-testnet-sepolia";
-const DEFAULT_DEST_EVM = "ethereum-testnet-sepolia-base-1";
-const DEFAULT_SOURCE_SOLANA = "solana-devnet";
-const DEFAULT_DEST_SOLANA = "ethereum-testnet-sepolia";
 const DEFAULT_TOKEN = "CCIP-BnM";
 const DEFAULT_AMOUNT = "0.001";
-
-// Logger interface for SDK
-interface Logger {
-  debug: (...args: unknown[]) => void;
-  info: (...args: unknown[]) => void;
-  warn: (...args: unknown[]) => void;
-  error: (...args: unknown[]) => void;
-}
-
-function createLogger(verbose: boolean): Logger {
-  return {
-    debug: verbose ? console.debug.bind(console) : () => {},
-    info: console.info.bind(console),
-    warn: console.warn.bind(console),
-    error: console.error.bind(console),
-  };
-}
 
 /**
  * Prompt user for confirmation
@@ -98,20 +77,25 @@ function validateChainKey(key: string): string {
 }
 
 /**
- * Get default receiver address based on destination chain family
- * - EVM destination: Use sender's EVM address or dummy EVM address
- * - Solana destination: Use dummy Solana address
+ * Get default receiver address based on destination chain family.
+ *
+ * When the sender address is available and the destination is the
+ * same chain family, we use it (self-transfer). Otherwise we fall
+ * back to a format-valid dummy address for the destination family.
  */
-function getDefaultReceiver(destKey: string, senderAddress?: string): string {
+function getDefaultReceiver(
+  destKey: string,
+  sourceFamily: ChainFamily,
+  senderAddress?: string
+): string {
   const destFamily = networkInfo(destKey).family;
 
-  if (destFamily === ChainFamily.Solana) {
-    // Solana destination: use dummy Solana address
-    return DUMMY_ADDRESSES.solana;
-  } else {
-    // EVM destination: prefer sender address if available, otherwise dummy
-    return senderAddress ?? DUMMY_ADDRESSES.evm;
+  // Self-transfer when same family and sender address available
+  if (senderAddress && destFamily === sourceFamily) {
+    return senderAddress;
   }
+
+  return getDummyReceiver(destFamily);
 }
 
 interface TransferOptions {
@@ -120,94 +104,52 @@ interface TransferOptions {
   token: string;
   amount: string;
   receiver?: string;
+  /** Fee token selection: "native" (default) or "link". */
+  feeToken: FeeTokenOption;
+  /** Optional keypair path/key that overrides the env var (useful for Solana). */
+  keypair?: string;
   verbose: boolean;
   yes: boolean;
 }
 
 /**
- * Wallet abstraction for unified transfer logic
+ * Transfer tokens cross-chain
  */
-type WalletInfo =
-  | {
-      address: string;
-      signTransaction: (tx: ethers.TransactionLike) => Promise<string>;
-    }
-  | AnchorWallet;
-
-/**
- * Initialize wallet based on chain family
- */
-function initializeWallet(
-  sourceKey: string,
-  privateKey: string
-): { wallet: WalletInfo; address: string; isSolana: boolean } {
-  const sourceInfo = networkInfo(sourceKey);
-  const sourceConfig = NETWORKS[sourceKey];
-
-  if (!sourceConfig) {
-    throw new Error(`Invalid network: ${sourceKey}`);
-  }
-
-  if (sourceInfo.family === ChainFamily.Solana) {
-    // Solana wallet
-    try {
-      const secretKey = bs58.decode(privateKey);
-      const wallet = new AnchorWallet(Keypair.fromSecretKey(secretKey));
-      return {
-        wallet,
-        address: wallet.publicKey.toBase58(),
-        isSolana: true,
-      };
-    } catch {
-      throw new Error("Invalid Solana private key. Expected base58 encoded secret key.");
-    }
-  } else {
-    // EVM wallet
-    const provider = new ethers.JsonRpcProvider(sourceConfig.rpcUrl);
-    const ethersWallet = new ethers.Wallet(privateKey, provider);
-    return {
-      wallet: {
-        address: ethersWallet.address,
-        signTransaction: async (tx: ethers.TransactionLike) => ethersWallet.signTransaction(tx),
-      },
-      address: ethersWallet.address,
-      isSolana: false,
-    };
-  }
-}
-
-/**
- * Transfer tokens cross-chain (unified for EVM and Solana)
- */
-async function transfer(options: TransferOptions, privateKey: string): Promise<string> {
-  const { source, dest, token, amount, receiver, verbose, yes } = options;
+async function transfer(options: TransferOptions): Promise<string> {
+  const { source, dest, token, amount, receiver, feeToken, keypair, verbose, yes } = options;
   const logger = createLogger(verbose);
 
   const sourceConfig = NETWORKS[source];
   const destConfig = NETWORKS[dest];
-  const sourceInfo = networkInfo(source);
   const destInfo = networkInfo(dest);
+  const sourceFamily = networkInfo(source).family;
 
   if (!sourceConfig || !destConfig) {
     throw new Error("Invalid network configuration");
   }
 
-  const isSolana = sourceInfo.family === ChainFamily.Solana;
+  // Resolve fee token: "native" → undefined, "link" → LINK address
+  const feeTokenAddress = resolveFeeTokenAddress(feeToken, source);
 
   console.log(`Source:      ${sourceConfig.name} (${source})`);
   console.log(`Destination: ${destConfig.name} (${dest})`);
   console.log(`Token:       ${token}`);
   console.log(`Amount:      ${amount}`);
+  console.log(`Fee Token:   ${feeToken}${feeTokenAddress ? ` (${feeTokenAddress})` : ""}`);
   console.log();
 
   // Step 1: Initialize wallet
+  // CLI --keypair overrides the env var (useful for Solana keypair files)
   console.log("Step 1: Initializing wallet...");
-  const { wallet, address: walletAddress } = initializeWallet(source, privateKey);
+  const { wallet, address: walletAddress } = createWallet(
+    sourceFamily,
+    sourceConfig.rpcUrl,
+    keypair
+  );
   console.log(`Wallet address: ${walletAddress}`);
 
   // Determine receiver address with smart defaults
-  const receiverAddress =
-    receiver ?? getDefaultReceiver(dest, isSolana ? undefined : walletAddress);
+  const receiverAddress = receiver ?? getDefaultReceiver(dest, sourceFamily, walletAddress);
   if (receiver) {
     console.log(`Receiver:       ${receiverAddress}`);
   } else if (receiverAddress === walletAddress) {
@@ -216,12 +158,9 @@ async function transfer(options: TransferOptions, privateKey: string): Promise<s
     console.log(`Receiver:       ${receiverAddress} (default)`);
   }
 
-  // Step 2: Initialize CCIP SDK
+  // Step 2: Initialize CCIP SDK (pass logger so -v controls SDK debug output too)
   console.log("\nStep 2: Initializing CCIP SDK...");
-  const sourceChain = isSolana
-    ? await SolanaChain.fromUrl(sourceConfig.rpcUrl)
-    : await EVMChain.fromUrl(sourceConfig.rpcUrl);
-  logger.debug("SDK initialized", { chainSelector: destInfo.chainSelector });
+  const sourceChain = await createChain(source, sourceConfig.rpcUrl, logger);
 
   // Get token address
   const tokenAddress = getTokenAddress(token, source);
@@ -233,7 +172,6 @@ async function transfer(options: TransferOptions, privateKey: string): Promise<s
   const tokenInfo = await sourceChain.getTokenInfo(tokenAddress);
   const parsedAmount = parseAmount(amount, tokenInfo.decimals);
   console.log(`Token address: ${tokenAddress}`);
-  logger.debug("Token info", tokenInfo);
 
   // Step 3: Build CCIP message
   console.log("\nStep 3: Building CCIP message...");
@@ -241,8 +179,22 @@ async function transfer(options: TransferOptions, privateKey: string): Promise<s
     receiver: receiverAddress,
     tokenAddress,
     amount: parsedAmount,
+    feeToken: feeTokenAddress,
   });
-  logger.debug("Message", message);
+
+  // Resolve fee token metadata for display and balance checks.
+  // When feeTokenAddress is undefined, fee is paid in native currency.
+  let feeDecimals: number;
+  let feeSymbol: string;
+
+  if (feeTokenAddress) {
+    const feeTokenInfo = await sourceChain.getTokenInfo(feeTokenAddress);
+    feeDecimals = feeTokenInfo.decimals;
+    feeSymbol = feeTokenInfo.symbol;
+  } else {
+    feeDecimals = sourceConfig.nativeCurrency.decimals;
+    feeSymbol = sourceConfig.nativeCurrency.symbol;
+  }
 
   // Step 4: Estimate fee
   console.log("\nStep 4: Estimating transfer fee...");
@@ -251,14 +203,17 @@ async function transfer(options: TransferOptions, privateKey: string): Promise<s
     destChainSelector: destInfo.chainSelector,
     message,
   });
-  console.log(
-    `Estimated fee: ${formatAmount(fee, sourceConfig.nativeCurrency.decimals)} ${sourceConfig.nativeCurrency.symbol}`
-  );
+  console.log(`Estimated fee: ${formatAmount(fee, feeDecimals)} ${feeSymbol}`);
 
   // Step 5: Check balances
   console.log("\nStep 5: Checking balances...");
-  const nativeBalance = await sourceChain.getBalance({ holder: walletAddress });
-  const tokenBalance = await sourceChain.getBalance({ holder: walletAddress, token: tokenAddress });
+  const nativeBalance = await sourceChain.getBalance({
+    holder: walletAddress,
+  });
+  const tokenBalance = await sourceChain.getBalance({
+    holder: walletAddress,
+    token: tokenAddress,
+  });
 
   console.log(
     `Native balance: ${formatAmount(nativeBalance, sourceConfig.nativeCurrency.decimals)} ${sourceConfig.nativeCurrency.symbol}`
@@ -267,9 +222,20 @@ async function transfer(options: TransferOptions, privateKey: string): Promise<s
     `Token balance:  ${formatAmount(tokenBalance, tokenInfo.decimals)} ${tokenInfo.symbol}`
   );
 
-  if (nativeBalance < fee) {
+  // When paying in a non-native fee token, check that balance too
+  if (feeTokenAddress) {
+    const feeTokenBalance = await sourceChain.getBalance({
+      holder: walletAddress,
+      token: feeTokenAddress,
+    });
+    console.log(`Fee token balance: ${formatAmount(feeTokenBalance, feeDecimals)} ${feeSymbol}`);
+    if (feeTokenBalance < fee) {
+      throw new Error(`Insufficient ${feeSymbol} for fee`);
+    }
+  } else if (nativeBalance < fee) {
     throw new Error(`Insufficient ${sourceConfig.nativeCurrency.symbol} for fee`);
   }
+
   if (tokenBalance < parsedAmount) {
     throw new Error(`Insufficient ${token}`);
   }
@@ -283,9 +249,7 @@ async function transfer(options: TransferOptions, privateKey: string): Promise<s
     console.log(`  From:        ${sourceConfig.name}`);
     console.log(`  To:          ${destConfig.name}`);
     console.log(`  Receiver:    ${receiverAddress}`);
-    console.log(
-      `  Fee:         ${formatAmount(fee, sourceConfig.nativeCurrency.decimals)} ${sourceConfig.nativeCurrency.symbol}`
-    );
+    console.log(`  Fee:         ${formatAmount(fee, feeDecimals)} ${feeSymbol}`);
     console.log("=".repeat(60));
 
     const confirmed = await confirm("Proceed with transfer?");
@@ -319,38 +283,43 @@ async function main() {
   program
     .name("transfer")
     .description("Transfer tokens cross-chain using CCIP SDK")
-    .option("-s, --source <chain>", "Source chain key (run 'pnpm chains' to see options)")
-    .option("-d, --dest <chain>", "Destination chain key")
+    .requiredOption("-s, --source <chain>", "Source chain key (run 'pnpm chains' to see options)")
+    .requiredOption("-d, --dest <chain>", "Destination chain key")
     .option("-t, --token <symbol>", "Token symbol to transfer", DEFAULT_TOKEN)
     .option("-a, --amount <amount>", "Amount to transfer", DEFAULT_AMOUNT)
-    .option("-r, --receiver <address>", "Receiver address (defaults based on destination chain)")
+    .option(
+      "-r, --receiver <address>",
+      "Receiver address (defaults to self for same-family, dummy otherwise)"
+    )
+    .option("-f, --fee-token <type>", 'Fee token: "native" (default) or "link"', "native")
+    .option(
+      "-k, --keypair <path>",
+      "Keypair file path or secret key (overrides SVM_PRIVATE_KEY env var)"
+    )
     .option("-v, --verbose", "Enable verbose logging", false)
     .option("-y, --yes", "Skip confirmation prompt", false)
     .action(
       async (opts: {
-        source?: string;
-        dest?: string;
+        source: string;
+        dest: string;
         token: string;
         amount: string;
         receiver?: string;
+        feeToken: string;
+        keypair?: string;
         verbose: boolean;
         yes: boolean;
       }) => {
-        // Determine if using Solana based on source
-        const source = opts.source
-          ? validateChainKey(opts.source)
-          : opts.dest?.includes("solana")
-            ? DEFAULT_SOURCE_SOLANA
-            : DEFAULT_SOURCE_EVM;
+        const source = validateChainKey(opts.source);
+        const dest = validateChainKey(opts.dest);
+        const sourceFamily = networkInfo(source).family;
 
-        const isSolana = networkInfo(source).family === ChainFamily.Solana;
-
-        // Set defaults based on chain family
-        const dest = opts.dest
-          ? validateChainKey(opts.dest)
-          : isSolana
-            ? DEFAULT_DEST_SOLANA
-            : DEFAULT_DEST_EVM;
+        // Validate fee token option
+        const feeTokenValue = opts.feeToken.toLowerCase();
+        if (feeTokenValue !== "native" && feeTokenValue !== "link") {
+          console.error(`Invalid --fee-token value: "${opts.feeToken}". Use "native" or "link".`);
+          process.exit(1);
+        }
 
         const options: TransferOptions = {
           source,
@@ -358,25 +327,20 @@ async function main() {
           token: opts.token,
           amount: opts.amount,
           receiver: opts.receiver,
+          feeToken: feeTokenValue,
+          keypair: opts.keypair,
           verbose: opts.verbose,
           yes: opts.yes,
         };
 
+        const familyLabel = CHAIN_FAMILY_LABELS[sourceFamily];
         console.log("=".repeat(60));
-        console.log(`CCIP SDK: Transfer Tokens Cross-Chain (${isSolana ? "Solana" : "EVM"})`);
+        console.log(`CCIP SDK: Transfer Tokens Cross-Chain (${familyLabel})`);
         console.log("=".repeat(60));
         console.log();
 
-        const privateKey = process.env.PRIVATE_KEY;
-        if (!privateKey) {
-          console.error("Error: PRIVATE_KEY not set in .env file");
-          console.error("For EVM: Use hex private key (with or without 0x prefix)");
-          console.error("For Solana: Use base58 encoded secret key");
-          process.exit(1);
-        }
-
         try {
-          const messageId = await transfer(options, privateKey);
+          const messageId = await transfer(options);
 
           console.log("\n" + "=".repeat(60));
           console.log("Transfer initiated successfully!");
@@ -388,7 +352,6 @@ async function main() {
           console.log("=".repeat(60));
         } catch (error) {
           console.error("\n" + "=".repeat(60));
-          // Use SDK error types for better error handling
           if (CCIPError.isCCIPError(error)) {
             console.error("Error:", error.message);
             console.error("Code:", error.code);

@@ -25,3 +25,14 @@ export { toGenericPublicClient } from "./viem.js";
 
 // CCIP message building utilities
 export { buildTokenTransferMessage } from "./message.js";
+
+// Chain factory utilities
+export { createChain, createLogger } from "./chain.js";
+
+// Wallet factory utilities
+export {
+  createWallet,
+  createSolanaWallet,
+  createEVMWallet,
+  getPrivateKeyForFamily,
+} from "./wallet.js";

@@ -1,5 +1,5 @@
 /**
- * CCIP SDK Example: Inspect Token Pool Configuration (EVM + Solana)
+ * CCIP SDK Example: Inspect Token Pool Configuration
  *
  * This script demonstrates how to inspect token pool configurations,
  * including rate limits and remote chain settings. This is useful for:
@@ -7,35 +7,49 @@
  * - Checking if a lane is rate-limited
  * - Viewing pool type and version
  *
- * Both EVM and Solana chains support full pool inspection with rate limits.
+ * Works with all supported chain families (EVM, Solana, etc.) through
+ * the unified Chain interface.
  *
  * Usage:
  *   pnpm pools
  *   pnpm pools <network> <token_address>
  */
 
-import {
-  EVMChain,
-  SolanaChain,
-  networkInfo,
-  ChainFamily,
-  CCIPError,
-  CCIPTokenPoolChainConfigNotFoundError,
-} from "@chainlink/ccip-sdk";
+import type { Chain, RateLimiterState, TokenInfo } from "@chainlink/ccip-sdk";
+import { networkInfo, CCIPError, CCIPTokenPoolChainConfigNotFoundError } from "@chainlink/ccip-sdk";
 import { NETWORKS, NETWORK_IDS, getTokenAddress } from "@ccip-examples/shared-config";
-import { formatAmount } from "@ccip-examples/shared-utils";
+import { formatAmount, createChain } from "@ccip-examples/shared-utils";
 
 /**
- * Inspect token pool with full configuration
+ * Format a rate limiter state for display.
  *
- * Works with both EVM and Solana chains since they share
- * the same pool inspection interface.
+ * @param label - Direction label (e.g. "Outbound", "Inbound")
+ * @param state - Rate limiter state (null when rate limiting is disabled)
+ * @param tokenInfo - Token metadata for formatting amounts
  */
-async function inspectPool(
-  chain: EVMChain | SolanaChain,
-  networkKey: string,
-  tokenAddress: string
-) {
+function printRateLimiterState(label: string, state: RateLimiterState, tokenInfo: TokenInfo): void {
+  if (!state) {
+    console.log(`    ${label} Rate Limit: Disabled`);
+    return;
+  }
+
+  const { tokens, capacity, rate } = state;
+  const percentAvailable = capacity > 0n ? Number((tokens * 100n) / capacity) : 100;
+
+  console.log(`    ${label} Rate Limit:`);
+  console.log(
+    `      Available: ${formatAmount(tokens, tokenInfo.decimals)} / ${formatAmount(capacity, tokenInfo.decimals)} (${percentAvailable}%)`
+  );
+  console.log(`      Refill:    ${formatAmount(rate, tokenInfo.decimals)} tokens/sec`);
+}
+
+/**
+ * Inspect a token pool with full configuration.
+ *
+ * Uses the base {@link Chain} interface so this works with any
+ * chain family that the SDK supports.
+ */
+async function inspectPool(chain: Chain, networkKey: string, tokenAddress: string): Promise<void> {
   const config = NETWORKS[networkKey];
 
   if (!config) {
@@ -43,15 +57,15 @@ async function inspectPool(
     return;
   }
 
-  const chainFamily = networkInfo(networkKey).family === ChainFamily.Solana ? "Solana" : "EVM";
-  console.log(`\nInspecting pool on ${config.name} (${chainFamily})`);
+  const { family } = networkInfo(networkKey);
+  console.log(`\nInspecting pool on ${config.name} (${family})`);
   console.log(`Token: ${tokenAddress}`);
   console.log("-".repeat(60));
 
   try {
     // Get token info from SDK
     const tokenInfo = await chain.getTokenInfo(tokenAddress);
-    console.log(`Token Name:   ${tokenInfo.name}`);
+    console.log(`Token Name:   ${tokenInfo.name ?? "N/A"}`);
     console.log(`Token Symbol: ${tokenInfo.symbol}`);
     console.log(`Decimals:     ${tokenInfo.decimals}`);
 
@@ -74,9 +88,10 @@ async function inspectPool(
       console.log(`Pool Type:    ${poolConfig.typeAndVersion}`);
     }
     console.log(`Router:       ${poolConfig.router}`);
-    // Solana has additional tokenPoolProgram field
+
+    // Some chain families expose extra fields (e.g. Solana's tokenPoolProgram)
     if ("tokenPoolProgram" in poolConfig && poolConfig.tokenPoolProgram) {
-      console.log(`Pool Program: ${poolConfig.tokenPoolProgram}`);
+      console.log(`Pool Program: ${poolConfig.tokenPoolProgram as string}`);
     }
 
     // Get remote configurations for all destinations
@@ -90,7 +105,6 @@ async function inspectPool(
 
       try {
         const destInfo = networkInfo(destKey);
-        // Use getTokenPoolRemote (singular) for single destination lookup
         const remote = await chain.getTokenPoolRemote(
           tokenConfig.tokenPool,
           destInfo.chainSelector
@@ -100,43 +114,19 @@ async function inspectPool(
         console.log(`    Remote Token: ${remote.remoteToken}`);
         console.log(`    Remote Pools: ${remote.remotePools.join(", ")}`);
 
-        // Outbound rate limit (source → destination)
-        if (remote.outboundRateLimiterState) {
-          const { tokens, capacity, rate } = remote.outboundRateLimiterState;
-          const percentAvailable = capacity > 0n ? Number((tokens * 100n) / capacity) : 100;
-          console.log(`    Outbound Rate Limit:`);
-          console.log(
-            `      Available: ${formatAmount(tokens, tokenInfo.decimals)} / ${formatAmount(capacity, tokenInfo.decimals)} (${percentAvailable}%)`
-          );
-          console.log(`      Refill:    ${formatAmount(rate, tokenInfo.decimals)} tokens/sec`);
-        } else {
-          console.log(`    Outbound Rate Limit: Disabled`);
-        }
-
-        // Inbound rate limit (destination → source)
-        if (remote.inboundRateLimiterState) {
-          const { tokens, capacity, rate } = remote.inboundRateLimiterState;
-          const percentAvailable = capacity > 0n ? Number((tokens * 100n) / capacity) : 100;
-          console.log(`    Inbound Rate Limit:`);
-          console.log(
-            `      Available: ${formatAmount(tokens, tokenInfo.decimals)} / ${formatAmount(capacity, tokenInfo.decimals)} (${percentAvailable}%)`
-          );
-          console.log(`      Refill:    ${formatAmount(rate, tokenInfo.decimals)} tokens/sec`);
-        } else {
-          console.log(`    Inbound Rate Limit: Disabled`);
-        }
+        printRateLimiterState("Outbound", remote.outboundRateLimiterState, tokenInfo);
+        printRateLimiterState("Inbound", remote.inboundRateLimiterState, tokenInfo);
       } catch (error) {
-        // Use SDK error types - CCIPTokenPoolChainConfigNotFoundError means destination not configured
-        if (error instanceof CCIPTokenPoolChainConfigNotFoundError) {
-          // Expected: destination not configured for this pool - skip silently
-        } else if (CCIPError.isCCIPError(error)) {
-          console.log(`\n  → ${destConfig.name}`);
+        // Destination not configured for this pool — skip silently
+        if (error instanceof CCIPTokenPoolChainConfigNotFoundError) continue;
+
+        console.log(`\n  → ${destConfig.name}`);
+        if (CCIPError.isCCIPError(error)) {
           console.log(`    Error: ${error.message}`);
           if (error.recovery) {
             console.log(`    Recovery: ${error.recovery}`);
           }
         } else {
-          console.log(`\n  → ${destConfig.name}`);
           console.log(`    Error: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
@@ -157,7 +147,7 @@ async function inspectPool(
 
 async function main() {
   console.log("=".repeat(60));
-  console.log("CCIP SDK: Inspect Token Pool Configuration (EVM + Solana)");
+  console.log("CCIP SDK: Inspect Token Pool Configuration");
   console.log("=".repeat(60));
 
   const args = process.argv.slice(2);
@@ -172,11 +162,7 @@ async function main() {
       process.exit(1);
     }
 
-    const chain =
-      networkInfo(network).family === ChainFamily.Solana
-        ? await SolanaChain.fromUrl(config.rpcUrl)
-        : await EVMChain.fromUrl(config.rpcUrl);
-
+    const chain = await createChain(network, config.rpcUrl);
     await inspectPool(chain, network, token);
   } else if (args.length === 0) {
     // Show pools for CCIP-BnM on all networks
@@ -184,13 +170,10 @@ async function main() {
 
     for (const [networkKey, config] of Object.entries(NETWORKS)) {
       const tokenAddress = getTokenAddress("CCIP-BnM", networkKey);
-      if (tokenAddress) {
-        const chain =
-          networkInfo(networkKey).family === ChainFamily.Solana
-            ? await SolanaChain.fromUrl(config.rpcUrl)
-            : await EVMChain.fromUrl(config.rpcUrl);
-        await inspectPool(chain, networkKey, tokenAddress);
-      }
+      if (!tokenAddress) continue;
+
+      const chain = await createChain(networkKey, config.rpcUrl);
+      await inspectPool(chain, networkKey, tokenAddress);
     }
   } else {
     console.log("Usage:");

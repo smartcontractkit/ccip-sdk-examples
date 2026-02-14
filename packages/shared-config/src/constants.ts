@@ -5,6 +5,8 @@
  * Centralizing these prevents duplication and makes updates easier.
  */
 
+import { ChainFamily } from "@chainlink/ccip-sdk";
+
 /**
  * External documentation and resource URLs
  */
@@ -146,14 +148,49 @@ export function getStatusDescription(status: string): string {
 }
 
 /**
- * Dummy addresses for fee estimation
+ * Dummy receiver addresses for fee estimation, keyed by chain family.
  *
  * These are used when estimating fees without a real receiver address.
- * The addresses are valid but not owned by anyone.
+ * The addresses are valid format-wise but not owned by anyone.
+ * Each chain family requires its own address format.
  */
-export const DUMMY_ADDRESSES = {
-  /** Dummy EVM address for fee estimation */
-  evm: "0x0000000000000000000000000000000000000001",
-  /** Dummy Solana address (System Program) for fee estimation */
-  solana: "11111111111111111111111111111111",
+export const DUMMY_ADDRESSES: Record<ChainFamily, string> = {
+  /** EVM: checksummed 20-byte address */
+  [ChainFamily.EVM]: "0x0000000000000000000000000000000000000001",
+  /** Solana: base58-encoded 32-byte public key (System Program) */
+  [ChainFamily.Solana]: "11111111111111111111111111111111",
+  /** Aptos: 0x-prefixed 32-byte hex address */
+  [ChainFamily.Aptos]: "0x0000000000000000000000000000000000000000000000000000000000000001",
+  /** Sui: 0x-prefixed 32-byte hex address */
+  [ChainFamily.Sui]: "0x0000000000000000000000000000000000000000000000000000000000000001",
+  /** TON: raw workchain:hash format */
+  [ChainFamily.TON]: "0:0000000000000000000000000000000000000000000000000000000000000001",
+  /** Unknown: fallback to EVM format */
+  [ChainFamily.Unknown]: "0x0000000000000000000000000000000000000001",
+} as const;
+
+/**
+ * Get a dummy receiver address appropriate for a destination chain family.
+ *
+ * @param family - The destination chain family
+ * @returns A valid-format dummy address for fee estimation
+ */
+export function getDummyReceiver(family: ChainFamily): string {
+  return DUMMY_ADDRESSES[family];
+}
+
+/**
+ * Human-friendly display labels for chain families.
+ *
+ * The SDK's {@link ChainFamily} values are terse identifiers
+ * (`"EVM"`, `"SVM"`, `"APTOS"`, …). This mapping provides
+ * labels suitable for CLI output and UI rendering.
+ */
+export const CHAIN_FAMILY_LABELS: Record<ChainFamily, string> = {
+  [ChainFamily.EVM]: "EVM Networks",
+  [ChainFamily.Solana]: "Solana Networks",
+  [ChainFamily.Aptos]: "Aptos Networks",
+  [ChainFamily.Sui]: "Sui Networks",
+  [ChainFamily.TON]: "TON Networks",
+  [ChainFamily.Unknown]: "Other Networks",
 } as const;

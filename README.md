@@ -1,6 +1,8 @@
 # CCIP SDK Examples
 
-Educational examples for the [Chainlink CCIP SDK](https://www.npmjs.com/package/@chainlink/ccip-sdk) — progressive tutorials for cross-chain token transfers on EVM and Solana.
+> **CCIP SDK** [`@chainlink/ccip-sdk@0.96.0`](https://www.npmjs.com/package/@chainlink/ccip-sdk/v/0.96.0) | **Testnet only** | [CCIP Docs](https://docs.chain.link/ccip) | [CCIP Explorer](https://ccip.chain.link)
+
+Educational examples for the [Chainlink CCIP SDK](https://www.npmjs.com/package/@chainlink/ccip-sdk) — progressive tutorials for cross-chain token transfers across EVM, Solana, and other supported chain families.
 
 [![CI](https://github.com/smartcontractkit/ccip-sdk-examples/actions/workflows/ci.yml/badge.svg)](https://github.com/smartcontractkit/ccip-sdk-examples/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -41,9 +43,10 @@ pnpm build:packages
 
 ```bash
 # 01 - Getting Started (Node.js scripts)
-pnpm dev:01                    # Show available commands
-pnpm -F 01-getting-started fees   # Estimate fees
-pnpm -F 01-getting-started tokens # List supported tokens
+cd examples/01-getting-started
+pnpm chains                                                            # List supported chains
+pnpm fees -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1   # Estimate fees
+pnpm tokens -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1 # Supported tokens
 
 # 02 - Simple Bridge (Browser)
 pnpm dev:02                    # Start dev server at localhost:5173
@@ -93,57 +96,54 @@ ccip-sdk-examples/
 
 ### @ccip-examples/shared-config
 
-Network and token configuration shared across all examples.
+Network, token, and constant configuration shared across all examples.
 
 ```typescript
 import {
+  // Networks
   NETWORKS, // All supported networks with config
   NETWORK_IDS, // Array of network keys
   getAllNetworks, // Get networks with key, name, family
   getNetwork, // Get config by network key
-  getEVMNetworks, // Filter EVM networks
-  getSolanaNetworks, // Filter Solana networks
-  getTokenAddress, // Get token address for network
-  getExplorerTxUrl, // Build explorer URL for tx
-  DUMMY_ADDRESSES, // Placeholder addresses for testing
-  getStatusDescription, // Human-readable status descriptions
-} from "@ccip-examples/shared-config";
 
-// Network keys match SDK networkIds
-const config = NETWORKS["ethereum-testnet-sepolia"];
-// { name, rpcUrl, explorerUrl, nativeCurrency, routerAddress }
+  // Tokens
+  getTokenAddress, // Get token address for network
+  LINK_TOKEN_ADDRESSES, // LINK addresses per network
+  resolveFeeTokenAddress, // "native" | "link" → on-chain address
+
+  // Display & constants
+  CHAIN_FAMILY_LABELS, // Human-friendly labels per ChainFamily
+  getDummyReceiver, // Format-valid dummy address per family
+  getStatusDescription, // Human-readable CCIP status descriptions
+  getExplorerTxUrl, // Build explorer URL for tx
+  ChainFamily, // Re-exported from SDK
+} from "@ccip-examples/shared-config";
 ```
 
 ### @ccip-examples/shared-utils
 
-Validation, formatting, and error handling utilities.
+Chain factories, wallet factories, validation, and formatting utilities.
 
 ```typescript
 import {
-  // Validation
-  isValidEVMAddress, // Validate EVM address
-  isValidSolanaAddress, // Validate Solana address
-  isValidAddress, // Validate address by chain type
-  isValidAmount, // Validate amount string
-  isAmountWithinBalance, // Check amount doesn't exceed balance
+  // Chain & wallet factories
+  createChain, // Family-agnostic Chain instance from networkId + rpcUrl
+  createLogger, // Logger with configurable verbosity (-v flag)
+  createWallet, // Family-agnostic wallet from env var (EVM_PRIVATE_KEY / SVM_PRIVATE_KEY)
+  createSolanaWallet, // Solana wallet from file path, hex, or base58
 
-  // Formatting
+  // Message building
+  buildTokenTransferMessage, // Build MessageInput for token transfers
+
+  // Validation & formatting
   parseAmount, // "1.5" + 18 decimals → bigint
   formatAmount, // bigint + 18 decimals → "1.5"
+  isValidAddress, // Validate address by chain type
   truncateAddress, // "0x1234...5678"
-  checksumAddress, // Checksum an EVM address
 
   // Error handling
-  getErrorMessage, // Extract error message from unknown errors
-
-  // SDK integration
-  toGenericPublicClient, // Bridge wagmi → CCIP SDK viem types
-  buildTokenTransferMessage, // Build CCIP token transfer message
+  getErrorMessage, // Extract message from unknown errors
 } from "@ccip-examples/shared-utils";
-
-// Error handling example
-const message = getErrorMessage(error);
-// Returns a string extracted from Error, ethers errors, or unknown types
 ```
 
 ## Supported Networks
@@ -160,7 +160,9 @@ const message = getErrorMessage(error);
 - **Sepolia ETH**: [Chainlink Faucet](https://faucets.chain.link/sepolia)
 - **Base Sepolia ETH**: [Chainlink Faucet](https://faucets.chain.link/base-sepolia)
 - **Fuji AVAX**: [Chainlink Faucet](https://faucets.chain.link/fuji)
-- **CCIP-BnM**: [CCIP Faucet](https://docs.chain.link/ccip/test-tokens)
+- **Devnet SOL**: `solana airdrop 3 --url devnet` or [Solana Faucet](https://faucet.solana.com/)
+- **CCIP-BnM**: [CCIP Test Tokens](https://docs.chain.link/ccip/test-tokens)
+- **LINK**: [Chainlink Faucet](https://faucets.chain.link/)
 
 ## Development
 

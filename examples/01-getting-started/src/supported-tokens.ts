@@ -1,36 +1,39 @@
 /**
- * CCIP SDK Example: Discover Supported Tokens (EVM + Solana)
+ * CCIP SDK Example: Discover Supported Tokens
  *
  * This script demonstrates how to discover which tokens are supported
  * for transfer on a specific CCIP lane (source → destination).
  *
- * Both EVM and Solana use the SDK's getSupportedTokens() method,
- * which reads from on-chain registries (contract for EVM, PDAs for Solana).
+ * Works with all chain families through the unified Chain interface.
+ * The SDK's getSupportedTokens() reads from on-chain registries
+ * (TokenAdminRegistry contract on EVM, PDAs on Solana, etc.).
  *
  * Usage:
- *   pnpm tokens
- *   pnpm tokens <source_network> <dest_network>
- *   pnpm tokens ethereum-testnet-sepolia ethereum-testnet-sepolia-base-1
+ *   pnpm tokens -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1
+ *   pnpm tokens -s solana-devnet -d ethereum-testnet-sepolia
  */
 
-import {
-  EVMChain,
-  SolanaChain,
-  networkInfo,
-  ChainFamily,
-  CCIPError,
-  CCIPTokenPoolChainConfigNotFoundError,
-} from "@chainlink/ccip-sdk";
-import { NETWORKS } from "@ccip-examples/shared-config";
-import { formatAmount } from "@ccip-examples/shared-utils";
+import { Command } from "commander";
+import { networkInfo, CCIPError, CCIPTokenPoolChainConfigNotFoundError } from "@chainlink/ccip-sdk";
+import { NETWORKS, NETWORK_IDS, CHAIN_FAMILY_LABELS } from "@ccip-examples/shared-config";
+import { formatAmount, createChain } from "@ccip-examples/shared-utils";
+
+function validateChainKey(key: string): string {
+  if (!NETWORK_IDS.includes(key)) {
+    console.error(`Error: Unknown chain key "${key}"`);
+    console.error(`Run "pnpm chains" to see supported chains.`);
+    process.exit(1);
+  }
+  return key;
+}
 
 /**
- * Get supported tokens for any lane (EVM or Solana)
+ * Discover and display supported tokens for a specific lane.
  *
- * Uses the SDK's unified getSupportedTokens() method which works
- * for both EVM (via TokenAdminRegistry contract) and Solana (via PDAs).
+ * Uses the base {@link Chain} interface so this works with any
+ * chain family the SDK supports.
  */
-async function getSupportedTokens(sourceKey: string, destKey: string) {
+async function discoverSupportedTokens(sourceKey: string, destKey: string): Promise<void> {
   const sourceConfig = NETWORKS[sourceKey];
   const destConfig = NETWORKS[destKey];
 
@@ -41,30 +44,20 @@ async function getSupportedTokens(sourceKey: string, destKey: string) {
 
   const sourceInfo = networkInfo(sourceKey);
   const destInfo = networkInfo(destKey);
-  const chainFamily = sourceInfo.family === ChainFamily.Solana ? "Solana" : "EVM";
+  const familyLabel = CHAIN_FAMILY_LABELS[sourceInfo.family];
 
-  console.log(`\nLane: ${sourceConfig.name} → ${destConfig.name} (${chainFamily})`);
-  console.log("-".repeat(50));
+  console.log(`\nLane: ${sourceConfig.name} → ${destConfig.name} (${familyLabel})`);
+  console.log("-".repeat(60));
 
   try {
-    // Create chain instance based on family
-    const sourceChain =
-      sourceInfo.family === ChainFamily.Solana
-        ? await SolanaChain.fromUrl(sourceConfig.rpcUrl)
-        : await EVMChain.fromUrl(sourceConfig.rpcUrl);
+    const sourceChain = await createChain(sourceKey, sourceConfig.rpcUrl);
 
-    // Get token registry address (EVM needs registry lookup, Solana uses router directly)
-    let registryAddress: string;
-    if (sourceInfo.family === ChainFamily.Solana) {
-      // Solana: getSupportedTokens takes router directly
-      registryAddress = sourceConfig.routerAddress;
-    } else {
-      // EVM: Get TokenAdminRegistry from router
-      registryAddress = await sourceChain.getTokenAdminRegistryFor(sourceConfig.routerAddress);
-      console.log(`Token Admin Registry: ${registryAddress}`);
-    }
+    // getTokenAdminRegistryFor works for all chain families:
+    // EVM resolves via OnRamp → TokenAdminRegistry, Solana returns the router itself.
+    const registryAddress = await sourceChain.getTokenAdminRegistryFor(sourceConfig.routerAddress);
+    console.log(`Token Admin Registry: ${registryAddress}`);
 
-    // Get all supported tokens from the registry/router
+    // Get all supported tokens from the registry
     const tokens = await sourceChain.getSupportedTokens(registryAddress);
 
     if (tokens.length === 0) {
@@ -78,10 +71,8 @@ async function getSupportedTokens(sourceKey: string, destKey: string) {
     // Check each token for destination support
     for (const tokenAddress of tokens) {
       try {
-        // Get token info from SDK
         const tokenInfo = await sourceChain.getTokenInfo(tokenAddress);
 
-        // Get token pool configuration
         const tokenConfig = await sourceChain.getRegistryTokenConfig(registryAddress, tokenAddress);
 
         if (!tokenConfig.tokenPool) {
@@ -97,7 +88,7 @@ async function getSupportedTokens(sourceKey: string, destKey: string) {
             destInfo.chainSelector
           );
 
-          console.log(`  ${tokenInfo.symbol} (${tokenInfo.name})`);
+          console.log(`  ${tokenInfo.symbol} (${tokenInfo.name ?? "N/A"})`);
           console.log(`    Address:   ${tokenAddress}`);
           console.log(`    Decimals:  ${tokenInfo.decimals}`);
           console.log(`    Pool:      ${tokenConfig.tokenPool}`);
@@ -114,7 +105,6 @@ async function getSupportedTokens(sourceKey: string, destKey: string) {
           }
           console.log();
         } catch (error) {
-          // Handle destination not configured
           if (error instanceof CCIPTokenPoolChainConfigNotFoundError) {
             console.log(`  ${tokenInfo.symbol}: Not configured for ${destConfig.name}`);
           } else if (CCIPError.isCCIPError(error)) {
@@ -130,7 +120,6 @@ async function getSupportedTokens(sourceKey: string, destKey: string) {
           console.log();
         }
       } catch (error) {
-        // Handle token info errors
         if (CCIPError.isCCIPError(error)) {
           console.log(`  Token ${tokenAddress}: ${error.message}`);
         } else {
@@ -156,48 +145,27 @@ async function getSupportedTokens(sourceKey: string, destKey: string) {
 }
 
 async function main() {
-  console.log("=".repeat(60));
-  console.log("CCIP SDK: Discover Supported Tokens (EVM + Solana)");
-  console.log("=".repeat(60));
+  const program = new Command();
 
-  const args = process.argv.slice(2);
+  program
+    .name("tokens")
+    .description("Discover supported tokens for a CCIP lane")
+    .requiredOption("-s, --source <chain>", "Source chain key (run 'pnpm chains' to see options)")
+    .requiredOption("-d, --dest <chain>", "Destination chain key")
+    .action(async (opts: { source: string; dest: string }) => {
+      const source = validateChainKey(opts.source);
+      const dest = validateChainKey(opts.dest);
 
-  if (args.length === 2) {
-    // Specific lane requested
-    const sourceKey = args[0] ?? "";
-    const destKey = args[1] ?? "";
-    const sourceConfig = NETWORKS[sourceKey];
+      console.log("=".repeat(60));
+      console.log("CCIP SDK: Discover Supported Tokens");
+      console.log("=".repeat(60));
 
-    if (!sourceConfig) {
-      console.error(`Unknown network: ${sourceKey}`);
-      process.exit(1);
-    }
+      await discoverSupportedTokens(source, dest);
 
-    await getSupportedTokens(sourceKey, destKey);
-  } else if (args.length === 0) {
-    // Show all available networks
-    console.log("\nAvailable networks:");
-    for (const [key, config] of Object.entries(NETWORKS)) {
-      const family = networkInfo(key).family === ChainFamily.Solana ? "Solana" : "EVM";
-      console.log(`  ${key}: ${config.name} (${family})`);
-    }
+      console.log("=".repeat(60));
+    });
 
-    console.log("\nUsage:");
-    console.log("  pnpm tokens <source> <destination>");
-    console.log("\nExamples:");
-    console.log("  pnpm tokens ethereum-testnet-sepolia ethereum-testnet-sepolia-base-1");
-    console.log("  pnpm tokens solana-devnet ethereum-testnet-sepolia");
-
-    // Show one example
-    console.log("\nExample output for ethereum-testnet-sepolia → ethereum-testnet-sepolia-base-1:");
-    await getSupportedTokens("ethereum-testnet-sepolia", "ethereum-testnet-sepolia-base-1");
-  } else {
-    console.log("Usage: pnpm tokens <source_network> <dest_network>");
-    console.log("Example: pnpm tokens ethereum-testnet-sepolia ethereum-testnet-sepolia-base-1");
-    process.exit(1);
-  }
-
-  console.log("=".repeat(60));
+  await program.parseAsync(process.argv);
 }
 
 main().catch(console.error);

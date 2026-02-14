@@ -1,15 +1,18 @@
 /**
  * CCIP SDK Example: List Supported Chains
  *
- * Lists all supported chain keys with their friendly names.
+ * Lists all supported chain keys grouped by chain family.
  * Use these keys with other commands like transfer, fees, etc.
  *
  * Usage:
  *   pnpm chains
  */
 
-import { getAllNetworks } from "@ccip-examples/shared-config";
-import { ChainFamily } from "@chainlink/ccip-sdk";
+import {
+  type ChainFamily,
+  getAllNetworks,
+  CHAIN_FAMILY_LABELS,
+} from "@ccip-examples/shared-config";
 
 function main() {
   console.log("=".repeat(60));
@@ -19,34 +22,32 @@ function main() {
 
   const networks = getAllNetworks();
 
-  // Group by chain family (using SDK's ChainFamily enum)
-  const evmNetworks = networks.filter((n) => n.family === ChainFamily.EVM);
-  const svmNetworks = networks.filter((n) => n.family === ChainFamily.Solana);
-
-  console.log("EVM Networks:");
-  console.log("-".repeat(60));
-  console.log("Key".padEnd(40) + "Name");
-  console.log("-".repeat(60));
-  for (const network of evmNetworks) {
-    console.log(`${network.key.padEnd(40)}${network.name}`);
+  // Group networks by chain family dynamically
+  const byFamily = new Map<ChainFamily, typeof networks>();
+  for (const network of networks) {
+    const group = byFamily.get(network.family) ?? [];
+    group.push(network);
+    byFamily.set(network.family, group);
   }
 
-  console.log();
-  console.log("Solana Networks:");
-  console.log("-".repeat(60));
-  console.log("Key".padEnd(40) + "Name");
-  console.log("-".repeat(60));
-  for (const network of svmNetworks) {
-    console.log(`${network.key.padEnd(40)}${network.name}`);
+  for (const [family, group] of byFamily) {
+    const label = CHAIN_FAMILY_LABELS[family];
+    console.log(`${label}:`);
+    console.log("-".repeat(60));
+    console.log("Key".padEnd(40) + "Name");
+    console.log("-".repeat(60));
+    for (const network of group) {
+      console.log(`${network.key.padEnd(40)}${network.name}`);
+    }
+    console.log();
   }
 
-  console.log();
   console.log("=".repeat(60));
   console.log("Use these keys with commands like:");
   console.log(
     "  pnpm transfer --source ethereum-testnet-sepolia --dest ethereum-testnet-sepolia-base-1"
   );
-  console.log("  pnpm fees --source solana-devnet --dest ethereum-testnet-sepolia");
+  console.log("  pnpm fees");
   console.log("=".repeat(60));
 }
 

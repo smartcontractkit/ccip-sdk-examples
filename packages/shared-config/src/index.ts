@@ -9,6 +9,10 @@
  * - Keys are SDK-compatible networkIds
  */
 
+// Re-export ChainFamily from SDK so consumers don't need a direct SDK import
+// just for the type that getAllNetworks() returns.
+export { ChainFamily } from "@chainlink/ccip-sdk";
+
 // Network exports
 export {
   type NativeCurrency,
@@ -25,21 +29,26 @@ export {
 
 // Token exports
 export {
+  type FeeTokenOption,
   type TokenAddresses,
   TOKEN_ADDRESSES,
   TOKEN_KEYS,
   CCIP_BNM_ADDRESSES,
+  LINK_TOKEN_ADDRESSES,
   getTokenAddress,
+  resolveFeeTokenAddress,
 } from "./tokens.js";
 
 // Constants exports
 export {
+  CHAIN_FAMILY_LABELS,
   EXTERNAL_URLS,
   MESSAGE_STAGES,
   POLLING_CONFIG,
   STATUS_DESCRIPTIONS,
   DUMMY_ADDRESSES,
   getFaucetUrl,
+  getDummyReceiver,
   getStageFromStatus,
   getStatusDescription,
 } from "./constants.js";

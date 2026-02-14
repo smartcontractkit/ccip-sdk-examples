@@ -1,8 +1,10 @@
 /**
- * CCIP SDK Example: Get Message Status (EVM + Solana)
+ * CCIP SDK Example: Get Message Status
  *
  * This script demonstrates how to check the status of a cross-chain message
- * using its message ID. Searches across both EVM and Solana networks.
+ * using its message ID. It uses the CCIP API directly — status lookup is
+ * a centralized operation that does not require a connection to any specific
+ * chain.
  *
  * Message lifecycle states:
  * - SENT: Transaction submitted on source chain
@@ -18,12 +20,13 @@
  *   pnpm status 0x1234...
  */
 
-import { EVMChain, SolanaChain, getCCIPExplorerUrl, CCIPError } from "@chainlink/ccip-sdk";
 import {
-  getEVMNetworks,
-  getSolanaNetworks,
-  getStatusDescription,
-} from "@ccip-examples/shared-config";
+  CCIPAPIClient,
+  getCCIPExplorerUrl,
+  CCIPError,
+  CCIPMessageIdNotFoundError,
+} from "@chainlink/ccip-sdk";
+import { getStatusDescription } from "@ccip-examples/shared-config";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -44,110 +47,71 @@ async function main() {
   }
 
   console.log("=".repeat(60));
-  console.log("CCIP SDK: Get Message Status (EVM + Solana)");
+  console.log("CCIP SDK: Get Message Status");
   console.log("=".repeat(60));
   console.log();
   console.log(`Message ID: ${messageId}`);
   console.log();
-  console.log("Searching for message across networks...");
-  console.log();
 
-  let found = false;
+  // The CCIP API is a centralized index — a single call can locate any
+  // message regardless of which chain it was sent from.
+  const apiClient = new CCIPAPIClient();
 
-  // Search EVM networks
-  const evmNetworks = getEVMNetworks();
-  for (const [networkKey, config] of evmNetworks) {
-    try {
-      const chain = await EVMChain.fromUrl(config.rpcUrl);
-      const message = await chain.getMessageById(messageId);
+  try {
+    console.log("Querying CCIP API...");
+    console.log();
 
-      found = true;
-      const metadata = message.metadata;
-      const status = metadata?.status ?? "UNKNOWN";
-      const description = getStatusDescription(status);
+    const request = await apiClient.getMessageById(messageId);
+    const { metadata } = request;
 
-      console.log("Message Found on EVM!");
-      console.log("-".repeat(60));
-      console.log(`Network:     ${config.name} (${networkKey})`);
-      console.log(`Status:      ${status}`);
-      console.log(`Description: ${description}`);
+    const status = metadata.status;
+    const description = getStatusDescription(status);
 
-      if (metadata) {
-        console.log(`Source:      ${metadata.sourceNetworkInfo.name}`);
-        console.log(`Destination: ${metadata.destNetworkInfo.name}`);
-        if (metadata.receiptTransactionHash) {
-          console.log(`Dest TX:     ${metadata.receiptTransactionHash}`);
-        }
-      }
+    console.log("Message Found!");
+    console.log("-".repeat(60));
+    console.log(`Status:      ${status}`);
+    console.log(`Description: ${description}`);
+    console.log(`Source:      ${metadata.sourceNetworkInfo.name}`);
+    console.log(`Destination: ${metadata.destNetworkInfo.name}`);
 
+    if (metadata.receiptTransactionHash) {
+      console.log(`Dest TX:     ${metadata.receiptTransactionHash}`);
+    }
+
+    if (metadata.deliveryTime != null) {
+      const seconds = Number(metadata.deliveryTime) / 1000;
+      console.log(`Delivery:    ${seconds.toFixed(1)}s`);
+    }
+
+    if (metadata.readyForManualExecution) {
       console.log();
-      console.log("CCIP Explorer:");
-      console.log(getCCIPExplorerUrl("msg", messageId));
-      break;
-    } catch (error) {
-      // Expected: MESSAGE_ID_NOT_FOUND means message not on this network
-      // Log unexpected errors for debugging
-      if (!CCIPError.isCCIPError(error) || error.code !== "MESSAGE_ID_NOT_FOUND") {
-        console.debug(
-          `  ${config.name}: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
+      console.log("⚠ This message is ready for manual execution.");
     }
-  }
 
-  // Search Solana networks if not found
-  if (!found) {
-    const solanaNetworks = getSolanaNetworks();
-    for (const [networkKey, config] of solanaNetworks) {
-      try {
-        const chain = await SolanaChain.fromUrl(config.rpcUrl);
-        const message = await chain.getMessageById(messageId);
-
-        found = true;
-        const metadata = message.metadata;
-        const status = metadata?.status ?? "UNKNOWN";
-        const description = getStatusDescription(status);
-
-        console.log("Message Found on Solana!");
-        console.log("-".repeat(60));
-        console.log(`Network:     ${config.name} (${networkKey})`);
-        console.log(`Status:      ${status}`);
-        console.log(`Description: ${description}`);
-
-        if (metadata) {
-          console.log(`Source:      ${metadata.sourceNetworkInfo.name}`);
-          console.log(`Destination: ${metadata.destNetworkInfo.name}`);
-          if (metadata.receiptTransactionHash) {
-            console.log(`Dest TX:     ${metadata.receiptTransactionHash}`);
-          }
-        }
-
-        console.log();
-        console.log("CCIP Explorer:");
-        console.log(getCCIPExplorerUrl("msg", messageId));
-        break;
-      } catch (error) {
-        // Expected: MESSAGE_ID_NOT_FOUND means message not on this network
-        // Log unexpected errors for debugging
-        if (!CCIPError.isCCIPError(error) || error.code !== "MESSAGE_ID_NOT_FOUND") {
-          console.debug(
-            `  ${config.name}: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    }
-  }
-
-  if (!found) {
-    console.log("Message not found on any network.");
     console.log();
-    console.log("Possible reasons:");
-    console.log("- Message was sent recently and not yet indexed");
-    console.log("- Message ID is incorrect");
-    console.log("- Message was sent on a network not in our config");
-    console.log();
-    console.log("Try checking CCIP Explorer:");
+    console.log("CCIP Explorer:");
     console.log(getCCIPExplorerUrl("msg", messageId));
+  } catch (error) {
+    if (error instanceof CCIPMessageIdNotFoundError) {
+      console.log("Message not found.");
+      console.log();
+      console.log("Possible reasons:");
+      console.log("- Message was sent recently and not yet indexed");
+      console.log("- Message ID is incorrect");
+      console.log();
+      console.log("Try checking CCIP Explorer:");
+      console.log(getCCIPExplorerUrl("msg", messageId));
+    } else if (CCIPError.isCCIPError(error)) {
+      console.error(`Error: ${error.message}`);
+      if (error.recovery) {
+        console.error(`Recovery: ${error.recovery}`);
+      }
+      if (error.isTransient) {
+        console.error("Note: This error may be transient. Try again later.");
+      }
+    } else {
+      console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   console.log();
