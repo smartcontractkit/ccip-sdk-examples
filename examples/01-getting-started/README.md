@@ -2,6 +2,10 @@
 
 > **CCIP SDK** [`@chainlink/ccip-sdk@0.96.0`](https://www.npmjs.com/package/@chainlink/ccip-sdk/v/0.96.0) | **Testnet only** | [CCIP Docs](https://docs.chain.link/ccip) | [CCIP Explorer](https://ccip.chain.link)
 
+> **Disclaimer**
+>
+> _This tutorial represents an educational example to use a Chainlink system, product, or service and is provided to demonstrate how to interact with Chainlink's systems, products, and services to integrate them into your own. This template is provided "AS IS" and "AS AVAILABLE" without warranties of any kind, it has not been audited, and it may be missing key checks or error handling to make the usage of the system, product or service more clear. Do not use the code in this example in a production environment without completing your own audits and application of best practices. Neither Chainlink Labs, the Chainlink Foundation, nor Chainlink node operators are responsible for unintended outputs that are generated due to errors in code._
+
 Node.js scripts demonstrating the fundamental operations of the CCIP SDK. Start here to learn the basics without UI complexity.
 
 All scripts are **chain-family-agnostic** — the same code path works for EVM, Solana, and any future chain family the SDK supports, through the unified `Chain` base class and `createChain` factory.
