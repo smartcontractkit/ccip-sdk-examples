@@ -59,7 +59,11 @@ export const TOKEN_ADDRESSES: Record<string, TokenAddresses> = {
 } as const;
 
 /**
- * Supported fee token identifiers accepted by CLI scripts.
+ * Fee token utilities (centralized for reuse across examples)
+ */
+
+/**
+ * Supported fee token identifiers accepted by CLI scripts and UIs.
  *
  * - `"native"` — pay in the chain's native currency (ETH, SOL, AVAX, …)
  * - `"link"` — pay in LINK
@@ -67,7 +71,21 @@ export const TOKEN_ADDRESSES: Record<string, TokenAddresses> = {
 export type FeeTokenOption = "native" | "link";
 
 /**
- * Resolve a CLI fee-token option to an on-chain address.
+ * Fee token metadata for display in UIs
+ */
+export interface FeeTokenMetadata {
+  /** Fee token option identifier */
+  option: FeeTokenOption;
+  /** Display symbol (e.g., "ETH", "LINK") */
+  symbol: string;
+  /** On-chain address (undefined for native) */
+  address?: string;
+  /** Whether this fee token is available on the network */
+  available: boolean;
+}
+
+/**
+ * Resolve a fee-token option to an on-chain address.
  *
  * @param option - `"native"` or `"link"`
  * @param networkId - SDK-compatible network ID
@@ -88,6 +106,56 @@ export function resolveFeeTokenAddress(
     );
   }
   return address;
+}
+
+/**
+ * Get available fee token options for a network
+ *
+ * Returns metadata for all fee token options with availability status.
+ * Useful for rendering fee token selectors in UIs.
+ *
+ * @param networkId - SDK-compatible network ID
+ * @param nativeSymbol - Native currency symbol (e.g., "ETH", "AVAX")
+ * @returns Array of fee token metadata
+ *
+ * @example
+ * ```typescript
+ * const options = getAvailableFeeTokens("ethereum-testnet-sepolia", "ETH");
+ * // [
+ * //   { option: "native", symbol: "ETH", available: true },
+ * //   { option: "link", symbol: "LINK", address: "0x779...", available: true }
+ * // ]
+ * ```
+ */
+export function getAvailableFeeTokens(networkId: string, nativeSymbol: string): FeeTokenMetadata[] {
+  const linkAddress = LINK_TOKEN_ADDRESSES[networkId];
+
+  return [
+    {
+      option: "native",
+      symbol: nativeSymbol,
+      address: undefined,
+      available: true,
+    },
+    {
+      option: "link",
+      symbol: "LINK",
+      address: linkAddress,
+      available: Boolean(linkAddress),
+    },
+  ];
+}
+
+/**
+ * Check if a fee token option is available on a network
+ *
+ * @param option - Fee token option
+ * @param networkId - SDK-compatible network ID
+ * @returns True if the fee token is available
+ */
+export function isFeeTokenAvailable(option: FeeTokenOption, networkId: string): boolean {
+  if (option === "native") return true;
+  return Boolean(LINK_TOKEN_ADDRESSES[networkId]);
 }
 
 /**

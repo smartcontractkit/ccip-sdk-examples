@@ -21,13 +21,10 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { fromViemClient } from "@chainlink/ccip-sdk/viem";
 import type { TokenInfo } from "@chainlink/ccip-sdk";
-import { networkInfo, ChainFamily } from "@chainlink/ccip-sdk";
-import { getPublicClient } from "wagmi/actions";
+import { formatAmount } from "@ccip-examples/shared-utils";
 import { NETWORKS } from "@ccip-examples/shared-config";
-import { toGenericPublicClient, formatAmount } from "@ccip-examples/shared-utils";
-import { wagmiConfig, NETWORK_TO_CHAIN_ID } from "../config/wagmi.js";
+import { getChainInstance } from "./useChain.js";
 
 // Re-export SDK's TokenInfo so consumers don't need a direct SDK import
 export type { TokenInfo };
@@ -51,15 +48,10 @@ export interface UseTokenInfoResult {
 }
 
 /**
- * Type for chain IDs configured in wagmi
- */
-type ConfiguredChainId = (typeof wagmiConfig)["chains"][number]["id"];
-
-/**
  * Hook for fetching token info and balance
  *
  * @param networkId - SDK-compatible network ID (e.g., "ethereum-testnet-sepolia")
- * @param tokenAddress - Token contract address (null to skip)
+ * @param tokenAddress - Token contract address (null for native balance)
  * @param holderAddress - Address to check balance for (null to skip balance)
  */
 export function useTokenInfo(
@@ -76,46 +68,40 @@ export function useTokenInfo(
    * Fetch token info and balance from SDK
    */
   const fetchData = useCallback(async () => {
-    if (!networkId || !tokenAddress) {
+    if (!networkId) {
       setTokenInfo(null);
       setBalance(null);
       return;
     }
 
-    const config = NETWORKS[networkId];
-    if (!config || networkInfo(networkId).family !== ChainFamily.EVM) {
-      setError(`Invalid EVM network: ${networkId}`);
-      return;
-    }
-
-    // Verify network is configured in wagmi before lookup
-    if (!(networkId in NETWORK_TO_CHAIN_ID)) {
-      setError(`Network not configured in wagmi: ${networkId}`);
-      return;
-    }
-    const chainId = NETWORK_TO_CHAIN_ID[networkId] as ConfiguredChainId;
-
     setIsLoading(true);
     setError(null);
 
     try {
-      const client = getPublicClient(wagmiConfig, { chainId });
-      const chain = await fromViemClient(toGenericPublicClient(client));
+      // Use shared chain instance cache
+      const chain = await getChainInstance(networkId);
 
-      // Fetch token info from SDK
-      const info = await chain.getTokenInfo(tokenAddress);
-      setTokenInfo({
-        symbol: info.symbol,
-        name: info.name || info.symbol,
-        decimals: info.decimals,
-      });
+      // Handle token info
+      if (tokenAddress) {
+        // Fetch token info from SDK
+        const info = await chain.getTokenInfo(tokenAddress);
+        setTokenInfo({
+          symbol: info.symbol,
+          name: info.name ?? info.symbol,
+          decimals: info.decimals,
+        });
+      } else {
+        // Native balance - no token info needed
+        setTokenInfo(null);
+      }
 
       // Fetch balance if holder provided
       if (holderAddress) {
-        const bal = await chain.getBalance({
-          holder: holderAddress,
-          token: tokenAddress,
-        });
+        // For native balance: call without token parameter
+        // For token balance: include token parameter
+        const bal = tokenAddress
+          ? await chain.getBalance({ holder: holderAddress, token: tokenAddress })
+          : await chain.getBalance({ holder: holderAddress });
         setBalance(bal);
       }
     } catch (err) {
@@ -136,9 +122,22 @@ export function useTokenInfo(
 
   /**
    * Calculate formatted balance
+   * For native balance (tokenInfo is null), use network's native currency decimals
    */
-  const balanceFormatted =
-    balance !== null && tokenInfo ? formatAmount(balance, tokenInfo.decimals) : null;
+  const balanceFormatted = (() => {
+    if (balance === null) return null;
+
+    if (tokenInfo) {
+      // Token balance - use token decimals
+      return formatAmount(balance, tokenInfo.decimals);
+    } else if (networkId) {
+      // Native balance - use network's native currency decimals
+      const network = NETWORKS[networkId];
+      return network ? formatAmount(balance, network.nativeCurrency.decimals) : null;
+    }
+
+    return null;
+  })();
 
   return {
     tokenInfo,

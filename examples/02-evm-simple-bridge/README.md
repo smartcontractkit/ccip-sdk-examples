@@ -367,12 +367,20 @@ CCIP-BnM tokens have specific addresses per network. Make sure you're using a su
 
 ### Transfer taking too long
 
-CCIP transfers involve multiple steps:
+CCIP transfers involve multiple steps that vary by lane version:
 
-1. Source chain finality (~2-3 minutes)
+**V1 Lanes (COMMITTING & EXECUTING DON):**
+
+1. Source chain finality
 2. DON commits merkle root to destination
 3. Risk Management Network blessing
 4. Execution on destination
+
+**V2 Lanes (Verifier architecture):**
+
+1. Source chain finality
+2. Verification by required verifiers (Chainlink/external)
+3. Execution on destination
 
 The estimated delivery time shown in the UI comes from `getLaneLatency()` and varies by lane. Check the CCIP Explorer for real-time progress.
 

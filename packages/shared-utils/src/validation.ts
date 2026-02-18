@@ -98,3 +98,25 @@ export function truncateAddress(address: string, chars = 6): string {
   }
   return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`;
 }
+
+/**
+ * Format lane latency in milliseconds as human-friendly estimate string
+ *
+ * Converts milliseconds to approximate minutes for display.
+ * Used for showing CCIP lane delivery time estimates.
+ *
+ * @param totalMs - Lane latency in milliseconds (from chain.getLaneLatency())
+ * @returns Formatted string (e.g., "~17 min", "~<1 min")
+ *
+ * @example
+ * ```typescript
+ * const latency = await chain.getLaneLatency(destChainSelector);
+ * const formatted = formatLaneLatency(latency.totalMs);
+ * console.log(formatted); // "~17 min"
+ * ```
+ */
+export function formatLaneLatency(totalMs: number): string {
+  const minutes = Math.round(totalMs / 60_000);
+  if (minutes < 1) return "~<1 min";
+  return `~${minutes} min`;
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@ccip-examples/shared-brand",
+  "version": "1.0.0",
+  "description": "Shared brand assets and design tokens for CCIP SDK examples",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./design-tokens.css": "./src/design-tokens.css",
+    "./chainlink-logo.svg": "./assets/chainlink-logo.svg"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "ccip",
+    "brand",
+    "design-system",
+    "chainlink"
+  ]
+}

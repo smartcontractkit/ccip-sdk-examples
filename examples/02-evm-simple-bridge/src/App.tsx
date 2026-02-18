@@ -20,6 +20,7 @@
  * QueryClientProvider > WagmiProvider > RainbowKitProvider > App
  */
 
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
@@ -28,7 +29,7 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { wagmiConfig } from "./config/wagmi.js";
 import { Header, Footer } from "./components/layout";
 import { WalletConnect, BridgeForm, TransferStatus, MessageProgress } from "./components/bridge";
-import { useTransfer } from "./hooks";
+import { useTransfer, useMessageStatus } from "./hooks";
 import "./styles/globals.css";
 import "@rainbow-me/rainbowkit/styles.css";
 import styles from "./App.module.css";
@@ -56,6 +57,13 @@ function AppContent() {
   const { switchChain } = useSwitchChain();
   const transfer = useTransfer();
 
+  // Track network IDs for explorer links
+  const [sourceNetworkId, setSourceNetworkId] = useState<string | null>(null);
+  const [destNetworkId, setDestNetworkId] = useState<string | null>(null);
+
+  // Get destination transaction hash from message status
+  const messageStatus = useMessageStatus(transfer.messageId);
+
   // Determine if transfer is in progress
   const isLoading = ["estimating", "sending"].includes(transfer.status);
 
@@ -70,9 +78,12 @@ function AppContent() {
     dest: string,
     token: string,
     amount: string,
-    receiver: string
+    receiver: string,
+    feeToken: "native" | "link"
   ) => {
-    await transfer.estimateFee(source, dest, token, amount, receiver);
+    setSourceNetworkId(source);
+    setDestNetworkId(dest);
+    await transfer.estimateFee(source, dest, token, amount, receiver, feeToken);
   };
 
   /**
@@ -83,9 +94,12 @@ function AppContent() {
     dest: string,
     token: string,
     amount: string,
-    receiver: string
+    receiver: string,
+    feeToken: "native" | "link"
   ) => {
-    await transfer.transfer(source, dest, token, amount, receiver);
+    setSourceNetworkId(source);
+    setDestNetworkId(dest);
+    await transfer.transfer(source, dest, token, amount, receiver, feeToken);
   };
 
   /**
@@ -125,6 +139,9 @@ function AppContent() {
               txHash={transfer.txHash}
               messageId={transfer.messageId}
               estimatedTime={transfer.estimatedTime}
+              sourceNetworkId={sourceNetworkId}
+              destNetworkId={destNetworkId}
+              destTxHash={messageStatus.destTxHash}
               onReset={transfer.reset}
             />
 
@@ -150,7 +167,7 @@ export default function App() {
       <WagmiProvider config={wagmiConfig}>
         <RainbowKitProvider
           theme={darkTheme({
-            accentColor: "#375BD2", // Chainlink blue
+            accentColor: "#0847F7", // Primary blue
             borderRadius: "medium",
           })}
         >

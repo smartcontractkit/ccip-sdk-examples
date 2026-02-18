@@ -21,6 +21,7 @@ export {
   parseAmount,
   formatAmount,
   truncateAddress,
+  formatLaneLatency,
 } from "./validation.js";
 
 // Viem utilities for CCIP SDK integration
