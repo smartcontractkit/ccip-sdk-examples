@@ -16,7 +16,7 @@
 
 import { Command } from "commander";
 import type { Chain } from "@chainlink/ccip-sdk";
-import { networkInfo, CCIPError } from "@chainlink/ccip-sdk";
+import { networkInfo } from "@chainlink/ccip-sdk";
 import {
   NETWORKS,
   NETWORK_IDS,
@@ -31,6 +31,7 @@ import {
   parseAmount,
   buildTokenTransferMessage,
   createChain,
+  getErrorMessage,
 } from "@ccip-examples/shared-utils";
 
 const DEFAULT_TOKEN = "CCIP-BnM";
@@ -92,17 +93,8 @@ async function estimateTokenTransferFee(
       feeSymbol,
     };
   } catch (error) {
-    if (CCIPError.isCCIPError(error)) {
-      console.error(`  Error: ${error.message}`);
-      if (error.recovery) {
-        console.error(`  Recovery: ${error.recovery}`);
-      }
-      if (error.isTransient) {
-        console.error(`  Note: This error may be transient. Try again later.`);
-      }
-    } else {
-      console.error(`  Error: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    // getErrorMessage handles both CCIPError and regular errors
+    console.error(`  ${getErrorMessage(error)}`);
     return null;
   }
 }
