@@ -7,6 +7,9 @@
 // Error handling exports
 export { getErrorMessage } from "./errors.js";
 
+// Retry utilities
+export { withRetry, type RetryConfig, DEFAULT_RETRY_CONFIG } from "./retry.js";
+
 // Validation exports
 export {
   isValidEVMAddress,

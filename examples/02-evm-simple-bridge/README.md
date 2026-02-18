@@ -212,6 +212,8 @@ You'll need two types of tokens:
 
 ## Installation
 
+**Important:** Before running the app, you must install dependencies and build shared packages from the monorepo root.
+
 ```bash
 # From the repository root
 cd ccip-sdk-examples
@@ -219,7 +221,7 @@ cd ccip-sdk-examples
 # Install all dependencies
 pnpm install
 
-# Build shared packages
+# Build shared packages (required for all examples)
 pnpm build:packages
 ```
 

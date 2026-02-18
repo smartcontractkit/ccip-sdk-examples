@@ -6,14 +6,24 @@
  * a centralized operation that does not require a connection to any specific
  * chain.
  *
- * Message lifecycle states:
- * - SENT: Transaction submitted on source chain
- * - SOURCE_FINALIZED: Source chain reached finality
- * - COMMITTED: DON committed merkle root to destination
- * - BLESSED: Risk Management Network approved
- * - VERIFIED: Message verified on destination
- * - SUCCESS: Message executed successfully
- * - FAILED: Message execution failed
+ * Message lifecycle depends on lane version:
+ *
+ * V1 Lanes (COMMITTING & EXECUTING DON):
+ * 1. SENT - Transaction submitted on source chain
+ * 2. SOURCE_FINALIZED - Source chain reached finality
+ * 3. COMMITTED - DON committed merkle root to destination
+ * 4. BLESSED - Risk Management Network approved
+ * 5. SUCCESS or FAILED - Execution completed
+ *
+ * V2 Lanes (Verifier architecture):
+ * 1. SENT - Transaction submitted on source chain
+ * 2. SOURCE_FINALIZED - Source chain reached finality
+ * 3. VERIFYING - Verification in progress
+ * 4. VERIFIED - All required verifiers (Chainlink/external) have verified
+ * 5. SUCCESS or FAILED - Execution completed
+ *
+ * Note: A message will NEVER have both COMMITTED/BLESSED and VERIFIED states.
+ * The lifecycle depends on which lane version is deployed.
  *
  * Usage:
  *   pnpm status <message_id>
@@ -26,7 +36,8 @@ import {
   CCIPError,
   CCIPMessageIdNotFoundError,
 } from "@chainlink/ccip-sdk";
-import { getStatusDescription } from "@ccip-examples/shared-config";
+import { getStatusDescription, POLLING_CONFIG } from "@ccip-examples/shared-config";
+import { withRetry } from "@ccip-examples/shared-utils";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -58,10 +69,22 @@ async function main() {
   const apiClient = new CCIPAPIClient();
 
   try {
-    console.log("Querying CCIP API...");
+    console.log("Querying CCIP API (with retry for transient errors)...");
     console.log();
 
-    const request = await apiClient.getMessageById(messageId);
+    // Use retry logic for "message not found" errors (indexing delay)
+    // SDK's shouldRetry() determines if errors are retryable
+    const request = await withRetry(() => apiClient.getMessageById(messageId), {
+      initialDelay: POLLING_CONFIG.initialDelay,
+      maxDelay: POLLING_CONFIG.maxDelay,
+      delayIncrement: POLLING_CONFIG.delayIncrement,
+      maxAttempts: Math.min(POLLING_CONFIG.maxNotFoundRetries, 10), // Cap at 10 for CLI
+      onRetry: (attempt, delay) => {
+        console.log(
+          `  Attempt ${attempt} - Message not found yet, retrying in ${delay / 1000}s...`
+        );
+      },
+    });
     const { metadata } = request;
 
     const status = metadata.status;

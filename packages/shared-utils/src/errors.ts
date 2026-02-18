@@ -2,15 +2,26 @@
  * Error handling utilities for CCIP SDK examples
  *
  * Note: For CCIP-specific error handling, use the SDK's CCIPError class directly.
- * It provides `code`, `recovery`, and `isTransient` properties.
+ * The SDK provides all necessary error information:
+ * - `error.message` - Human-readable message
+ * - `error.recovery` - Recovery suggestion
+ * - `error.isTransient` - Whether to retry
+ * - `error.code` - Machine-readable code
+ * - `error.context` - Structured context (IDs, addresses)
  *
- * For retry logic, use the SDK's withRetry() and shouldRetry() functions.
+ * For retry logic, use the SDK's shouldRetry() and getRetryDelay() functions.
  */
+
+import { CCIPError } from "@chainlink/ccip-sdk";
 
 /**
  * Extract error message from various error types
  *
- * Useful for displaying errors in UI when you need a simple string message.
+ * For CCIPError, returns the formatted message with recovery info.
+ * For other errors, returns the basic error message.
+ *
+ * @param error - Error to format
+ * @returns Formatted error message
  */
 export function getErrorMessage(error: unknown): string {
   if (error === null || error === undefined) {
@@ -21,31 +32,29 @@ export function getErrorMessage(error: unknown): string {
     return error;
   }
 
+  // CCIPError has all the information we need
+  if (CCIPError.isCCIPError(error)) {
+    let message = error.message;
+
+    if (error.recovery) {
+      message += `\n  Recovery: ${error.recovery}`;
+    }
+
+    if (error.isTransient) {
+      message += `\n  Note: This error may be transient. Try again later.`;
+    }
+
+    return message;
+  }
+
   if (error instanceof Error) {
     return error.message;
   }
 
   if (typeof error === "object") {
-    // Handle ethers.js errors
-    const anyError = error as Record<string, unknown>;
-
-    if (typeof anyError.reason === "string") {
-      return anyError.reason;
-    }
-
-    if (typeof anyError.message === "string") {
-      return anyError.message;
-    }
-
-    if (typeof anyError.shortMessage === "string") {
-      return anyError.shortMessage;
-    }
-
-    // Handle nested errors
-    if (anyError.error && typeof anyError.error === "object") {
-      return getErrorMessage(anyError.error);
-    }
+    return JSON.stringify(error);
   }
 
-  return "Unknown error";
+  // Primitives (number, boolean, bigint, symbol)
+  return String(error as string | number | boolean | bigint | symbol);
 }

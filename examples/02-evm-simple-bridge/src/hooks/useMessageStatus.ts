@@ -8,13 +8,24 @@
  * regardless of which chain it was sent from. No chain instance or RPC
  * connection is needed.
  *
- * CCIP Message Lifecycle:
+ * CCIP Message Lifecycle (depends on lane version):
+ *
+ * V1 Lanes (COMMITTING & EXECUTING DON):
  * 1. SENT - Message submitted on source chain
  * 2. SOURCE_FINALIZED - Source chain reached finality
- * 3. COMMITTED - Merkle root committed to destination
+ * 3. COMMITTED - DON committed merkle root to destination
  * 4. BLESSED - Risk Management Network approved
- * 5. VERIFYING/VERIFIED - Verification in progress/complete
- * 6. SUCCESS or FAILED - Final execution state
+ * 5. SUCCESS or FAILED - Final execution state
+ *
+ * V2 Lanes (Verifier architecture):
+ * 1. SENT - Message submitted on source chain
+ * 2. SOURCE_FINALIZED - Source chain reached finality
+ * 3. VERIFYING - Verification in progress
+ * 4. VERIFIED - All required verifiers (Chainlink/external) have verified
+ * 5. SUCCESS or FAILED - Final execution state
+ *
+ * Note: A message will NEVER have both COMMITTED/BLESSED and VERIFYING/VERIFIED.
+ * The lifecycle path depends on which lane version is deployed.
  *
  * @see https://docs.chain.link/ccip/concepts/message-lifecycle
  */
