@@ -30,6 +30,7 @@ export {
 // Token exports
 export {
   type FeeTokenOption,
+  type FeeTokenMetadata,
   type TokenAddresses,
   TOKEN_ADDRESSES,
   TOKEN_KEYS,
@@ -37,6 +38,8 @@ export {
   LINK_TOKEN_ADDRESSES,
   getTokenAddress,
   resolveFeeTokenAddress,
+  getAvailableFeeTokens,
+  isFeeTokenAvailable,
 } from "./tokens.js";
 
 // Constants exports

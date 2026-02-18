@@ -132,15 +132,21 @@
   display: flex;
   gap: var(--spacing-2);
   align-items: flex-end;
+  margin-bottom: var(--spacing-4);
 }
 
-.amountRow > *:first-child {
+.amountRow > div:first-child {
   flex: 1;
+  margin-bottom: 0 !important; /* Override Input component's margin-bottom */
 }
 
 .maxButton {
-  padding: var(--spacing-2) var(--spacing-3);
-  height: 42px;
+  padding: var(--spacing-3);
+  min-height: 42px;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-primary);
@@ -150,6 +156,7 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .maxButton:hover:not(:disabled) {
@@ -166,4 +173,79 @@
   display: flex;
   gap: var(--spacing-4);
   margin-top: var(--spacing-4);
+}
+
+/* Balances Summary */
+.balancesSummary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-4);
+}
+
+.balanceItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  text-align: center;
+  min-width: 0; /* Allow flex items to shrink below content size */
+}
+
+.balanceLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.balanceValue {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: break-all;
+}
+
+/* Fee Token Selector */
+.feeTokenSelector {
+  margin-bottom: var(--spacing-4);
+}
+
+.feeTokenLabel {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.feeTokenOptions {
+  display: flex;
+  gap: var(--spacing-4);
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.radioLabel input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.notAvailable {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
 }

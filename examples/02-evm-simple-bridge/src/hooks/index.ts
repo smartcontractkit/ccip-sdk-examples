@@ -13,3 +13,5 @@
 export { useTransfer, type TransferStatus, type TransferState } from "./useTransfer.js";
 export { useMessageStatus, type MessageStatusResult } from "./useMessageStatus.js";
 export { useTokenInfo, type TokenInfo, type UseTokenInfoResult } from "./useTokenInfo.js";
+export { useLaneLatency, type UseLaneLatencyResult } from "./useLaneLatency.js";
+export { getChainInstance, clearChainCache, getChainCacheSize } from "./useChain.js";

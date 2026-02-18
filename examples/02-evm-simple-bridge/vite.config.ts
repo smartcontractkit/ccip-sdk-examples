@@ -1,21 +1,34 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 /**
- * Vite configuration following CCIP SDK recommendations
+ * Vite configuration following CCIP SDK browser setup recommendations
  *
  * Key optimizations:
  * - manualChunks: Split vendor dependencies for better caching
  * - esnext target: Modern browsers, smaller bundle
  * - optimizeDeps: Pre-bundle CJS dependencies for faster dev
  *
- * Note: For EVM-only usage with @chainlink/ccip-sdk/viem, we don't need
- * buffer polyfills. The viem sub-export enables tree-shaking automatically.
+ * Buffer Polyfill:
+ * - Required for CCIP SDK (even for EVM-only) due to dev mode pre-bundling
+ * - RainbowKit/MetaMask also need crypto, stream, util, process polyfills
+ * - See: CCIP SDK browser setup guide
  *
  * @see https://github.com/smartcontractkit/ccip-tools-ts
  */
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    nodePolyfills({
+      include: ["buffer", "crypto", "stream", "util", "process"],
+      globals: { Buffer: true, global: true, process: true },
+      protocolImports: false, // Don't polyfill protocol imports (http, https, etc.)
+    }),
+  ],
+  define: {
+    "process.env": {},
+  },
   optimizeDeps: {
     // Pre-bundle CJS dependencies for faster dev mode
     include: ["react", "react-dom", "viem"],
@@ -41,11 +54,9 @@ export default defineConfig({
     },
   },
   server: {
-    host: "0.0.0.0",
     port: 5173,
   },
   preview: {
-    host: "0.0.0.0",
     port: 4173,
   },
 });

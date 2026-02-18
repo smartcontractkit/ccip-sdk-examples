@@ -52,22 +52,43 @@
   animation: spin 1s linear infinite;
 }
 
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .errorMessage {
   margin: var(--spacing-2) 0;
   color: var(--color-error);
 }
 
+.sendingDetails {
+  margin: var(--spacing-2) 0;
+  padding: var(--spacing-3);
+  background-color: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  border-left: 3px solid var(--color-warning);
+}
+
 .link {
   margin: var(--spacing-2) 0;
+  font-size: var(--font-size-sm);
 }
 
-.link a {
+.explorerLink {
   color: var(--color-primary);
   text-decoration: none;
-  word-break: break-all;
+  font-family: var(--font-mono, monospace);
+  font-size: var(--font-size-sm);
 }
 
-.link a:hover {
+.explorerLink:hover {
   text-decoration: underline;
 }
 
