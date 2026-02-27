@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@chainlink/ccip-sdk": "1.0.0",
+    "@ccip-examples/shared-brand": "workspace:*",
     "@ccip-examples/shared-config": "workspace:*",
     "@ccip-examples/shared-components": "workspace:*",
     "@ccip-examples/shared-utils": "workspace:*",

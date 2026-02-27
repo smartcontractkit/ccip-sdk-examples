@@ -1,13 +1,12 @@
 /**
  * Global styles for CCIP example frontends.
- * Import tokens from same package.
+ * Import design tokens from shared-brand (single source of truth).
  */
-@import "./tokens.css";
+@import "@ccip-examples/shared-brand/design-tokens.css";
 
 :root {
   --color-metamask: #f6851b;
   --color-metamask-hover: #e2761b;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 }
 
 /* Global Reset */
@@ -39,16 +38,5 @@ body {
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-/* Reduced Motion Support */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
   }
 }

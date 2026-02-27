@@ -9,7 +9,7 @@ import { TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import type { SolanaChain } from "@chainlink/ccip-sdk";
 import { networkInfo } from "@chainlink/ccip-sdk";
 import { NETWORKS } from "@ccip-examples/shared-config";
-import { parseSolanaError } from "@ccip-examples/shared-utils";
+import { parseSolanaError, confirmTransaction } from "@ccip-examples/shared-utils";
 import type { TransactionResult, TransferMessage } from "./transferTypes.js";
 
 export interface UseSolanaTransferParams {
@@ -53,25 +53,74 @@ export function useSolanaTransfer({
           message: { ...message, fee },
         });
 
-        onStateChange("sending");
+        // Retry loop covering both send AND confirm: if the user takes too long
+        // to sign in the wallet popup the blockhash expires. This can surface as
+        // either a send-time error or a confirmation-time expiration. In both
+        // cases we rebuild the transaction with a fresh blockhash and re-prompt.
+        const MAX_ATTEMPTS = 3;
+        let signature: string | undefined;
+        let confirmed = false;
 
-        // Use "confirmed" for a fresher blockhash (less likely to expire during wallet signing).
-        const blockhash = await solanaConnection.getLatestBlockhash("confirmed");
-        const messageV0 = new TransactionMessage({
-          payerKey: solanaPublicKey,
-          recentBlockhash: blockhash.blockhash,
-          instructions: unsignedTx.instructions,
-        }).compileToV0Message(unsignedTx.lookupTables);
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+          onStateChange("sending");
 
-        const transaction = new VersionedTransaction(messageV0);
-        const signature = await sendTransaction(transaction, solanaConnection, {
-          skipPreflight: true,
-          maxRetries: 5,
-        });
-        onTxHash(signature);
+          const blockhash = await solanaConnection.getLatestBlockhash("confirmed");
+          const messageV0 = new TransactionMessage({
+            payerKey: solanaPublicKey,
+            recentBlockhash: blockhash.blockhash,
+            instructions: unsignedTx.instructions,
+          }).compileToV0Message(unsignedTx.lookupTables);
 
-        onStateChange("confirming");
-        await solanaConnection.confirmTransaction({ signature, ...blockhash }, "confirmed");
+          const transaction = new VersionedTransaction(messageV0);
+
+          try {
+            signature = await sendTransaction(transaction, solanaConnection, {
+              skipPreflight: true,
+              maxRetries: 5,
+            });
+          } catch (sendErr: unknown) {
+            const isBlockheightError =
+              sendErr instanceof Error &&
+              sendErr.name === "TransactionExpiredBlockheightExceededError";
+
+            if (isBlockheightError && attempt < MAX_ATTEMPTS) {
+              console.warn(
+                `Blockhash expired on send (attempt ${attempt}/${MAX_ATTEMPTS}), retrying…`
+              );
+              continue;
+            }
+            throw sendErr;
+          }
+
+          onTxHash(signature);
+
+          // Poll-based confirmation — uses getSignatureStatus() so no
+          // blockhash is needed for the confirmation step itself.
+          onStateChange("confirming");
+          const result = await confirmTransaction({
+            connection: solanaConnection,
+            signature,
+            lastValidBlockHeight: blockhash.lastValidBlockHeight,
+          });
+
+          if (result.confirmed) {
+            if (!result.success) throw new Error("Solana transaction failed on-chain");
+            confirmed = true;
+            break;
+          }
+
+          // Transaction expired before confirmation — retry with fresh tx
+          if (attempt < MAX_ATTEMPTS) {
+            console.warn(
+              `Transaction expired during confirmation (attempt ${attempt}/${MAX_ATTEMPTS}), retrying…`
+            );
+            continue;
+          }
+        }
+
+        if (!signature || !confirmed) {
+          throw new Error("Solana transaction could not be confirmed after multiple attempts");
+        }
 
         onStateChange("tracking");
         const tx = await chain.getTransaction(signature);

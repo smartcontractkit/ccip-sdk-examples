@@ -76,6 +76,13 @@ export {
   type TransferState,
 } from "./types/transfer.js";
 
+// Solana transaction utilities (poll-based confirmation, retry helpers)
+export {
+  confirmTransaction,
+  type ConfirmTransactionOptions,
+  type ConfirmTransactionResult,
+} from "./solana.js";
+
 // NOTE: Wallet utilities (createWallet, createSolanaWallet, etc.) use Node.js
 // built-ins (fs, os, path) and are NOT re-exported here to keep the main
 // entry point browser-safe. Import them from "@ccip-examples/shared-utils/wallet".

@@ -19,6 +19,7 @@ import { useWallet as useAptosWallet } from "@aptos-labs/wallet-adapter-react";
 import { Network } from "@aptos-labs/ts-sdk";
 import { useAccount, useSwitchChain } from "wagmi";
 
+import { BRAND_COLORS } from "@ccip-examples/shared-brand";
 import { wagmiConfig } from "@ccip-examples/shared-config/wagmi";
 import { createDefaultQueryClient } from "@ccip-examples/shared-config/queryClient";
 import { NETWORKS, type FeeTokenOptionItem } from "@ccip-examples/shared-config";
@@ -122,7 +123,7 @@ function AppContent() {
 
   return (
     <div className={styles.app}>
-      <Header title="CCIP Multichain Bridge" subtitle="EVM, Solana, and Aptos token transfers">
+      <Header title="Multichain Family Bridge" subtitle="EVM, Solana, and Aptos token transfers">
         <HistoryButton />
       </Header>
       <main className={`${styles.main} ${styles.mainWide}`}>
@@ -177,7 +178,7 @@ export default function App() {
         <WagmiProvider config={wagmiConfig}>
           <RainbowKitProvider
             theme={darkTheme({
-              accentColor: "#375BD2",
+              accentColor: BRAND_COLORS.primary,
               borderRadius: "medium",
             })}
           >

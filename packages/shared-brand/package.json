@@ -9,7 +9,8 @@
       "default": "./dist/index.js"
     },
     "./design-tokens.css": "./src/design-tokens.css",
-    "./chainlink-logo.svg": "./assets/chainlink-logo.svg"
+    "./chainlink-logo.svg": "./assets/chainlink-logo.svg",
+    "./favicon.ico": "./assets/favicon.ico"
   },
   "scripts": {
     "build": "tsc",
