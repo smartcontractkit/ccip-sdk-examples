@@ -62,7 +62,7 @@
   font-weight: 600;
   text-transform: uppercase;
   color: var(--color-primary);
-  background-color: var(--color-primary-light);
+  background-color: var(--color-primary-bg);
   padding: 1px 6px;
   border-radius: var(--radius-sm);
   line-height: 1.4;

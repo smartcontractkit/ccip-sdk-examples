@@ -24,6 +24,9 @@
   --color-primary: #0847f7;
   --color-primary-dark: #0635c4;
   --color-primary-light: #8aa6f9;
+  --color-primary-hover: #063fd4;
+  --color-primary-bg: #e8eeff; /* light tint for backgrounds */
+  --color-primary-shadow: rgba(8, 71, 247, 0.2);
 
   /* Neutrals */
   --color-dark: #0b101c; /* Chainlink dark */
@@ -32,7 +35,9 @@
 
   /* Secondary - Status Colors */
   --color-success: #217b71; /* Chainlink green */
+  --color-success-hover: #1a655c;
   --color-warning: #f7b808; /* Chainlink yellow */
+  --color-warning-hover: #d9a207;
   --color-error: #e54918; /* Chainlink orange */
 
   /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -49,6 +54,7 @@
   /* Backgrounds */
   --color-background: var(--color-light);
   --color-background-secondary: var(--color-white);
+  --color-background-tertiary: #eef1f6;
   --color-surface: var(--color-white);
   --color-surface-elevated: var(--color-white);
 
@@ -77,6 +83,7 @@
   /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
   --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-family);
   --font-mono: "Monaco", "Menlo", "Ubuntu Mono", monospace;
 
   --font-size-xs: 0.75rem; /* 12px */

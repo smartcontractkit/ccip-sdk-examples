@@ -21,6 +21,12 @@ export const BRAND_COLORS = {
   primaryDark: "#0635C4",
   /** Light variant */
   primaryLight: "#8AA6F9",
+  /** Hover state for primary */
+  primaryHover: "#063FD4",
+  /** Light tint for backgrounds */
+  primaryBg: "#E8EEFF",
+  /** Primary shadow */
+  primaryShadow: "rgba(8, 71, 247, 0.2)",
 
   /** Dark neutral */
   dark: "#0B101C",
@@ -31,10 +37,17 @@ export const BRAND_COLORS = {
 
   /** Success/positive states */
   success: "#217B71",
+  /** Success hover */
+  successHover: "#1A655C",
   /** Warning states */
   warning: "#F7B808",
+  /** Warning hover */
+  warningHover: "#D9A207",
   /** Error/destructive states */
   error: "#E54918",
+
+  /** Tertiary background */
+  backgroundTertiary: "#EEF1F6",
 } as const;
 
 /** @deprecated Use BRAND_COLORS instead */

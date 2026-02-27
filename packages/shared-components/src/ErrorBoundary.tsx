@@ -28,7 +28,7 @@ function DefaultFallback({ error, reset }: { error: Error; reset: () => void }) 
         style={{
           padding: "0.5rem 1rem",
           cursor: "pointer",
-          backgroundColor: "var(--color-primary, #375bd2)",
+          backgroundColor: "var(--color-primary, #0847f7)",
           color: "white",
           border: "none",
           borderRadius: "4px",

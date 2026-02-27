@@ -49,7 +49,7 @@
 
 .aptosButtonConnected {
   background: var(--color-background-secondary, #1a1b1f);
-  border-color: var(--color-primary, #375bd2);
+  border-color: var(--color-primary, #0847f7);
   color: var(--color-text-primary);
 }
 

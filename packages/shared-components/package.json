@@ -14,7 +14,6 @@
       "types": "./dist/primitives/index.d.ts",
       "import": "./dist/primitives/index.js"
     },
-    "./styles/tokens.css": "./dist/styles/tokens.css",
     "./styles/globals.css": "./dist/styles/globals.css",
     "./layout": {
       "types": "./dist/layout/index.d.ts",
@@ -52,6 +51,7 @@
     "ui"
   ],
   "dependencies": {
+    "@ccip-examples/shared-brand": "workspace:*",
     "@ccip-examples/shared-config": "workspace:*",
     "@ccip-examples/shared-utils": "workspace:*"
   },

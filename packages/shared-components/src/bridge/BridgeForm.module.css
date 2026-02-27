@@ -115,7 +115,7 @@
 .copyButton:hover:not(:disabled) {
   color: var(--color-primary);
   border-color: var(--color-primary);
-  background-color: var(--color-primary-light);
+  background-color: var(--color-primary-bg);
 }
 
 .copyButton:disabled {
@@ -151,7 +151,7 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-primary);
-  background-color: var(--color-primary-light);
+  background-color: var(--color-primary-bg);
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-md);
   cursor: pointer;
