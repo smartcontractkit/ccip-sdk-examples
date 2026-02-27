@@ -17,6 +17,14 @@
     "./tokens": {
       "types": "./dist/tokens.d.ts",
       "import": "./dist/tokens.js"
+    },
+    "./wagmi": {
+      "types": "./dist/wagmi.d.ts",
+      "import": "./dist/wagmi.js"
+    },
+    "./queryClient": {
+      "types": "./dist/queryClient.d.ts",
+      "import": "./dist/queryClient.js"
     }
   },
   "files": [
@@ -30,16 +38,25 @@
     "lint:fix": "eslint src --fix",
     "clean": "rm -rf dist"
   },
-  "dependencies": {
-    "@chainlink/ccip-sdk": "0.96.0"
-  },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "@chainlink/ccip-sdk": "1.0.0",
+    "@rainbow-me/rainbowkit": "^2.2.10",
+    "@tanstack/react-query": "^5.62.0",
+    "typescript": "^5.9.3",
+    "viem": "^2.21.0",
+    "wagmi": "^2.14.0"
   },
   "keywords": [
     "ccip",
     "config",
     "networks",
     "tokens"
-  ]
+  ],
+  "peerDependencies": {
+    "@chainlink/ccip-sdk": "1.0.0",
+    "@rainbow-me/rainbowkit": ">=2.2.0",
+    "@tanstack/react-query": ">=5.0.0",
+    "viem": ">=2.21.0",
+    "wagmi": ">=2.14.0"
+  }
 }

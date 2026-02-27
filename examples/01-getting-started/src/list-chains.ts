@@ -8,6 +8,7 @@
  *   pnpm chains
  */
 
+import "dotenv/config";
 import {
   type ChainFamily,
   getAllNetworks,

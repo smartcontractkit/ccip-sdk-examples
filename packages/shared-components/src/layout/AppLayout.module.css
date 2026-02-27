@@ -1,0 +1,30 @@
+.app {
+  min-height: 100vh;
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
+  padding: var(--spacing-4) var(--spacing-6);
+}
+
+.mainWide {
+  max-width: 680px;
+}
+
+.section {
+  margin-bottom: var(--spacing-6);
+}
+
+/* Responsive adjustments */
+@media (max-width: 520px) {
+  .main {
+    padding: var(--spacing-4);
+  }
+}

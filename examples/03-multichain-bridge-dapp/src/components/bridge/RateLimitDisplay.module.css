@@ -1,0 +1,62 @@
+.container {
+  margin-bottom: var(--spacing-4);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.value {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.disabled {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.progressTrack {
+  height: 8px;
+  background-color: var(--color-background-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--spacing-1);
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  transition: width 0.3s ease;
+}
+
+.green {
+  background-color: var(--color-success);
+}
+
+.yellow {
+  background-color: var(--color-warning);
+}
+
+.red {
+  background-color: var(--color-error);
+}
+
+.percentage {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.refillRate {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}

@@ -12,50 +12,23 @@
  * @see https://docs.chain.link/ccip
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useAccount, useWalletClient } from "wagmi";
-import { viemWallet } from "@chainlink/ccip-sdk/viem";
-import { networkInfo, CCIPError } from "@chainlink/ccip-sdk";
-import {
-  NETWORKS,
-  getTokenAddress,
-  resolveFeeTokenAddress,
-  type FeeTokenOption,
-} from "@ccip-examples/shared-config";
+import { fromViemClient, viemWallet } from "@chainlink/ccip-sdk/viem";
+import { networkInfo } from "@chainlink/ccip-sdk";
+import type { Chain } from "@chainlink/ccip-sdk";
+import { getPublicClient } from "wagmi/actions";
+import { NETWORKS, getTokenAddress, type FeeTokenOptionItem } from "@ccip-examples/shared-config";
 import {
   parseAmount,
   formatAmount,
-  formatLaneLatency,
-  getErrorMessage,
+  formatLatency,
+  toGenericPublicClient,
+  categorizeError,
   buildTokenTransferMessage,
+  type TransferState,
 } from "@ccip-examples/shared-utils";
-import { getChainInstance } from "./useChain.js";
-
-/**
- * Transfer lifecycle states
- *
- * Simplified states since SDK handles the details:
- * - idle: Ready for new transfer
- * - estimating: Calculating CCIP fee + lane latency
- * - sending: SDK is handling approvals and sending (wallet prompts appear)
- * - success: Transfer initiated on source chain
- * - failed: Error occurred
- */
-export type TransferStatus = "idle" | "estimating" | "sending" | "success" | "failed";
-
-/**
- * Transfer state including transaction details
- */
-export interface TransferState {
-  status: TransferStatus;
-  error: string | null;
-  txHash: string | null;
-  messageId: string | null;
-  fee: bigint | null;
-  feeFormatted: string | null;
-  /** Estimated delivery time from getLaneLatency (e.g. "~17 min") */
-  estimatedTime: string | null;
-}
+import { wagmiConfig, NETWORK_TO_CHAIN_ID } from "@ccip-examples/shared-config/wagmi";
 
 const initialState: TransferState = {
   status: "idle",
@@ -74,11 +47,39 @@ export function useTransfer() {
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
 
+  // Memoized chain instances — reused across estimateFee / transfer calls
+  // for the same network to avoid repeated RPC handshakes.
+  const chainCacheRef = useRef<Map<string, Chain>>(new Map());
+
   /**
    * Reset transfer state to initial values
    */
   const reset = useCallback(() => {
     setState(initialState);
+  }, []);
+
+  /**
+   * Clear only fee estimate (e.g. when fee token changes)
+   */
+  const clearEstimate = useCallback(() => {
+    setState((prev) => ({ ...prev, fee: null, feeFormatted: null, estimatedTime: null }));
+  }, []);
+
+  /**
+   * Get (or reuse) an SDK chain instance for a network.
+   */
+  const getChainInstance = useCallback(async (networkId: string): Promise<Chain> => {
+    const cached = chainCacheRef.current.get(networkId);
+    if (cached) return cached;
+
+    const chainId = NETWORK_TO_CHAIN_ID[networkId];
+    if (chainId === undefined) {
+      throw new Error(`Network not configured: ${networkId}`);
+    }
+    const client = getPublicClient(wagmiConfig, { chainId });
+    const chain = await fromViemClient(toGenericPublicClient(client));
+    chainCacheRef.current.set(networkId, chain);
+    return chain;
   }, []);
 
   /**
@@ -89,7 +90,7 @@ export function useTransfer() {
    * @param tokenSymbol - Token symbol (e.g., "CCIP-BnM")
    * @param amount - Human-readable amount (e.g., "1.5")
    * @param receiver - Destination address
-   * @param feeToken - Fee token option ("native" or "link")
+   * @param feeToken - Selected fee token (address undefined = native)
    */
   const estimateFee = useCallback(
     async (
@@ -98,7 +99,7 @@ export function useTransfer() {
       tokenSymbol: string,
       amount: string,
       receiver: string,
-      feeToken: FeeTokenOption = "native"
+      feeToken: FeeTokenOptionItem | null
     ) => {
       setState((prev) => ({ ...prev, status: "estimating", error: null }));
 
@@ -122,8 +123,7 @@ export function useTransfer() {
         const tokenInfo = await sourceChain.getTokenInfo(tokenAddress);
         const amountWei = parseAmount(amount, tokenInfo.decimals);
 
-        // Resolve fee token address
-        const feeTokenAddress = resolveFeeTokenAddress(feeToken, sourceNetwork);
+        const feeTokenAddress = feeToken?.address;
 
         // Build message using shared utility
         const message = buildTokenTransferMessage({
@@ -140,23 +140,16 @@ export function useTransfer() {
             destChainSelector,
             message,
           }),
-          sourceChain.getLaneLatency(destChainSelector).catch(() => null), // Non-critical — don't fail if latency unavailable
+          sourceChain.getLaneLatency(destChainSelector).catch((err) => {
+            console.warn("Failed to fetch lane latency:", err);
+            return null;
+          }),
         ]);
 
-        // Get fee token info for proper formatting
-        let feeDecimals: number;
-        let feeSymbol: string;
-        if (feeTokenAddress) {
-          const feeTokenInfo = await sourceChain.getTokenInfo(feeTokenAddress);
-          feeDecimals = feeTokenInfo.decimals;
-          feeSymbol = feeTokenInfo.symbol;
-        } else {
-          feeDecimals = sourceConfig.nativeCurrency.decimals;
-          feeSymbol = sourceConfig.nativeCurrency.symbol;
-        }
-
+        const feeDecimals = feeToken?.decimals ?? sourceConfig.nativeCurrency.decimals;
+        const feeSymbol = feeToken?.symbol ?? sourceConfig.nativeCurrency.symbol;
         const feeFormatted = `${formatAmount(fee, feeDecimals)} ${feeSymbol}`;
-        const estimatedTime = latency ? formatLaneLatency(latency.totalMs) : null;
+        const estimatedTime = latency ? formatLatency(latency.totalMs) : null;
 
         setState((prev) => ({
           ...prev,
@@ -168,18 +161,18 @@ export function useTransfer() {
 
         return { fee, feeFormatted, estimatedTime };
       } catch (err) {
-        const errorMessage = CCIPError.isCCIPError(err)
-          ? (err.recovery ?? err.message)
-          : getErrorMessage(err);
+        const family = sourceNetwork ? networkInfo(sourceNetwork).family : undefined;
+        const categorized = categorizeError(err, { chainFamily: family });
         setState((prev) => ({
           ...prev,
           status: "idle",
-          error: errorMessage,
+          error: categorized.message,
+          categorizedError: categorized,
         }));
         return null;
       }
     },
-    [] // No dependencies - getChainInstance is module-level
+    [getChainInstance]
   );
 
   /**
@@ -195,7 +188,7 @@ export function useTransfer() {
    * @param tokenSymbol - Token symbol (e.g., "CCIP-BnM")
    * @param amount - Human-readable amount (e.g., "1.5")
    * @param receiver - Destination address
-   * @param feeToken - Fee token option ("native" or "link")
+   * @param feeToken - Selected fee token (address undefined = native)
    */
   const transfer = useCallback(
     async (
@@ -204,7 +197,7 @@ export function useTransfer() {
       tokenSymbol: string,
       amount: string,
       receiver: string,
-      feeToken: FeeTokenOption = "native"
+      feeToken: FeeTokenOptionItem | null
     ) => {
       // Validate wallet connection
       if (!walletClient || !address) {
@@ -235,86 +228,13 @@ export function useTransfer() {
         // Destination chain selector from static metadata
         const destChainSelector = networkInfo(destNetwork).chainSelector;
 
-        // Get token info
+        // Get token decimals from SDK
         const tokenInfo = await sourceChain.getTokenInfo(tokenAddress);
         const amountWei = parseAmount(amount, tokenInfo.decimals);
 
-        // Resolve fee token address
-        const feeTokenAddress = resolveFeeTokenAddress(feeToken, sourceNetwork);
+        const feeTokenAddress = feeToken?.address;
 
-        // Reuse fee from estimate step if available, otherwise get it
-        // (User should estimate first, but we handle both cases)
-        let fee: bigint;
-        let feeDecimals: number;
-        let feeSymbol: string;
-
-        if (state.fee && state.feeFormatted) {
-          // Reuse already-estimated fee
-          fee = state.fee;
-          // Parse symbol from formatted string (e.g., "0.026 LINK" -> "LINK")
-          const parts = state.feeFormatted.split(" ");
-          feeSymbol = parts[parts.length - 1] ?? sourceConfig.nativeCurrency.symbol;
-          feeDecimals = feeTokenAddress
-            ? (await sourceChain.getTokenInfo(feeTokenAddress)).decimals
-            : sourceConfig.nativeCurrency.decimals;
-        } else {
-          // No fee estimated yet - get it now
-          const message = buildTokenTransferMessage({
-            receiver,
-            tokenAddress,
-            amount: amountWei,
-            feeToken: feeTokenAddress,
-          });
-
-          fee = await sourceChain.getFee({
-            router: sourceConfig.routerAddress,
-            destChainSelector,
-            message,
-          });
-
-          // Get fee token info for formatting
-          if (feeTokenAddress) {
-            const feeTokenInfo = await sourceChain.getTokenInfo(feeTokenAddress);
-            feeDecimals = feeTokenInfo.decimals;
-            feeSymbol = feeTokenInfo.symbol;
-          } else {
-            feeDecimals = sourceConfig.nativeCurrency.decimals;
-            feeSymbol = sourceConfig.nativeCurrency.symbol;
-          }
-        }
-
-        // Validate balances before attempting transfer
-        const tokenBalance = await sourceChain.getBalance({ holder: address, token: tokenAddress });
-
-        // Check token balance
-        if (tokenBalance < amountWei) {
-          throw new Error(
-            `Insufficient ${tokenSymbol}. Need ${formatAmount(amountWei, tokenInfo.decimals)} ${tokenSymbol}`
-          );
-        }
-
-        // Check fee token balance
-        if (feeTokenAddress) {
-          const feeTokenBalance = await sourceChain.getBalance({
-            holder: address,
-            token: feeTokenAddress,
-          });
-          if (feeTokenBalance < fee) {
-            throw new Error(
-              `Insufficient ${feeSymbol} for fee. Need ${formatAmount(fee, feeDecimals)} ${feeSymbol}, have ${formatAmount(feeTokenBalance, feeDecimals)} ${feeSymbol}`
-            );
-          }
-        } else {
-          // Paying with native - need enough for fee + gas
-          const nativeBalance = await sourceChain.getBalance({ holder: address });
-          if (nativeBalance < fee) {
-            throw new Error(
-              `Insufficient ${sourceConfig.nativeCurrency.symbol} for fee. Need ${formatAmount(fee, feeDecimals)} ${feeSymbol}`
-            );
-          }
-        }
-
-        // Build the final message with fee
+        // Build message using shared utility
         const message = buildTokenTransferMessage({
           receiver,
           tokenAddress,
@@ -322,14 +242,29 @@ export function useTransfer() {
           feeToken: feeTokenAddress,
         });
 
+        // Get fee
+        const fee = await sourceChain.getFee({
+          router: sourceConfig.routerAddress,
+          destChainSelector,
+          message,
+        });
+
+        const feeDecimals = feeToken?.decimals ?? sourceConfig.nativeCurrency.decimals;
+        const feeSymbol = feeToken?.symbol ?? sourceConfig.nativeCurrency.symbol;
+        setState((prev) => ({
+          ...prev,
+          fee,
+          feeFormatted: `${formatAmount(fee, feeDecimals)} ${feeSymbol}`,
+        }));
+
         /**
          * SDK sendMessage() handles:
          * 1. Check token allowance
          * 2. Request approval if needed (wallet prompt)
          * 3. Send CCIP message (wallet prompt)
-         * 4. Return CCIPRequest with tx hash and messageId
+         * 4. Return CCIPRequest with tx hash and message
          *
-         * viemWallet() converts wagmi's WalletClient to SDK-compatible wallet
+         * viemWallet() converts wagmi's WalletClient to ethers-compatible signer
          */
         const request = await sourceChain.sendMessage({
           router: sourceConfig.routerAddress,
@@ -351,18 +286,18 @@ export function useTransfer() {
 
         return { txHash, messageId };
       } catch (err) {
-        const errorMessage = CCIPError.isCCIPError(err)
-          ? (err.recovery ?? err.message)
-          : getErrorMessage(err);
+        const family = sourceNetwork ? networkInfo(sourceNetwork).family : undefined;
+        const categorized = categorizeError(err, { chainFamily: family });
         setState((prev) => ({
           ...prev,
           status: "failed",
-          error: errorMessage,
+          error: categorized.message,
+          categorizedError: categorized,
         }));
         return null;
       }
     },
-    [walletClient, address]
+    [walletClient, address, getChainInstance]
   );
 
   return {
@@ -370,5 +305,6 @@ export function useTransfer() {
     estimateFee,
     transfer,
     reset,
+    clearEstimate,
   };
 }

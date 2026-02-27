@@ -1,6 +1,6 @@
 # 01 - Getting Started with CCIP SDK
 
-> **CCIP SDK** [`@chainlink/ccip-sdk@0.96.0`](https://www.npmjs.com/package/@chainlink/ccip-sdk/v/0.96.0) | **Testnet only** | [CCIP Docs](https://docs.chain.link/ccip) | [CCIP Explorer](https://ccip.chain.link)
+> **CCIP SDK** [`@chainlink/ccip-sdk@1.0.0`](https://www.npmjs.com/package/@chainlink/ccip-sdk/v/1.0.0) | **Testnet only** | [CCIP Docs](https://docs.chain.link/ccip) | [CCIP Explorer](https://ccip.chain.link)
 
 > **Disclaimer**
 >
@@ -8,7 +8,7 @@
 
 Node.js scripts demonstrating the fundamental operations of the CCIP SDK. Start here to learn the basics without UI complexity.
 
-All scripts are **chain-family-agnostic** — the same code path works for EVM, Solana, and any future chain family the SDK supports, through the unified `Chain` base class and `createChain` factory.
+All scripts are **chain-family-agnostic** — the same code path works for EVM, Solana, Aptos, and any future chain family the SDK supports, through the unified `Chain` base class and `createChain` factory.
 
 ## Architecture
 
@@ -76,6 +76,7 @@ npm install -g pnpm
 | ------------------------------------- | ------------------------------------------------------------ |
 | Sepolia ETH (gas)                     | [Chainlink Faucet](https://faucets.chain.link/sepolia)       |
 | Devnet SOL (gas)                      | [Solana Faucet](https://faucet.solana.com/)                  |
+| Testnet APT (gas)                     | [Aptos Faucet](https://aptos.dev/en/network/faucet)          |
 | CCIP-BnM (transfer token)             | [CCIP Test Tokens](https://docs.chain.link/ccip/test-tokens) |
 | LINK (optional, for LINK fee payment) | [Chainlink Faucet](https://faucets.chain.link/)              |
 
@@ -106,8 +107,9 @@ cp .env.example .env
 # Edit .env — set the key(s) for your chain family:
 #   EVM_PRIVATE_KEY=0x...           (hex private key)
 #   SVM_PRIVATE_KEY=~/.config/solana/devnet.json  (keypair file or base58)
+#   APTOS_PRIVATE_KEY=ed25519-priv-0x...  (AIP-80 format or raw hex)
 #
-# Both can coexist — the script picks the right one based on --source.
+# All can coexist — the script picks the right one based on --source.
 # See .env.example for full instructions.
 
 # Explore
@@ -120,13 +122,19 @@ pnpm fees    -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1 -f l
 # Cross-chain family fee estimation (works across all combinations)
 pnpm fees -s solana-devnet -d ethereum-testnet-sepolia                   # Solana → EVM
 pnpm fees -s ethereum-testnet-sepolia -d solana-devnet                   # EVM → Solana
+pnpm fees -s aptos-testnet -d ethereum-testnet-sepolia                   # Aptos → EVM
+pnpm fees -s ethereum-testnet-sepolia -d aptos-testnet                   # EVM → Aptos
 
 # Transfer (requires PRIVATE_KEY in .env)
 pnpm transfer -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1
-pnpm transfer -s solana-devnet -d ethereum-testnet-sepolia -r 0xYOUR_EVM_ADDRESS -y
+pnpm transfer -s solana-devnet -d ethereum-testnet-sepolia -r <your-evm-address> -y
+pnpm transfer -s aptos-testnet -d ethereum-testnet-sepolia -r <your-evm-address> -y   # Aptos → EVM
+pnpm transfer -s ethereum-testnet-sepolia -d aptos-testnet -r <your-aptos-address> -y # EVM → Aptos
+#              ^^^^^^^^^^^^^^^^^ replace <your-evm-address> / <your-aptos-address> with real addresses
 
 # Track (with automatic retry for recent messages)
-pnpm status 0x<message_id>
+pnpm status <your-message-id>
+#           ^^^^^^^^^^^^^^^^^^ replace with the 0x… message ID from the transfer output
 ```
 
 ## Scripts
@@ -160,6 +168,7 @@ Discovers supported tokens for a lane, including pool addresses and rate limits.
 ```bash
 pnpm tokens -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1
 pnpm tokens -s solana-devnet -d ethereum-testnet-sepolia
+pnpm tokens -s aptos-testnet -d ethereum-testnet-sepolia
 ```
 
 | Flag           | Description                      |
@@ -175,21 +184,22 @@ Inspects token pool configurations including rate limits for all destinations.
 pnpm pools                                                            # All CCIP-BnM pools
 pnpm pools ethereum-testnet-sepolia 0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05  # Specific pool
 pnpm pools solana-devnet 3PjyGzj1jGVgHSKS4VR1Hr1memm63PmN8L9rtPDKwzZ6
+pnpm pools aptos-testnet 0xa680c9935c7ea489676fa0e01f1ff8a97fadf0cb35e1e06ba1ba32ecd882fc9a
 ```
 
 ### `pnpm transfer`
 
-Sends a cross-chain token transfer. Requires `EVM_PRIVATE_KEY` and/or `SVM_PRIVATE_KEY` in `.env`.
+Sends a cross-chain token transfer. Requires `EVM_PRIVATE_KEY`, `SVM_PRIVATE_KEY`, and/or `APTOS_PRIVATE_KEY` in `.env`.
 
 ```bash
 pnpm transfer -s <source> -d <dest>                       # Transfer with native fee
 pnpm transfer -s <source> -d <dest> -f link               # Pay fee in LINK
-pnpm transfer -s <source> -d <dest> -a 0.5 -r 0x...      # Custom amount & receiver
+pnpm transfer -s <source> -d <dest> -a 0.5 -r <address>  # Custom amount & receiver
 pnpm transfer -s <source> -d <dest> -v                    # Verbose mode
 pnpm transfer -s <source> -d <dest> -y                    # Skip confirmation
 
-# Cross-chain family transfers (MUST specify receiver)
-pnpm transfer -s solana-devnet -d ethereum-testnet-sepolia -r 0xYOUR_EVM_ADDRESS -y
+# Cross-chain family transfers (MUST specify receiver — replace <your-evm-address>)
+pnpm transfer -s solana-devnet -d ethereum-testnet-sepolia -r <your-evm-address> -y
 ```
 
 | Flag              | Description                                    | Default                     |
@@ -205,14 +215,14 @@ pnpm transfer -s solana-devnet -d ethereum-testnet-sepolia -r 0xYOUR_EVM_ADDRESS
 | `-y, --yes`       | Skip confirmation prompt                       | `false`                     |
 
 **Important for Cross-Chain Family Transfers:**
-When transferring between different chain families (e.g., Solana → EVM), you **must** specify a receiver address with `-r` flag. Same-family transfers (EVM → EVM, Solana → Solana) default to your sender address.
+When transferring between different chain families (e.g., Solana → EVM, Aptos → EVM), you **must** specify a receiver address with `-r` flag. Same-family transfers (EVM → EVM, Solana → Solana) default to your sender address.
 
 ### `pnpm status <message_id>`
 
 Checks the status of a cross-chain message via the CCIP API with automatic retry for recently sent messages.
 
 ```bash
-pnpm status 0x1234567890abcdef...
+pnpm status <your-message-id>   # the 0x… ID from transfer output
 ```
 
 The CCIP API is a centralized index — one call locates any message regardless of which chain it was sent from.
@@ -258,6 +268,7 @@ Used by `get-status.ts` for message lookups. No chain instance needed.
 | `createChain()`               | `@ccip-examples/shared-utils`  | Family-agnostic chain factory                     |
 | `createWallet()`              | `@ccip-examples/shared-utils`  | Family-agnostic wallet factory (reads env vars)   |
 | `createSolanaWallet()`        | `@ccip-examples/shared-utils`  | Solana wallet from file path, hex, or base58      |
+| `createAptosWallet()`         | `@ccip-examples/shared-utils`  | Aptos wallet from AIP-80 or hex private key       |
 | `createLogger()`              | `@ccip-examples/shared-utils`  | Logger with configurable verbosity                |
 | `buildTokenTransferMessage()` | `@ccip-examples/shared-utils`  | Build a `MessageInput` for token transfers        |
 | `networkInfo()`               | `@chainlink/ccip-sdk`          | Get chain selector and metadata                   |
@@ -312,6 +323,34 @@ You can also use the [Solana Faucet](https://faucet.solana.com/) web interface.
 
 When sending **to** Solana, the SDK's `buildMessageForDest` automatically populates Solana-specific extra args (`computeUnits`, `tokenReceiver`, `accounts`, etc.). You don't need to construct them manually.
 
+## Aptos-Specific Notes
+
+### Private Key
+
+`APTOS_PRIVATE_KEY` supports two formats:
+
+**Option 1: AIP-80 format (recommended)**
+
+Generated by `aptos init --network testnet`:
+
+```bash
+APTOS_PRIVATE_KEY=ed25519-priv-0x...
+```
+
+**Option 2: Raw hex**
+
+```bash
+APTOS_PRIVATE_KEY=0x...
+```
+
+### Getting Testnet APT
+
+You need APT for gas fees on Aptos Testnet. Use the [Aptos Faucet](https://aptos.dev/en/network/faucet) web interface, or the Aptos CLI:
+
+```bash
+aptos account fund-with-faucet --account <YOUR_ADDRESS> --network testnet
+```
+
 ## Project Structure
 
 ```
@@ -337,7 +376,7 @@ When sending **to** Solana, the SDK's `buildMessageForDest` automatically popula
 
 **Solution:** Get testnet tokens from the faucets linked above.
 
-**Note:** Even when paying fees in LINK, you still need native tokens (ETH/SOL) for gas costs.
+**Note:** Even when paying fees in LINK, you still need native tokens (ETH/SOL/APT) for gas costs.
 
 ### "Rate limit reached"
 
@@ -365,7 +404,7 @@ If retries are exhausted, check the [CCIP Explorer](https://ccip.chain.link) dir
 
 ```bash
 pnpm transfer -s solana-devnet -d ethereum-testnet-sepolia \
-  -r 0xYOUR_EVM_ADDRESS -y
+  -r <your-evm-address> -y
 ```
 
 The Solana CCIP program validates that EVM addresses have a value > 1024 to prevent accidental token burns.
@@ -375,6 +414,12 @@ The Solana CCIP program validates that EVM addresses have a value > 1024 to prev
 **Cause:** Missing or invalid Solana private key configuration.
 
 **Solution:** Set `SVM_PRIVATE_KEY` in `.env` to a keypair file path, base58, or hex key. See the Solana-Specific Notes section above.
+
+### "APTOS_PRIVATE_KEY is not set"
+
+**Cause:** Missing Aptos private key configuration.
+
+**Solution:** Set `APTOS_PRIVATE_KEY` in `.env` to an AIP-80 format key (`ed25519-priv-0x...`) or raw hex (`0x...`). See the Aptos-Specific Notes section above.
 
 ### Node.js version errors
 

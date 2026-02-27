@@ -15,6 +15,7 @@
  *   pnpm pools <network> <token_address>
  */
 
+import "dotenv/config";
 import type { Chain, RateLimiterState, TokenInfo } from "@chainlink/ccip-sdk";
 import { networkInfo, CCIPError, CCIPTokenPoolChainConfigNotFoundError } from "@chainlink/ccip-sdk";
 import { NETWORKS, NETWORK_IDS, getTokenAddress } from "@ccip-examples/shared-config";

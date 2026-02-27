@@ -1,0 +1,13 @@
+.destLink {
+  margin-top: var(--spacing-3);
+  font-size: var(--font-size-sm);
+}
+
+.destLink a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.destLink a:hover {
+  text-decoration: underline;
+}

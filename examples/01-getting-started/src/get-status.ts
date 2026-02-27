@@ -26,27 +26,26 @@
  * The lifecycle depends on which lane version is deployed.
  *
  * Usage:
- *   pnpm status <message_id>
- *   pnpm status 0x1234...
+ *   pnpm status <your-message-id>
  */
 
+import "dotenv/config";
 import {
   CCIPAPIClient,
   getCCIPExplorerUrl,
   CCIPError,
   CCIPMessageIdNotFoundError,
+  withRetry,
 } from "@chainlink/ccip-sdk";
 import { getStatusDescription, POLLING_CONFIG } from "@ccip-examples/shared-config";
-import { withRetry } from "@ccip-examples/shared-utils";
 
 async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.log("Usage: pnpm status <message_id>");
+    console.log("Usage: pnpm status <message-id>");
     console.log();
-    console.log("Example:");
-    console.log("  pnpm status 0x1234567890abcdef...");
+    console.log("  <message-id>  The 0x… message ID from transfer output");
     process.exit(1);
   }
 
@@ -72,17 +71,16 @@ async function main() {
     console.log("Querying CCIP API (with retry for transient errors)...");
     console.log();
 
-    // Use retry logic for "message not found" errors (indexing delay)
-    // SDK's shouldRetry() determines if errors are retryable
+    // Use SDK's built-in retry logic for transient errors (e.g. indexing delay)
     const request = await withRetry(() => apiClient.getMessageById(messageId), {
-      initialDelay: POLLING_CONFIG.initialDelay,
-      maxDelay: POLLING_CONFIG.maxDelay,
-      delayIncrement: POLLING_CONFIG.delayIncrement,
-      maxAttempts: Math.min(POLLING_CONFIG.maxNotFoundRetries, 10), // Cap at 10 for CLI
-      onRetry: (attempt, delay) => {
-        console.log(
-          `  Attempt ${attempt} - Message not found yet, retrying in ${delay / 1000}s...`
-        );
+      maxRetries: Math.min(POLLING_CONFIG.maxNotFoundRetries, 10), // Cap at 10 for CLI
+      initialDelayMs: POLLING_CONFIG.initialDelay,
+      maxDelayMs: POLLING_CONFIG.maxDelay,
+      backoffMultiplier: 1.5,
+      respectRetryAfterHint: true,
+      logger: {
+        debug: (...args: unknown[]) => console.log("  [retry]", ...args),
+        warn: (...args: unknown[]) => console.warn("  [retry]", ...args),
       },
     });
     const { metadata } = request;

@@ -13,6 +13,7 @@
  *   pnpm tokens -s solana-devnet -d ethereum-testnet-sepolia
  */
 
+import "dotenv/config";
 import { Command } from "commander";
 import { networkInfo, CCIPError, CCIPTokenPoolChainConfigNotFoundError } from "@chainlink/ccip-sdk";
 import { NETWORKS, NETWORK_IDS, CHAIN_FAMILY_LABELS } from "@ccip-examples/shared-config";
