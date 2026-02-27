@@ -22,15 +22,17 @@ export {
   getNetwork,
   getEVMNetworks,
   getSolanaNetworks,
+  getAptosNetworks,
   getExplorerTxUrl,
   getExplorerAddressUrl,
   getAllNetworks,
+  getChainIdForNetwork,
 } from "./networks.js";
 
 // Token exports
 export {
   type FeeTokenOption,
-  type FeeTokenMetadata,
+  type FeeTokenOptionItem,
   type TokenAddresses,
   TOKEN_ADDRESSES,
   TOKEN_KEYS,
@@ -38,13 +40,13 @@ export {
   LINK_TOKEN_ADDRESSES,
   getTokenAddress,
   resolveFeeTokenAddress,
-  getAvailableFeeTokens,
-  isFeeTokenAvailable,
 } from "./tokens.js";
 
 // Constants exports
 export {
+  BALANCE_POLLING_INTERVAL_MS,
   CHAIN_FAMILY_LABELS,
+  RATE_LIMIT_POLLING_INTERVAL_MS,
   EXTERNAL_URLS,
   MESSAGE_STAGES,
   POLLING_CONFIG,

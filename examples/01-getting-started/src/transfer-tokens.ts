@@ -19,9 +19,9 @@
  * Run `pnpm chains` to see all supported chain keys.
  */
 
+import "dotenv/config";
 import { Command } from "commander";
 import { type ChainFamily, networkInfo, getCCIPExplorerUrl, CCIPError } from "@chainlink/ccip-sdk";
-import { config } from "dotenv";
 import * as readline from "readline";
 import {
   NETWORKS,
@@ -42,10 +42,34 @@ import {
 } from "@ccip-examples/shared-utils";
 import { createWallet } from "@ccip-examples/shared-utils/wallet";
 
-config();
-
 const DEFAULT_TOKEN = "CCIP-BnM";
 const DEFAULT_AMOUNT = "0.001";
+
+/**
+ * Display a live elapsed-time indicator on the current line.
+ *
+ * Returns a `stop()` function that clears the interval and
+ * finalises the line with the total elapsed time.
+ *
+ * @example
+ * ```typescript
+ * const stop = startTimer("Waiting for confirmation...");
+ * await someSlowOperation();
+ * stop();
+ * ```
+ */
+function startTimer(label: string): () => void {
+  const start = Date.now();
+  const elapsed = () => Math.floor((Date.now() - start) / 1000);
+  process.stdout.write(`  ${label} (0s)`);
+  const interval = setInterval(() => {
+    process.stdout.write(`\r  ${label} (${elapsed()}s)`);
+  }, 1000);
+  return () => {
+    clearInterval(interval);
+    process.stdout.write(`\r  ${label} (${elapsed()}s)\n`);
+  };
+}
 
 /**
  * Prompt user for confirmation
@@ -261,12 +285,18 @@ async function transfer(options: TransferOptions): Promise<string> {
 
   // Step 6: Send transfer
   console.log("\nStep 6: Sending cross-chain transfer...");
-  const request = await sourceChain.sendMessage({
-    router: sourceConfig.routerAddress,
-    destChainSelector: destInfo.chainSelector,
-    message: { ...message, fee },
-    wallet,
-  });
+  const stop = startTimer("Waiting for on-chain confirmation...");
+  let request;
+  try {
+    request = await sourceChain.sendMessage({
+      router: sourceConfig.routerAddress,
+      destChainSelector: destInfo.chainSelector,
+      message: { ...message, fee },
+      wallet,
+    });
+  } finally {
+    stop();
+  }
 
   console.log(`\nTransaction sent!`);
   console.log(`TX Hash:    ${request.tx.hash}`);

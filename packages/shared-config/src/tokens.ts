@@ -31,6 +31,7 @@ export const LINK_TOKEN_ADDRESSES: TokenAddresses = {
   "ethereum-testnet-sepolia-base-1": "0xE4aB69C077896252FAFBD49EFD26B5D171A32410",
   "avalanche-testnet-fuji": "0x0b9d5D9136855f6FEc3c0993feE6E9CE8a297846",
   "solana-devnet": "LinkhB3afbBKb2EQQu7s7umdZceV3wcvAUJhQAfQ23L",
+  "aptos-testnet": "0x3d5d565c271d6b9c52f1a963f2b7bddad3453b0de2ace5e254b8db6549cc335e",
 } as const;
 
 /**
@@ -48,6 +49,7 @@ export const CCIP_BNM_ADDRESSES: TokenAddresses = {
   "ethereum-testnet-sepolia-base-1": "0x88A2d74F47a237a62e7A51cdDa67270CE381555e",
   "avalanche-testnet-fuji": "0xD21341536c5cF5EB1bcb58f6723cE26e8D8E90e4",
   "solana-devnet": "3PjyGzj1jGVgHSKS4VR1Hr1memm63PmN8L9rtPDKwzZ6",
+  "aptos-testnet": "0xa680c9935c7ea489676fa0e01f1ff8a97fadf0cb35e1e06ba1ba32ecd882fc9a",
 } as const;
 
 /**
@@ -59,11 +61,7 @@ export const TOKEN_ADDRESSES: Record<string, TokenAddresses> = {
 } as const;
 
 /**
- * Fee token utilities (centralized for reuse across examples)
- */
-
-/**
- * Supported fee token identifiers accepted by CLI scripts and UIs.
+ * Supported fee token identifiers accepted by CLI scripts.
  *
  * - `"native"` — pay in the chain's native currency (ETH, SOL, AVAX, …)
  * - `"link"` — pay in LINK
@@ -71,21 +69,22 @@ export const TOKEN_ADDRESSES: Record<string, TokenAddresses> = {
 export type FeeTokenOption = "native" | "link";
 
 /**
- * Fee token metadata for display in UIs
+ * Fee token option for UI: chain-agnostic (native or token via address).
+ * Used by useFeeTokens and FeeTokenOptions. address undefined = native; set = token.
  */
-export interface FeeTokenMetadata {
-  /** Fee token option identifier */
-  option: FeeTokenOption;
-  /** Display symbol (e.g., "ETH", "LINK") */
-  symbol: string;
-  /** On-chain address (undefined for native) */
+export interface FeeTokenOptionItem {
+  /** undefined = native; set = token (ERC20 on EVM, SPL on Solana) */
   address?: string;
-  /** Whether this fee token is available on the network */
-  available: boolean;
+  symbol: string;
+  /** Human-readable token name (e.g. "Wrapped SOL", "ChainLink Token") */
+  name?: string;
+  decimals: number;
+  balance: bigint | null;
+  balanceFormatted: string;
 }
 
 /**
- * Resolve a fee-token option to an on-chain address.
+ * Resolve a CLI fee-token option to an on-chain address.
  *
  * @param option - `"native"` or `"link"`
  * @param networkId - SDK-compatible network ID
@@ -106,56 +105,6 @@ export function resolveFeeTokenAddress(
     );
   }
   return address;
-}
-
-/**
- * Get available fee token options for a network
- *
- * Returns metadata for all fee token options with availability status.
- * Useful for rendering fee token selectors in UIs.
- *
- * @param networkId - SDK-compatible network ID
- * @param nativeSymbol - Native currency symbol (e.g., "ETH", "AVAX")
- * @returns Array of fee token metadata
- *
- * @example
- * ```typescript
- * const options = getAvailableFeeTokens("ethereum-testnet-sepolia", "ETH");
- * // [
- * //   { option: "native", symbol: "ETH", available: true },
- * //   { option: "link", symbol: "LINK", address: "0x779...", available: true }
- * // ]
- * ```
- */
-export function getAvailableFeeTokens(networkId: string, nativeSymbol: string): FeeTokenMetadata[] {
-  const linkAddress = LINK_TOKEN_ADDRESSES[networkId];
-
-  return [
-    {
-      option: "native",
-      symbol: nativeSymbol,
-      address: undefined,
-      available: true,
-    },
-    {
-      option: "link",
-      symbol: "LINK",
-      address: linkAddress,
-      available: Boolean(linkAddress),
-    },
-  ];
-}
-
-/**
- * Check if a fee token option is available on a network
- *
- * @param option - Fee token option
- * @param networkId - SDK-compatible network ID
- * @returns True if the fee token is available
- */
-export function isFeeTokenAvailable(option: FeeTokenOption, networkId: string): boolean {
-  if (option === "native") return true;
-  return Boolean(LINK_TOKEN_ADDRESSES[networkId]);
 }
 
 /**

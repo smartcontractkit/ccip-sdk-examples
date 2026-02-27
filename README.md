@@ -1,203 +1,119 @@
 # CCIP SDK Examples
 
-> **CCIP SDK** [`@chainlink/ccip-sdk@0.96.0`](https://www.npmjs.com/package/@chainlink/ccip-sdk/v/0.96.0) | **Testnet only** | [CCIP Docs](https://docs.chain.link/ccip) | [CCIP Explorer](https://ccip.chain.link)
-
-Educational examples for the [Chainlink CCIP SDK](https://www.npmjs.com/package/@chainlink/ccip-sdk) — progressive tutorials for cross-chain token transfers across EVM, Solana, and other supported chain families.
-
 [![CI](https://github.com/smartcontractkit/ccip-sdk-examples/actions/workflows/ci.yml/badge.svg)](https://github.com/smartcontractkit/ccip-sdk-examples/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node: >=22.0.0](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen)](package.json)
 [![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg)](https://pnpm.io/)
 
+Progressive examples for [@chainlink/ccip-sdk](https://www.npmjs.com/package/@chainlink/ccip-sdk) (v1.0.0). Testnet only. EVM, Solana, and Aptos.
+
 > **Disclaimer**
 >
-> _This tutorial represents an educational example to use a Chainlink system, product, or service and is provided to demonstrate how to interact with Chainlink's systems, products, and services to integrate them into your own. This template is provided "AS IS" and "AS AVAILABLE" without warranties of any kind, it has not been audited, and it may be missing key checks or error handling to make the usage of the system, product or service more clear. Do not use the code in this example in a production environment without completing your own audits and application of best practices. Neither Chainlink Labs, the Chainlink Foundation, nor Chainlink node operators are responsible for unintended outputs that are generated due to errors in code._
+> This repository is for education and integration examples. Code is provided "AS IS" without warranty. It has not been audited. Do not use in production without your own review and hardening. See [LICENSE](LICENSE).
 
 ## Examples
 
-| Example                                                 | Description                  | Complexity            |
-| ------------------------------------------------------- | ---------------------------- | --------------------- |
-| [01-getting-started](./examples/01-getting-started)     | Node.js scripts - SDK basics | Beginner              |
-| [02-evm-simple-bridge](./examples/02-evm-simple-bridge) | Browser bridge with MetaMask | Beginner-Intermediate |
+| Example                                                           | Description                                                                                                                                | Runtime |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| [01-getting-started](./examples/01-getting-started)               | SDK basics: chains, fees, tokens, pools                                                                                                    | Node.js |
+| [02-evm-simple-bridge](./examples/02-evm-simple-bridge)           | EVM-to-EVM bridge; fee token selection (native/LINK); **send:** `chain.sendMessage()` (SDK does approval + send)                           | Browser |
+| [03-multichain-bridge-dapp](./examples/03-multichain-bridge-dapp) | EVM + Solana + Aptos; fee token selection; **send:** `generateUnsignedSendMessage()` then wallet `sendTransaction` (unsigned tx to wallet) | Browser |
 
-## Quick Start
+## Prerequisites
 
-### Prerequisites
+- Node.js 22+
+- pnpm 10+ (`npm install -g pnpm`)
 
-- **Node.js 22+**
-- **pnpm 10+** (install: `npm install -g pnpm`)
-
-### Setup
+## Setup
 
 ```bash
-# Clone and install
 git clone <repo-url>
 cd ccip-sdk-examples
 pnpm install
-
-# Build shared packages
 pnpm build:packages
 ```
 
-### Run Examples
+## Run
 
 ```bash
-# 01 - Getting Started (Node.js scripts)
-cd examples/01-getting-started
-pnpm chains                                                            # List supported chains
-pnpm fees -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1   # Estimate fees
-pnpm tokens -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1 # Supported tokens
+# 01 – Node scripts (from repo root)
+pnpm -F 01-getting-started chains
+pnpm -F 01-getting-started fees -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1
+pnpm -F 01-getting-started tokens -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1
 
-# 02 - Simple Bridge (Browser)
-pnpm dev:02                    # Start dev server at localhost:5173
+# 02 – EVM bridge (dev server http://localhost:5173)
+pnpm dev:02
+
+# 03 – Multichain bridge (dev server http://localhost:5173)
+pnpm dev:03
 ```
 
-## Learning Path
+Optional: in 02 or 03, copy `.env.example` to `.env` and set `RPC_<NETWORK_ID>` (e.g. `RPC_ETHEREUM_TESTNET_SEPOLIA`) to use custom RPC endpoints. 03 also supports `VITE_WALLETCONNECT_PROJECT_ID`.
 
-```
-Start Here
-    │
-    ▼
-┌─────────────────────────────────────┐
-│  01-getting-started                 │
-│  • SDK basics without UI complexity │
-│  • Fee estimation                   │
-│  • Token discovery                  │
-│  • Pool inspection                  │
-└─────────────────────────────────────┘
-    │
-    ▼
-┌─────────────────────────────────────┐
-│  02-evm-simple-bridge               │
-│  • Browser + MetaMask integration   │
-│  • Simple React UI                  │
-│  • Basic transfer flow              │
-└─────────────────────────────────────┘
-```
-
-## Project Structure
+## Project structure
 
 ```
 ccip-sdk-examples/
 ├── examples/
-│   ├── 01-getting-started/     # Node.js scripts
-│   └── 02-evm-simple-bridge/   # Browser app with MetaMask
-│
+│   ├── 01-getting-started/   # Node scripts
+│   ├── 02-evm-simple-bridge/ # EVM-only browser app
+│   └── 03-multichain-bridge-dapp/ # EVM + Solana + Aptos browser app
 ├── packages/
-│   ├── shared-config/          # Network & token configuration
-│   └── shared-utils/           # Validation & error handling
-│
-├── docs/                       # Additional documentation
-├── pnpm-workspace.yaml         # Workspace configuration
-└── package.json                # Root scripts
+│   ├── shared-config/       # Networks, tokens, wagmi, constants
+│   ├── shared-utils/        # Validation, errors, formatting, message build, hooks
+│   └── shared-components/   # Button, Input, Select, Alert, MessageProgress, TransferStatus, ErrorBoundary, tokens.css
+├── docs/
+│   └── LEARNING_PATH.md     # Progression and concepts
+├── pnpm-workspace.yaml
+└── package.json
 ```
 
-## Shared Packages
+## Shared packages
 
 ### @ccip-examples/shared-config
 
-Network, token, and constant configuration shared across all examples.
+Network and token config; wagmi config and query client; constants (status labels, polling, explorer URLs). RPC URLs come from `getRpcUrl(networkId)` (env vars `RPC_<NETWORK_ID>` or public fallbacks).
 
-```typescript
-import {
-  // Networks
-  NETWORKS, // All supported networks with config
-  NETWORK_IDS, // Array of network keys
-  getAllNetworks, // Get networks with key, name, family
-  getNetwork, // Get config by network key
-
-  // Tokens
-  getTokenAddress, // Get token address for network
-  LINK_TOKEN_ADDRESSES, // LINK addresses per network
-  resolveFeeTokenAddress, // "native" | "link" → on-chain address
-
-  // Display & constants
-  CHAIN_FAMILY_LABELS, // Human-friendly labels per ChainFamily
-  getDummyReceiver, // Format-valid dummy address per family
-  getStatusDescription, // Human-readable CCIP status descriptions
-  getExplorerTxUrl, // Build explorer URL for tx
-  ChainFamily, // Re-exported from SDK
-} from "@ccip-examples/shared-config";
-```
+- **Exports:** `NETWORKS`, `NETWORK_IDS`, `getNetwork`, `getEVMNetworks`, `getSolanaNetworks`, `getAptosNetworks`, `getAllNetworks`, `getChainIdForNetwork`, `getExplorerTxUrl`, `getExplorerAddressUrl`; `getTokenAddress`, `resolveFeeTokenAddress`, `TOKEN_ADDRESSES`, etc.; `ChainFamily`; `POLLING_CONFIG`, `getStatusDescription`, `getFaucetUrl`, `getDummyReceiver`, etc.
+- **Subpaths:** `./wagmi`, `./queryClient`, `./networks`, `./tokens`.
 
 ### @ccip-examples/shared-utils
 
-Chain factories, wallet factories, validation, and formatting utilities.
+Browser-safe utilities: validation (`isValidAddress`, `isValidAmount`, `parseAmount`, `formatAmount`, `truncateAddress`), CCIP error parsing (`getCCIPErrorMessage`, `parseEVMError`, `parseSolanaError`), formatting (`formatLatency`, `formatElapsedTime`, `formatRelativeTime`), message building (`buildTokenTransferMessage`), clipboard (`copyToClipboard`, `COPIED_FEEDBACK_MS`), viem adapter (`toGenericPublicClient`). Node-only wallet/chain helpers live in `@ccip-examples/shared-utils/wallet`.
 
-```typescript
-import {
-  // Chain & wallet factories
-  createChain, // Family-agnostic Chain instance from networkId + rpcUrl
-  createLogger, // Logger with configurable verbosity (-v flag)
-  createWallet, // Family-agnostic wallet from env var (EVM_PRIVATE_KEY / SVM_PRIVATE_KEY)
-  createSolanaWallet, // Solana wallet from file path, hex, or base58
+- **Subpaths:** `./hooks` (e.g. `useMessageStatus`, `useCopyToClipboard`).
 
-  // Message building
-  buildTokenTransferMessage, // Build MessageInput for token transfers
+### @ccip-examples/shared-components
 
-  // Validation & formatting
-  parseAmount, // "1.5" + 18 decimals → bigint
-  formatAmount, // bigint + 18 decimals → "1.5"
-  isValidAddress, // Validate address by chain type
-  truncateAddress, // "0x1234...5678"
+React UI: primitives (Button, Input, Select, Alert), bridge (MessageProgress, TransferStatus, FeeTokenOptions, BalancesList), ErrorBoundary. All use design tokens from `@ccip-examples/shared-components/styles/tokens.css`. Import tokens once in app globals.
 
-  // Error handling
-  getErrorMessage, // Extract message from unknown errors
-} from "@ccip-examples/shared-utils";
-```
+- **FeeTokenOptions:** Radio group for choosing fee token (native currency, LINK, or other tokens discovered from the router). Displays token name, symbol, balance, and a "Native" badge for native currency options.
+- **BalancesList:** Displays multiple token balances with loading skeletons.
 
-## Supported Networks
+## Supported networks (testnet)
 
-| Network          | Type   | Chain Selector       |
-| ---------------- | ------ | -------------------- |
-| Ethereum Sepolia | EVM    | 16015286601757825753 |
-| Base Sepolia     | EVM    | 10344971235874465080 |
-| Avalanche Fuji   | EVM    | 14767482510784806043 |
-| Solana Devnet    | Solana | 16423721717087811551 |
+| Network          | Family | Chain selector (example) |
+| ---------------- | ------ | ------------------------ |
+| Ethereum Sepolia | EVM    | 16015286601757825753     |
+| Base Sepolia     | EVM    | 10344971235874465080     |
+| Avalanche Fuji   | EVM    | 14767482510784806043     |
+| Solana Devnet    | Solana | 16423721717087811551     |
+| Aptos Testnet    | Aptos  | 4741433654826277614      |
 
-## Getting Testnet Tokens
+Faucets and test tokens: [CCIP Test Tokens](https://docs.chain.link/ccip/test-tokens), [Chainlink Faucets](https://faucets.chain.link/).
 
-- **Sepolia ETH**: [Chainlink Faucet](https://faucets.chain.link/sepolia)
-- **Base Sepolia ETH**: [Chainlink Faucet](https://faucets.chain.link/base-sepolia)
-- **Fuji AVAX**: [Chainlink Faucet](https://faucets.chain.link/fuji)
-- **Devnet SOL**: `solana airdrop 3 --url devnet` or [Solana Faucet](https://faucet.solana.com/)
-- **CCIP-BnM**: [CCIP Test Tokens](https://docs.chain.link/ccip/test-tokens)
-- **LINK**: [Chainlink Faucet](https://faucets.chain.link/)
-
-## Development
+## Commands
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Build all packages
-pnpm build
-
-# Run type checking
+pnpm build            # All packages + examples
+pnpm build:packages   # Only packages
 pnpm typecheck
-
-# Run linting
 pnpm lint
-
-# Format code
-pnpm format
+pnpm format           # Prettier write
+pnpm format:check     # Prettier check (CI)
+pnpm check            # typecheck + lint + format:check
 ```
-
-## Quality Tools
-
-- **ESLint 10** - Flat config with TypeScript support
-- **Prettier 3.8** - Code formatting
-- **TypeScript 5.9** - Strict type checking
-- **Husky** - Pre-commit hooks
-- **lint-staged** - Run linters on staged files
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run `pnpm check` to verify quality
-5. Submit a pull request
 
 ## License
 

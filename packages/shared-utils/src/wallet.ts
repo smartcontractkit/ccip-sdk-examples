@@ -11,6 +11,7 @@ import { homedir } from "os";
 import { resolve } from "path";
 import { Keypair } from "@solana/web3.js";
 import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
+import { Ed25519PrivateKey, Ed25519Account } from "@aptos-labs/ts-sdk";
 import { type ChainFamily, ChainFamily as CF } from "@chainlink/ccip-sdk";
 import bs58 from "bs58";
 import { ethers, getBytes, hexlify } from "ethers";
@@ -28,6 +29,7 @@ import { ethers, getBytes, hexlify } from "ethers";
 const PRIVATE_KEY_ENV_VARS: Partial<Record<ChainFamily, string>> = {
   [CF.EVM]: "EVM_PRIVATE_KEY",
   [CF.Solana]: "SVM_PRIVATE_KEY",
+  [CF.Aptos]: "APTOS_PRIVATE_KEY",
 };
 
 /**
@@ -128,6 +130,26 @@ export function createSolanaWallet(keyOrPath: string): AnchorWallet {
 }
 
 // ---------------------------------------------------------------------------
+// Aptos wallet
+// ---------------------------------------------------------------------------
+
+/**
+ * Create an Aptos {@link Ed25519Account} from a private key string.
+ *
+ * Accepts:
+ * - **AIP-80 format**: `ed25519-priv-0x...`
+ * - **Raw hex**: `0x...`
+ *
+ * @param keyOrPath - AIP-80 or hex private key string
+ * @returns `{ wallet, address }` — wallet satisfies SDK's `AptosAsyncAccount`
+ */
+export function createAptosWallet(keyOrPath: string): { wallet: Ed25519Account; address: string } {
+  const privateKey = new Ed25519PrivateKey(keyOrPath);
+  const account = new Ed25519Account({ privateKey });
+  return { wallet: account, address: account.accountAddress.toString() };
+}
+
+// ---------------------------------------------------------------------------
 // EVM wallet
 // ---------------------------------------------------------------------------
 
@@ -186,6 +208,10 @@ export function createWallet(
     case CF.EVM: {
       const wallet = createEVMWallet(privateKey, rpcUrl);
       return { wallet, address: wallet.address };
+    }
+    case CF.Aptos: {
+      const { wallet, address } = createAptosWallet(privateKey);
+      return { wallet, address };
     }
     default:
       throw new Error(`Wallet creation for "${family}" is not yet supported in this example`);

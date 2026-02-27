@@ -7,7 +7,7 @@
  */
 
 import type { Chain, Logger } from "@chainlink/ccip-sdk";
-import { EVMChain, SolanaChain, networkInfo, ChainFamily } from "@chainlink/ccip-sdk";
+import { EVMChain, SolanaChain, AptosChain, networkInfo, ChainFamily } from "@chainlink/ccip-sdk";
 
 /**
  * Create a {@link Chain} instance from a network ID and RPC URL.
@@ -44,6 +44,8 @@ export async function createChain(
       return SolanaChain.fromUrl(rpcUrl, ctx);
     case ChainFamily.EVM:
       return EVMChain.fromUrl(rpcUrl, ctx);
+    case ChainFamily.Aptos:
+      return AptosChain.fromUrl(rpcUrl, ctx);
     default:
       throw new Error(`Chain family "${family}" is not yet supported in this example`);
   }

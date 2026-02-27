@@ -1,0 +1,83 @@
+.container {
+  padding: var(--spacing-4);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-4);
+  border: 1px solid;
+  position: relative;
+}
+
+.container[data-severity="error"] {
+  background-color: var(--color-error-bg);
+  border-color: var(--color-error-border);
+  color: var(--color-error);
+}
+
+.container[data-severity="warning"] {
+  background-color: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+  color: var(--color-warning);
+}
+
+.message {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.recovery {
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  opacity: 0.95;
+}
+
+.dismissButton {
+  position: absolute;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+  padding: var(--spacing-1);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.8;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+.dismissButton:hover {
+  opacity: 1;
+}
+
+.detailsToggle {
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.detailsContent {
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-2);
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono, monospace);
+  font-size: var(--font-size-xs);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.detailsActions {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+}
+
+.reportLink {
+  font-size: var(--font-size-xs);
+  color: inherit;
+  opacity: 0.9;
+}

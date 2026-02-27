@@ -1,0 +1,99 @@
+.container {
+  margin-bottom: var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-background-secondary);
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  text-align: left;
+}
+
+.headerTitle {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.poolType {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.chevron {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.chevron.expanded {
+  transform: rotate(180deg);
+}
+
+.content {
+  padding: var(--spacing-4);
+  background-color: var(--color-background);
+  border-top: 1px solid var(--color-border);
+}
+
+.row {
+  margin-bottom: var(--spacing-3);
+}
+
+.rowLabel {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-1);
+}
+
+.copyable {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.copyable:hover {
+  text-decoration: underline;
+}
+
+.rateLimits {
+  margin-top: var(--spacing-4);
+}
+
+.skeleton {
+  color: var(--color-text-muted);
+}
+
+.errorState {
+  padding: var(--spacing-4);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}
+
+.warning {
+  border-color: var(--color-warning-border);
+}
+
+.warningContent {
+  padding: var(--spacing-4);
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.warningContent p {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-sm);
+}

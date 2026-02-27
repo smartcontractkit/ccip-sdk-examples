@@ -1,0 +1,54 @@
+{
+  "name": "@ccip-examples/03-multichain-bridge-dapp",
+  "version": "1.0.0",
+  "description": "Multichain EVM + Solana + Aptos bridge using CCIP SDK",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "lint:fix": "eslint src --fix",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aptos-labs/ts-sdk": "^5.2.1",
+    "@aptos-labs/wallet-adapter-react": "^3.7.2",
+    "@chainlink/ccip-sdk": "1.0.0",
+    "@ccip-examples/shared-config": "workspace:*",
+    "@ccip-examples/shared-components": "workspace:*",
+    "@ccip-examples/shared-utils": "workspace:*",
+    "@rainbow-me/rainbowkit": "^2.2.10",
+    "@solana/wallet-adapter-base": "0.9.23",
+    "@solana/wallet-adapter-react": "0.15.39",
+    "@solana/wallet-adapter-react-ui": "0.9.35",
+    "@solana/wallet-adapter-wallets": "0.19.32",
+    "@solana/web3.js": "1.98.0",
+    "@tanstack/react-query": "^5.62.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "viem": "^2.21.0",
+    "wagmi": "^2.14.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.5",
+    "vite-plugin-node-polyfills": "^0.25.0"
+  },
+  "keywords": [
+    "ccip",
+    "multichain",
+    "bridge",
+    "evm",
+    "solana",
+    "aptos",
+    "wagmi",
+    "rainbowkit"
+  ]
+}

@@ -37,6 +37,7 @@ export function getFaucetUrl(networkId: string): string {
     "ethereum-testnet-sepolia-base-1": "base-sepolia",
     "avalanche-testnet-fuji": "fuji",
     "solana-devnet": "solana-devnet",
+    "aptos-testnet": "aptos-testnet",
   };
 
   const path = faucetPaths[networkId];
@@ -107,6 +108,18 @@ export function getStageFromStatus(status: string): number {
 }
 
 /**
+ * Polling interval for live balances during an in-progress transfer (source + destination).
+ * Separate from POLLING_CONFIG which is for message-status polling.
+ */
+export const BALANCE_POLLING_INTERVAL_MS = 5_000;
+
+/**
+ * Polling interval for live rate limits during an in-progress transfer (source + destination pools).
+ * Separate from POLLING_CONFIG which is for message-status polling.
+ */
+export const RATE_LIMIT_POLLING_INTERVAL_MS = 10_000;
+
+/**
  * Polling configuration for message status
  */
 export const POLLING_CONFIG = {
@@ -174,11 +187,12 @@ export const DUMMY_ADDRESSES: Record<ChainFamily, string> = {
   [ChainFamily.Solana]: "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
 
   /**
-   * Aptos: Aptos Foundation's main address
-   * Official address from Aptos documentation
-   * @see https://explorer.aptoslabs.com/account/0x1
+   * Aptos: well-known Aptos address for fee estimation.
+   * Must be >= APTOS_PRECOMPILE_SPACE (0x0b) to pass on-chain FeeQuoter
+   * validation in the CCIP contracts. Using 0x100 (256) which is safely
+   * above the precompile threshold.
    */
-  [ChainFamily.Aptos]: "0x0000000000000000000000000000000000000000000000000000000000000001",
+  [ChainFamily.Aptos]: "0x0000000000000000000000000000000000000000000000000000000000000100",
 
   /**
    * Sui: Sui System State Object

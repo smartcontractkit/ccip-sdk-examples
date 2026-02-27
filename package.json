@@ -57,6 +57,11 @@
     "solana",
     "blockchain"
   ],
+  "pnpm": {
+    "overrides": {
+      "minimatch@<3.1.6": ">=3.1.6"
+    }
+  },
   "author": "Chainlink",
   "license": "MIT"
 }

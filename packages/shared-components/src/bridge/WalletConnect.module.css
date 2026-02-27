@@ -1,0 +1,106 @@
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  align-items: center;
+  padding: var(--spacing-4);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  flex: 1;
+  min-width: 140px;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.solanaButton {
+  font-family: var(--font-sans) !important;
+}
+
+.aptosButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.aptosButton:hover {
+  background: var(--color-bg-hover, var(--color-bg-secondary));
+}
+
+.aptosButtonConnected {
+  background: var(--color-background-secondary, #1a1b1f);
+  border-color: var(--color-primary, #375bd2);
+  color: var(--color-text-primary);
+}
+
+.aptosWalletIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+/* ── Unified wallet button (shared across EVM / Solana / Aptos) ── */
+
+.walletButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  height: 40px;
+  padding: 0 var(--spacing-3);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--color-text-primary);
+  background: var(--color-background-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+  white-space: nowrap;
+}
+.walletButton:hover {
+  background: var(--color-border-light);
+}
+
+.walletButtonConnected {
+  border-color: var(--color-primary);
+  background: var(--color-background-secondary);
+}
+.walletButtonConnected:hover {
+  background: var(--color-background-tertiary);
+}
+
+.walletButtonError {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.walletIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}

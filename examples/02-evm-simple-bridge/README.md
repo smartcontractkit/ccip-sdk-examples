@@ -1,12 +1,14 @@
 # 02-evm-simple-bridge
 
-> **CCIP SDK** [`@chainlink/ccip-sdk@0.96.0`](https://www.npmjs.com/package/@chainlink/ccip-sdk/v/0.96.0) | **Testnet only** | [CCIP Docs](https://docs.chain.link/ccip) | [CCIP Explorer](https://ccip.chain.link)
+> **CCIP SDK** [`@chainlink/ccip-sdk@1.0.0`](https://www.npmjs.com/package/@chainlink/ccip-sdk/v/1.0.0) | **Testnet only** | [CCIP Docs](https://docs.chain.link/ccip) | [CCIP Explorer](https://ccip.chain.link)
 
 > **Disclaimer**
 >
 > _This tutorial represents an educational example to use a Chainlink system, product, or service and is provided to demonstrate how to interact with Chainlink's systems, products, and services to integrate them into your own. This template is provided "AS IS" and "AS AVAILABLE" without warranties of any kind, it has not been audited, and it may be missing key checks or error handling to make the usage of the system, product or service more clear. Do not use the code in this example in a production environment without completing your own audits and application of best practices. Neither Chainlink Labs, the Chainlink Foundation, nor Chainlink node operators are responsible for unintended outputs that are generated due to errors in code._
 
 A minimal EVM-to-EVM token bridge using the Chainlink CCIP SDK with modern React tooling.
+
+**Send flow:** This example calls `chain.sendMessage()`. The SDK handles token approval (if needed) and the send in one flow; wallet prompts are triggered inside the SDK. Example 03 instead uses `generateUnsignedSendMessage()` and passes the unsigned transaction to the wallet for signing and sending.
 
 ## Architecture
 
@@ -33,18 +35,18 @@ This example demonstrates the modern EVM wallet stack integrated with the CCIP S
 │         ▼                     ▼                ▼              ▼           │
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
 │  │                         Custom React Hooks                          │  │
-│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐  │  │
-│  │  │   useTransfer   │  │  useTokenInfo   │  │  useMessageStatus   │  │  │
-│  │  │                 │  │                 │  │                     │  │  │
-│  │  │ • estimateFee() │  │ • tokenInfo     │  │ • status polling    │  │  │
-│  │  │ • transfer()    │  │ • balance       │  │ • elapsed time      │  │  │
-│  │  │ • state machine │  │ • decimals      │  │ • final state       │  │  │
-│  │  └────────┬────────┘  └────────┬────────┘  └──────────┬──────────┘  │  │
-│  └───────────┼────────────────────┼──────────────────────┼─────────────┘  │
-│              │                    │                      │                │
-├──────────────┼────────────────────┼──────────────────────┼────────────────┤
-│              │                    │                      │                │
-│              ▼                    ▼                      ▼                │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────┐  │  │
+│  │  │ useTransfer  │  │useFeeTokens │  │useWalletBals│  │useMsgStat│  │  │
+│  │  │              │  │              │  │              │  │          │  │  │
+│  │  │• estimateFee │  │• getFeeTokens│  │• token bal   │  │• polling │  │  │
+│  │  │• transfer()  │  │• balances    │  │              │  │• elapsed │  │  │
+│  │  │• feeToken    │  │• selection   │  │              │  │• final   │  │  │
+│  │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └────┬─────┘  │  │
+│  └─────────┼─────────────────┼─────────────────┼───────────────┼────────┘  │
+│           │                 │                 │               │          │
+├───────────┼─────────────────┼─────────────────┼───────────────┼──────────┤
+│           │                 │                 │               │          │
+│           ▼                 ▼                 ▼               ▼          │
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
 │  │                              wagmi                                  │  │
 │  │                     (React Hooks for Ethereum)                      │  │
@@ -106,17 +108,18 @@ This example demonstrates the modern EVM wallet stack integrated with the CCIP S
 
 ### Data Flow Summary
 
-| Step | Component            | Action                                                              |
-| ---- | -------------------- | ------------------------------------------------------------------- |
-| 1    | **RainbowKit**       | User connects wallet                                                |
-| 2    | **wagmi**            | Manages wallet state, provides hooks                                |
-| 3    | **BridgeForm**       | User enters transfer details                                        |
-| 4    | **useTokenInfo**     | Fetches balance via SDK → viem → RPC                                |
-| 5    | **useTransfer**      | Estimates fee via `getFee()` + delivery time via `getLaneLatency()` |
-| 6    | **wagmi**            | Prompts wallet for signature                                        |
-| 7    | **CCIP SDK**         | `sendMessage()` handles approval + send                             |
-| 8    | **useMessageStatus** | Polls `CCIPAPIClient.getMessageById()` (no chain instance needed)   |
-| 9    | **MessageProgress**  | Displays visual stepper until complete                              |
+| Step | Component             | Action                                                                      |
+| ---- | --------------------- | --------------------------------------------------------------------------- |
+| 1    | **RainbowKit**        | User connects wallet                                                        |
+| 2    | **wagmi**             | Manages wallet state, provides hooks                                        |
+| 3    | **BridgeForm**        | User enters transfer details, selects fee token                             |
+| 4    | **useFeeTokens**      | Discovers available fee tokens via `getFeeTokens()`, fetches their balances |
+| 5    | **useWalletBalances** | Fetches transfer token (CCIP-BnM) balance via SDK → viem → RPC              |
+| 6    | **useTransfer**       | Estimates fee via `getFee()` + delivery time via `getLaneLatency()`         |
+| 7    | **wagmi**             | Prompts wallet for signature                                                |
+| 8    | **CCIP SDK**          | `sendMessage()` handles approval + send                                     |
+| 9    | **useMessageStatus**  | Polls `CCIPAPIClient.getMessageById()` (no chain instance needed)           |
+| 10   | **MessageProgress**   | Displays visual stepper until complete                                      |
 
 ### Key Adapters
 
@@ -125,9 +128,10 @@ This example demonstrates the modern EVM wallet stack integrated with the CCIP S
 const publicClient = getPublicClient(wagmiConfig, { chainId });
 const walletClient = useWalletClient();
 
-// 2. viem → CCIP SDK (adapters from SDK)
+// 2. viem → CCIP SDK (adapters from SDK + shared-utils)
 import { fromViemClient, viemWallet } from "@chainlink/ccip-sdk/viem";
 import { CCIPAPIClient, networkInfo } from "@chainlink/ccip-sdk";
+import { toGenericPublicClient } from "@ccip-examples/shared-utils";
 
 // Chain instance for on-chain operations (fee, send)
 const chain = await fromViemClient(toGenericPublicClient(publicClient));
@@ -147,7 +151,7 @@ const request = await chain.sendMessage({
   // ...
 });
 
-// Status tracking — centralized API, no chain instance needed
+// Status tracking — via CCIPAPIClient (default URL, no staging override)
 const api = new CCIPAPIClient();
 const status = await api.getMessageById(request.message.messageId);
 ```
@@ -156,7 +160,8 @@ const status = await api.getMessageById(request.message.messageId);
 
 - Modern wallet integration with **wagmi + viem + RainbowKit**
 - CCIP SDK integration via the **viem adapter**
-- Fee estimation before transfer
+- Fee estimation with choice of fee token (dynamically discovered via `getFeeTokens()`)
+- Fetching fee token and transfer token balances via SDK
 - Token approval + CCIP send flow
 - Cross-chain message status tracking
 
@@ -229,7 +234,7 @@ pnpm build:packages
 
 ```bash
 # Start the development server
-pnpm --filter 02-evm-simple-bridge dev
+pnpm dev:02
 ```
 
 Open http://localhost:5173 in your browser.
@@ -244,9 +249,10 @@ Click "Connect Wallet" and select your wallet provider. Approve the connection i
 
 1. **From Network**: Select the source chain (where your tokens are)
 2. **To Network**: Select the destination chain
-3. **Amount**: Enter how many CCIP-BnM tokens to transfer
+3. **Fee Token**: Choose which token to pay CCIP fees in (available options discovered from the router)
+4. **Amount**: Enter how many CCIP-BnM tokens to transfer
 
-Your token balance will be displayed once you select a source network.
+Your CCIP-BnM balance is displayed once you select a source network. Available fee tokens (native currency plus any ERC-20 fee tokens from the router) are listed with their balances. A fee token is disabled if the wallet balance is zero.
 
 ### Step 3: Switch Networks (if needed)
 
@@ -254,7 +260,7 @@ If your wallet is on a different network than the source, click "Switch to [Netw
 
 ### Step 4: Estimate Fee
 
-Click "Estimate Fee" to see the CCIP fee in native tokens (ETH/AVAX) and the estimated delivery time.
+Click "Estimate Fee" to see the CCIP fee (in the selected fee token) and the estimated delivery time. The fee amount varies depending on the selected fee token.
 
 ### Step 5: Execute Transfer
 
@@ -272,26 +278,39 @@ After the transaction confirms:
 
 ## Project Structure
 
+This example is part of a monorepo. Local code lives in `src/`, while shared packages provide reusable hooks, components, and configuration.
+
 ```
 src/
 ├── components/
-│   ├── bridge/           # Bridge-specific components
-│   │   ├── BridgeForm.tsx       # Main transfer form
-│   │   ├── TransferStatus.tsx   # Status display
-│   │   ├── MessageProgress.tsx  # Cross-chain progress stepper
-│   │   └── WalletConnect.tsx    # RainbowKit connect button
-│   ├── layout/           # Header, Footer
-│   └── ui/               # Reusable UI components
+│   ├── bridge/
+│   │   ├── BridgeForm.tsx       # Main transfer form (local)
+│   │   └── WalletConnect.tsx    # RainbowKit connect button (local)
+│   └── layout/
+│       └── Footer.tsx           # Footer (local; Header from shared-components)
 ├── config/
-│   └── wagmi.ts          # Wagmi + RainbowKit configuration
+│   └── index.ts                 # Re-exports wagmi config from shared-config
 ├── hooks/
-│   ├── useTransfer.ts    # Transfer execution logic
-│   ├── useMessageStatus.ts # CCIP message tracking
-│   └── useTokenInfo.ts   # Token metadata & balance
-├── styles/
-│   └── globals.css       # CSS custom properties
-└── App.tsx               # Main app with providers
+│   ├── index.ts                 # Re-exports local + shared hooks
+│   ├── useTransfer.ts           # Transfer execution logic (local)
+│   └── useGetChain.ts           # SDK chain instance factory (local)
+├── App.tsx                      # Main app with providers
+└── main.tsx                     # Entry point
 ```
+
+**From shared packages** (via `@ccip-examples/*`):
+
+| Import                                                  | Package               | Purpose                   |
+| ------------------------------------------------------- | --------------------- | ------------------------- |
+| `TransferStatus`, `MessageProgress`, `Header`           | `shared-components`   | UI components             |
+| `Select`, `Input`, `Button`, `Alert`                    | `shared-components`   | Form primitives           |
+| `FeeTokenOptions`, `FeeEstimateDisplay`, `BalancesList` | `shared-components`   | Bridge UI widgets         |
+| `globals.css`, `*.module.css`                           | `shared-components`   | Styles                    |
+| `useWalletBalances`, `useFeeTokens`                     | `shared-utils/hooks`  | Balance & fee token hooks |
+| `useMessageStatus`                                      | `shared-utils/hooks`  | CCIP message tracking     |
+| `buildTokenTransferMessage`, `toGenericPublicClient`    | `shared-utils`        | SDK helpers               |
+| `wagmiConfig`, `NETWORK_TO_CHAIN_ID`                    | `shared-config/wagmi` | Wagmi setup               |
+| `NETWORKS`, `getTokenAddress`                           | `shared-config`       | Network & token config    |
 
 ## Key Concepts
 
@@ -310,7 +329,11 @@ The SDK integrates with viem via adapters:
 ```typescript
 import { fromViemClient, viemWallet } from "@chainlink/ccip-sdk/viem";
 import { CCIPAPIClient, networkInfo } from "@chainlink/ccip-sdk";
-import { buildTokenTransferMessage, toGenericPublicClient } from "@ccip-examples/shared-utils";
+import {
+  buildTokenTransferMessage,
+  toGenericPublicClient,
+  categorizeError,
+} from "@ccip-examples/shared-utils";
 
 // Create SDK chain from wagmi's public client
 const publicClient = getPublicClient(wagmiConfig, { chainId });
@@ -319,8 +342,13 @@ const chain = await fromViemClient(toGenericPublicClient(publicClient));
 // Destination selector from static metadata (no RPC call)
 const destChainSelector = networkInfo(destNetworkId).chainSelector;
 
-// Build message using shared utility
-const message = buildTokenTransferMessage({ receiver, tokenAddress, amount });
+// Build message with fee token
+const message = buildTokenTransferMessage({
+  receiver,
+  tokenAddress,
+  amount,
+  feeToken: feeTokenAddress, // omit or undefined for native currency
+});
 
 // Get fee + estimated delivery time
 const [fee, latency] = await Promise.all([
@@ -338,10 +366,19 @@ const request = await chain.sendMessage({
 });
 console.log(request.tx.hash, request.message.messageId);
 
-// Track status — centralized API, no chain instance needed
+// Track status — via CCIPAPIClient
 const api = new CCIPAPIClient();
 const result = await api.getMessageById(request.message.messageId);
 console.log(result.metadata.status);
+
+// Error handling — categorizeError leverages SDK error types
+try {
+  /* ... */
+} catch (err) {
+  const family = networkInfo(sourceNetwork).family;
+  const categorized = categorizeError(err, { chainFamily: family });
+  console.log(categorized.message, categorized.category, categorized.severity);
+}
 ```
 
 ### Network Configuration
@@ -353,7 +390,7 @@ Chain IDs and selectors are fetched from the SDK, not hardcoded.
 
 ### "Network not configured in wagmi"
 
-The selected network isn't set up in `config/wagmi.ts`. This example supports Sepolia, Base Sepolia, and Avalanche Fuji.
+The selected network isn't configured in the wagmi setup (`packages/shared-config/src/wagmi.ts`). This example supports Sepolia, Base Sepolia, and Avalanche Fuji.
 
 ### "Token not available on this network"
 
@@ -367,20 +404,12 @@ CCIP-BnM tokens have specific addresses per network. Make sure you're using a su
 
 ### Transfer taking too long
 
-CCIP transfers involve multiple steps that vary by lane version:
+CCIP transfers involve multiple steps:
 
-**V1 Lanes (COMMITTING & EXECUTING DON):**
-
-1. Source chain finality
+1. Source chain finality (~2-3 minutes)
 2. DON commits merkle root to destination
 3. Risk Management Network blessing
 4. Execution on destination
-
-**V2 Lanes (Verifier architecture):**
-
-1. Source chain finality
-2. Verification by required verifiers (Chainlink/external)
-3. Execution on destination
 
 The estimated delivery time shown in the UI comes from `getLaneLatency()` and varies by lane. Check the CCIP Explorer for real-time progress.
 

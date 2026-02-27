@@ -1,0 +1,92 @@
+.container {
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-lg);
+}
+
+.success {
+  background-color: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+}
+
+.error {
+  background-color: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+}
+
+.loading {
+  background-color: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+}
+
+.statusText {
+  color: inherit;
+}
+
+.success .statusText {
+  color: var(--color-success);
+}
+
+.error .statusText {
+  color: var(--color-error);
+}
+
+.loading .statusText {
+  color: var(--color-warning);
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-warning);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: transferStatusSpin 1s linear infinite;
+}
+
+@keyframes transferStatusSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorMessage {
+  margin: var(--spacing-2) 0;
+  color: var(--color-error);
+}
+
+.link {
+  margin: var(--spacing-2) 0;
+}
+
+.link a {
+  color: var(--color-primary);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.link a:hover {
+  text-decoration: underline;
+}
+
+.note {
+  margin-top: var(--spacing-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.resetButton {
+  margin-top: var(--spacing-4);
+}
+
+.resetButton button {
+  flex: none;
+}

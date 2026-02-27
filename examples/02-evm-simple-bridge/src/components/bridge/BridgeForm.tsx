@@ -2,69 +2,43 @@
  * Bridge transfer form
  *
  * Main form component for initiating cross-chain transfers.
- * Split into logical sections for clarity:
- * - Network selection
- * - Token balance display (from SDK)
- * - Amount input
- * - Receiver address
- * - Fee display
- * - Submit actions
- *
- * Token metadata and balance are fetched from the SDK via useTokenInfo hook.
+ * Fee payment via useFeeTokens + FeeTokenOptions (native + LINK).
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { networkInfo, ChainFamily } from "@chainlink/ccip-sdk";
-import { NETWORKS, getTokenAddress } from "@ccip-examples/shared-config";
-import { isValidEVMAddress, isValidAmount } from "@ccip-examples/shared-utils";
-import { Select, Input, Button, Alert } from "../ui";
-import { useTokenInfo, useLaneLatency } from "../../hooks";
-import { NETWORK_TO_CHAIN_ID } from "../../config/wagmi.js";
-import styles from "./BridgeForm.module.css";
+import { NETWORKS, getTokenAddress, type FeeTokenOptionItem } from "@ccip-examples/shared-config";
+import {
+  isValidEVMAddress,
+  isValidAmount,
+  formatAmountFull,
+  copyToClipboard,
+  COPIED_FEEDBACK_MS,
+} from "@ccip-examples/shared-utils";
+import {
+  Select,
+  Input,
+  Button,
+  Alert,
+  FeeTokenOptions,
+  FeeEstimateDisplay,
+  BalancesList,
+  CopyIcon,
+  CheckIcon,
+  type BalanceItem,
+} from "@ccip-examples/shared-components";
+import { useWalletBalances, useFeeTokens } from "@ccip-examples/shared-utils/hooks";
+import { useGetChain } from "../../hooks/useGetChain.js";
+import { NETWORK_TO_CHAIN_ID } from "@ccip-examples/shared-config/wagmi";
+import styles from "@ccip-examples/shared-components/bridge/BridgeForm.module.css";
 
 /** Fixed token symbol for this bridge example */
 const TOKEN_SYMBOL = "CCIP-BnM";
 
-/** Copy icon SVG */
-function CopyIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-    </svg>
-  );
-}
-
-/** Check icon SVG for copied state */
-function CheckIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
 interface BridgeFormProps {
   walletAddress: string | null;
   currentChainId: number | null;
+  fee: bigint | null;
   feeFormatted: string | null;
   estimatedTime: string | null;
   isLoading: boolean;
@@ -74,7 +48,7 @@ interface BridgeFormProps {
     token: string,
     amount: string,
     receiver: string,
-    feeToken: "native" | "link"
+    feeToken: FeeTokenOptionItem | null
   ) => Promise<void>;
   onTransfer: (
     sourceNetwork: string,
@@ -82,31 +56,57 @@ interface BridgeFormProps {
     token: string,
     amount: string,
     receiver: string,
-    feeToken: "native" | "link"
+    feeToken: FeeTokenOptionItem | null
   ) => Promise<void>;
   onSwitchChain: (chainId: number) => void;
+  onClearEstimate: () => void;
+  onReset: () => void;
 }
 
 export function BridgeForm({
   walletAddress,
   currentChainId,
+  fee,
   feeFormatted,
   estimatedTime,
   isLoading,
   onEstimateFee,
   onTransfer,
   onSwitchChain,
+  onClearEstimate,
+  onReset,
 }: BridgeFormProps) {
-  // Form state
   const [sourceNetwork, setSourceNetwork] = useState("");
   const [destNetwork, setDestNetwork] = useState("");
   const [amount, setAmount] = useState("");
   const [receiver, setReceiver] = useState("");
   const [useSelfAsReceiver, setUseSelfAsReceiver] = useState(true);
-  const [feeToken, setFeeToken] = useState<"native" | "link">("native");
   const [copied, setCopied] = useState(false);
 
-  // Memoize EVM networks to avoid recalculating on every render
+  const getChain = useGetChain();
+
+  /** Clear stale transfer result + fee when the user changes networks */
+  const handleSourceChange = useCallback(
+    (id: string) => {
+      setSourceNetwork(id);
+      onReset();
+      onClearEstimate();
+    },
+    [onReset, onClearEstimate]
+  );
+
+  const handleDestChange = useCallback(
+    (id: string) => {
+      setDestNetwork(id);
+      onReset();
+      onClearEstimate();
+    },
+    [onReset, onClearEstimate]
+  );
+
+  const sourceConfig = sourceNetwork ? NETWORKS[sourceNetwork] : null;
+  const routerAddress = sourceConfig?.routerAddress ?? null;
+
   const allEVMNetworks = useMemo(() => {
     return Object.entries(NETWORKS).filter(([key]) => {
       return networkInfo(key).family === ChainFamily.EVM && NETWORK_TO_CHAIN_ID[key];
@@ -117,44 +117,34 @@ export function BridgeForm({
     return allEVMNetworks.filter(([key]) => key !== sourceNetwork);
   }, [allEVMNetworks, sourceNetwork]);
 
-  /**
-   * Copy receiver address to clipboard
-   */
-  const handleCopyAddress = useCallback(async () => {
+  const handleCopyAddress = useCallback(() => {
     if (!receiver) return;
-    try {
-      await navigator.clipboard.writeText(receiver);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
+    copyToClipboard(receiver);
+    setCopied(true);
+    const resetDelayMs: number = COPIED_FEEDBACK_MS;
+    setTimeout(() => setCopied(false), resetDelayMs);
   }, [receiver]);
 
-  // Get token addresses for selected network
   const tokenAddress = sourceNetwork ? getTokenAddress(TOKEN_SYMBOL, sourceNetwork) : null;
-  const linkAddress = sourceNetwork ? getTokenAddress("LINK", sourceNetwork) : null;
 
-  // Fetch token info and balances from SDK
   const {
-    tokenInfo,
-    balanceFormatted,
-    isLoading: tokenLoading,
-    error: tokenError,
-  } = useTokenInfo(sourceNetwork || null, tokenAddress ?? null, walletAddress);
+    feeTokens,
+    selectedToken: feeToken,
+    setSelectedToken: setFeeToken,
+    isLoading: feeTokensLoading,
+    error: feeTokensError,
+  } = useFeeTokens(sourceNetwork || null, routerAddress, walletAddress, getChain);
 
-  // Fetch native balance
-  const { balanceFormatted: nativeBalanceFormatted, isLoading: nativeLoading } = useTokenInfo(
+  const {
+    token,
+    isLoading: balancesLoading,
+    error: balancesError,
+  } = useWalletBalances(
     sourceNetwork || null,
-    null,
-    walletAddress
-  );
-
-  // Fetch LINK balance
-  const { balanceFormatted: linkBalanceFormatted, isLoading: linkLoading } = useTokenInfo(
-    sourceNetwork || null,
-    linkAddress ?? null,
-    walletAddress
+    tokenAddress ?? null,
+    walletAddress,
+    getChain,
+    TOKEN_SYMBOL
   );
 
   // Auto-populate receiver with wallet address
@@ -164,14 +154,6 @@ export function BridgeForm({
     }
   }, [useSelfAsReceiver, walletAddress]);
 
-  // Auto-fetch lane latency when source/destination changes
-  const { latencyFormatted: autoLatency } = useLaneLatency(
-    sourceNetwork || null,
-    destNetwork || null
-  );
-
-  // Get network configs
-  const sourceConfig = sourceNetwork ? NETWORKS[sourceNetwork] : null;
   const tokenAvailable = Boolean(tokenAddress);
 
   // Check if chain switch is needed (use mapping instead of config.chainId)
@@ -183,20 +165,25 @@ export function BridgeForm({
   const isReceiverValid = isValidEVMAddress(receiver);
 
   const canEstimate = Boolean(
-    sourceNetwork && destNetwork && isAmountValid && isReceiverValid && tokenAvailable && tokenInfo
+    sourceNetwork && destNetwork && isAmountValid && isReceiverValid && tokenAvailable && token
   );
 
   const canTransfer = canEstimate && !needsChainSwitch && feeFormatted;
 
+  const balanceItems: BalanceItem[] = useMemo(() => {
+    if (!token) return [];
+    return [{ symbol: token.symbol, balance: token.formatted }];
+  }, [token]);
+
   // Handlers
   const handleEstimate = () => {
-    if (canEstimate && tokenInfo) {
+    if (canEstimate && token) {
       void onEstimateFee(sourceNetwork, destNetwork, TOKEN_SYMBOL, amount, receiver, feeToken);
     }
   };
 
   const handleTransfer = () => {
-    if (canTransfer && tokenInfo) {
+    if (canTransfer && token) {
       void onTransfer(sourceNetwork, destNetwork, TOKEN_SYMBOL, amount, receiver, feeToken);
     }
   };
@@ -216,7 +203,7 @@ export function BridgeForm({
         <Select
           label="From Network"
           value={sourceNetwork}
-          onChange={(e) => setSourceNetwork(e.target.value)}
+          onChange={(e) => handleSourceChange(e.target.value)}
           disabled={isLoading}
         >
           <option value="">Select network</option>
@@ -230,7 +217,7 @@ export function BridgeForm({
         <Select
           label="To Network"
           value={destNetwork}
-          onChange={(e) => setDestNetwork(e.target.value)}
+          onChange={(e) => handleDestChange(e.target.value)}
           disabled={isLoading}
         >
           <option value="">Select network</option>
@@ -242,56 +229,30 @@ export function BridgeForm({
         </Select>
       </div>
 
-      {/* Token (fixed) with balance display */}
+      {sourceNetwork && (
+        <FeeTokenOptions
+          options={feeTokens}
+          selected={feeToken}
+          onChange={(token) => {
+            setFeeToken(token);
+            onClearEstimate();
+          }}
+          isLoading={feeTokensLoading}
+          disabled={isLoading}
+        />
+      )}
+      {feeTokensError && <Alert variant="warning">{feeTokensError}</Alert>}
+
+      {sourceNetwork && <BalancesList balances={balanceItems} isLoading={balancesLoading} />}
+
+      {/* Token (fixed) */}
       <div className={styles.tokenRow}>
-        <Input label="Token" value={tokenInfo ? tokenInfo.symbol : TOKEN_SYMBOL} disabled />
-        {/* Balance: show skeleton while loading, value when loaded */}
-        {sourceNetwork && tokenLoading && (
-          <div className={styles.balanceSkeleton}>
-            Balance: <span className={styles.skeletonBar} />
-          </div>
-        )}
-        {tokenInfo && balanceFormatted && !tokenLoading && (
-          <div className={styles.balance}>
-            Balance: <strong>{balanceFormatted}</strong> {tokenInfo.symbol}
-          </div>
-        )}
+        <Input label="Token" value={token ? token.symbol : TOKEN_SYMBOL} disabled />
       </div>
       {sourceNetwork && !tokenAvailable && (
         <Alert variant="error">Token not available on this network</Alert>
       )}
-      {tokenError && <Alert variant="error">{tokenError}</Alert>}
-
-      {/* Balances Summary (Native, BnM, LINK) */}
-      {sourceNetwork && sourceConfig && walletAddress && (
-        <div className={styles.balancesSummary}>
-          <div className={styles.balanceItem}>
-            <span className={styles.balanceLabel}>{sourceConfig.nativeCurrency.symbol}:</span>
-            <span className={styles.balanceValue}>
-              {nativeLoading ? "..." : (nativeBalanceFormatted ?? "0")}
-            </span>
-          </div>
-          <div className={styles.balanceItem}>
-            <span className={styles.balanceLabel}>CCIP-BnM:</span>
-            <span className={styles.balanceValue}>
-              {tokenLoading ? "..." : (balanceFormatted ?? "0")}
-            </span>
-          </div>
-          <div className={styles.balanceItem}>
-            <span className={styles.balanceLabel}>LINK:</span>
-            <span className={styles.balanceValue}>
-              {linkLoading ? "..." : (linkBalanceFormatted ?? "0")}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Lane Latency (auto-fetched when networks selected) */}
-      {autoLatency && (
-        <Alert variant="info">
-          <strong>Estimated Delivery:</strong> {autoLatency}
-        </Alert>
-      )}
+      {balancesError && <Alert variant="error">{balancesError}</Alert>}
 
       {/* Amount with Max button */}
       <div className={styles.amountRow}>
@@ -301,50 +262,22 @@ export function BridgeForm({
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0.0"
-          disabled={isLoading || tokenLoading}
+          disabled={isLoading || balancesLoading}
           error={amount && !isAmountValid ? "Enter a valid positive amount" : undefined}
         />
         <button
           type="button"
           className={styles.maxButton}
-          onClick={() => balanceFormatted && setAmount(balanceFormatted)}
-          disabled={isLoading || tokenLoading || !balanceFormatted}
+          onClick={() =>
+            token?.balance != null
+              ? setAmount(formatAmountFull(token.balance, token.decimals))
+              : undefined
+          }
+          disabled={isLoading || balancesLoading || !token?.formatted}
           title="Use maximum balance"
         >
           Max
         </button>
-      </div>
-
-      {/* Fee Token Selection */}
-      <div className={styles.feeTokenSelector}>
-        <label className={styles.feeTokenLabel}>Pay Fee With:</label>
-        <div className={styles.feeTokenOptions}>
-          <label className={styles.radioLabel}>
-            <input
-              type="radio"
-              name="feeToken"
-              value="native"
-              checked={feeToken === "native"}
-              onChange={() => setFeeToken("native")}
-              disabled={isLoading}
-            />
-            {sourceConfig?.nativeCurrency.symbol ?? "Native"}
-          </label>
-          <label className={styles.radioLabel}>
-            <input
-              type="radio"
-              name="feeToken"
-              value="link"
-              checked={feeToken === "link"}
-              onChange={() => setFeeToken("link")}
-              disabled={isLoading || !linkAddress}
-            />
-            LINK
-            {!linkAddress && sourceNetwork && (
-              <span className={styles.notAvailable}> (not available)</span>
-            )}
-          </label>
-        </div>
       </div>
 
       {/* Receiver */}
@@ -381,17 +314,13 @@ export function BridgeForm({
         </div>
       )}
 
-      {/* Fee Display (after estimation) */}
-      {feeFormatted && (
-        <Alert variant="info">
-          <strong>Estimated Fee:</strong> {feeFormatted}
-          {estimatedTime && (
-            <>
-              {" "}
-              &middot; <strong>Delivery:</strong> {estimatedTime}
-            </>
-          )}
-        </Alert>
+      {fee != null && feeToken && (
+        <FeeEstimateDisplay
+          fee={fee}
+          feeToken={feeToken}
+          balance={feeToken.balance}
+          estimatedTime={estimatedTime}
+        />
       )}
 
       {/* Actions */}

@@ -14,6 +14,10 @@
       "types": "./dist/errors.d.ts",
       "import": "./dist/errors.js"
     },
+    "./ccipErrors": {
+      "types": "./dist/ccipErrors.d.ts",
+      "import": "./dist/ccipErrors.js"
+    },
     "./validation": {
       "types": "./dist/validation.d.ts",
       "import": "./dist/validation.js"
@@ -25,6 +29,18 @@
     "./wallet": {
       "types": "./dist/wallet.d.ts",
       "import": "./dist/wallet.js"
+    },
+    "./formatting": {
+      "types": "./dist/formatting.d.ts",
+      "import": "./dist/formatting.js"
+    },
+    "./clipboard": {
+      "types": "./dist/clipboard.d.ts",
+      "import": "./dist/clipboard.js"
+    },
+    "./hooks": {
+      "types": "./dist/hooks/index.d.ts",
+      "import": "./dist/hooks/index.js"
     }
   },
   "files": [
@@ -39,20 +55,26 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@chainlink/ccip-sdk": "0.96.0",
+    "@aptos-labs/ts-sdk": "^5.2.1",
     "@coral-xyz/anchor": "^0.30.1",
     "@solana/web3.js": "^1.98.0",
     "bs58": "^6.0.0",
     "ethers": "^6.16.0",
-    "viem": "^2.21.0"
+    "viem": "^2.21.0",
+    "@ccip-examples/shared-config": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@chainlink/ccip-sdk": "1.0.0"
   },
   "keywords": [
     "ccip",
     "utils",
     "errors",
     "validation"
-  ]
+  ],
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "@chainlink/ccip-sdk": "1.0.0"
+  }
 }

@@ -20,34 +20,28 @@
  * QueryClientProvider > WagmiProvider > RainbowKitProvider > App
  */
 
-import { useState } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { useAccount, useSwitchChain } from "wagmi";
 
-import { wagmiConfig } from "./config/wagmi.js";
-import { Header, Footer } from "./components/layout";
-import { WalletConnect, BridgeForm, TransferStatus, MessageProgress } from "./components/bridge";
-import { useTransfer, useMessageStatus } from "./hooks";
-import "./styles/globals.css";
+import { wagmiConfig } from "@ccip-examples/shared-config/wagmi";
+import { createDefaultQueryClient } from "@ccip-examples/shared-config/queryClient";
+import type { FeeTokenOptionItem } from "@ccip-examples/shared-config";
+import {
+  ErrorBoundary,
+  MessageProgress,
+  TransferStatus,
+  Header,
+} from "@ccip-examples/shared-components";
+import { Footer } from "./components/layout";
+import { WalletConnect, BridgeForm } from "./components/bridge";
+import { useTransfer } from "./hooks";
+import "@ccip-examples/shared-components/styles/globals.css";
 import "@rainbow-me/rainbowkit/styles.css";
-import styles from "./App.module.css";
+import styles from "@ccip-examples/shared-components/layout/AppLayout.module.css";
 
-/**
- * React Query client for async state management
- *
- * Used by wagmi for caching blockchain data.
- */
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 3,
-      staleTime: 30_000,
-    },
-  },
-});
+const queryClient = createDefaultQueryClient();
 
 /**
  * Main application content (inside providers)
@@ -57,48 +51,31 @@ function AppContent() {
   const { switchChain } = useSwitchChain();
   const transfer = useTransfer();
 
-  // Track network IDs for explorer links
-  const [sourceNetworkId, setSourceNetworkId] = useState<string | null>(null);
-  const [destNetworkId, setDestNetworkId] = useState<string | null>(null);
-
-  // Get destination transaction hash from message status
-  const messageStatus = useMessageStatus(transfer.messageId);
-
   // Determine if transfer is in progress
   const isLoading = ["estimating", "sending"].includes(transfer.status);
 
   // Show message progress after successful transfer
   const showMessageProgress = transfer.status === "success" && transfer.messageId;
 
-  /**
-   * Handle fee estimation
-   */
   const handleEstimateFee = async (
     source: string,
     dest: string,
     token: string,
     amount: string,
     receiver: string,
-    feeToken: "native" | "link"
+    feeToken: FeeTokenOptionItem | null
   ) => {
-    setSourceNetworkId(source);
-    setDestNetworkId(dest);
     await transfer.estimateFee(source, dest, token, amount, receiver, feeToken);
   };
 
-  /**
-   * Handle transfer execution
-   */
   const handleTransfer = async (
     source: string,
     dest: string,
     token: string,
     amount: string,
     receiver: string,
-    feeToken: "native" | "link"
+    feeToken: FeeTokenOptionItem | null
   ) => {
-    setSourceNetworkId(source);
-    setDestNetworkId(dest);
     await transfer.transfer(source, dest, token, amount, receiver, feeToken);
   };
 
@@ -110,8 +87,8 @@ function AppContent() {
   };
 
   return (
-    <div className={styles.container}>
-      <Header />
+    <div className={styles.app}>
+      <Header title="CCIP Simple Bridge" subtitle="EVM-to-EVM token transfers with MetaMask" />
 
       <main className={styles.main}>
         {/* Wallet Connection - RainbowKit handles the UI */}
@@ -125,12 +102,15 @@ function AppContent() {
             <BridgeForm
               walletAddress={address ?? null}
               currentChainId={chainId ?? null}
+              fee={transfer.fee}
               feeFormatted={transfer.feeFormatted}
               estimatedTime={transfer.estimatedTime}
               isLoading={isLoading}
               onEstimateFee={handleEstimateFee}
               onTransfer={handleTransfer}
               onSwitchChain={handleSwitchChain}
+              onClearEstimate={transfer.clearEstimate}
+              onReset={transfer.reset}
             />
 
             <TransferStatus
@@ -139,9 +119,6 @@ function AppContent() {
               txHash={transfer.txHash}
               messageId={transfer.messageId}
               estimatedTime={transfer.estimatedTime}
-              sourceNetworkId={sourceNetworkId}
-              destNetworkId={destNetworkId}
-              destTxHash={messageStatus.destTxHash}
               onReset={transfer.reset}
             />
 
@@ -163,17 +140,19 @@ function AppContent() {
  */
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <WagmiProvider config={wagmiConfig}>
-        <RainbowKitProvider
-          theme={darkTheme({
-            accentColor: "#0847F7", // Primary blue
-            borderRadius: "medium",
-          })}
-        >
-          <AppContent />
-        </RainbowKitProvider>
-      </WagmiProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <WagmiProvider config={wagmiConfig}>
+          <RainbowKitProvider
+            theme={darkTheme({
+              accentColor: "#375BD2",
+              borderRadius: "medium",
+            })}
+          >
+            <AppContent />
+          </RainbowKitProvider>
+        </WagmiProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

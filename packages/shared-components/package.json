@@ -1,0 +1,62 @@
+{
+  "name": "@ccip-examples/shared-components",
+  "version": "1.0.0",
+  "description": "Shared UI components for CCIP SDK examples",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./primitives": {
+      "types": "./dist/primitives/index.d.ts",
+      "import": "./dist/primitives/index.js"
+    },
+    "./styles/tokens.css": "./dist/styles/tokens.css",
+    "./styles/globals.css": "./dist/styles/globals.css",
+    "./layout": {
+      "types": "./dist/layout/index.d.ts",
+      "import": "./dist/layout/index.js"
+    },
+    "./layout/AppLayout.module.css": "./dist/layout/AppLayout.module.css",
+    "./bridge/BridgeForm.module.css": "./dist/bridge/BridgeForm.module.css",
+    "./bridge/WalletConnect.module.css": "./dist/bridge/WalletConnect.module.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && pnpm run copy-css",
+    "copy-css": "mkdir -p dist/primitives dist/bridge dist/styles && cp src/primitives/*.module.css dist/primitives/ && cp src/bridge/*.module.css dist/bridge/ && cp src/styles/*.css dist/styles/ && mkdir -p dist/layout && cp src/layout/*.module.css dist/layout/ && cp src/*.module.css dist/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "@chainlink/ccip-sdk": "1.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.9.3",
+    "@chainlink/ccip-sdk": "1.0.0"
+  },
+  "keywords": [
+    "ccip",
+    "components",
+    "ui"
+  ],
+  "dependencies": {
+    "@ccip-examples/shared-config": "workspace:*",
+    "@ccip-examples/shared-utils": "workspace:*"
+  },
+  "sideEffects": [
+    "*.css",
+    "*.module.css"
+  ]
+}

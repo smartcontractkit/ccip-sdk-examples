@@ -23,12 +23,8 @@ export default defineConfig({
     nodePolyfills({
       include: ["buffer", "crypto", "stream", "util", "process"],
       globals: { Buffer: true, global: true, process: true },
-      protocolImports: false, // Don't polyfill protocol imports (http, https, etc.)
     }),
   ],
-  define: {
-    "process.env": {},
-  },
   optimizeDeps: {
     // Pre-bundle CJS dependencies for faster dev mode
     include: ["react", "react-dom", "viem"],
@@ -54,9 +50,11 @@ export default defineConfig({
     },
   },
   server: {
+    host: "0.0.0.0",
     port: 5173,
   },
   preview: {
+    host: "0.0.0.0",
     port: 4173,
   },
 });

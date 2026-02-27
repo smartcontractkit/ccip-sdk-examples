@@ -14,6 +14,7 @@
  *   pnpm fees -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1 -t CCIP-BnM -a 5.0
  */
 
+import "dotenv/config";
 import { Command } from "commander";
 import type { Chain } from "@chainlink/ccip-sdk";
 import { networkInfo } from "@chainlink/ccip-sdk";
