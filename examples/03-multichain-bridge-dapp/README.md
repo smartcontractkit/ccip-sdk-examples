@@ -53,6 +53,49 @@ Optional: copy `.env.example` to `.env`. Set `RPC_<NETWORK_ID>` (e.g. `RPC_ETHER
 - **Validation:** `isValidAddress(receiver, networkInfo(destNetworkId).family)` (shared-utils) handles all families.
 - **Pools:** Not every token is enabled on every lane. PoolInfo shows support and rate limits; unsupported lanes show "Lane Not Supported."
 
+## SDK Inspector
+
+The app includes an SDK Inspector panel (toggle via the `</>` button) that visualizes every CCIP SDK call in real time, grouped into four phases: **Setup**, **Fee Estimation**, **Transfer**, and **Tracking**. Each entry shows the method name, arguments, result, latency, and an educational annotation explaining _what_ the call does and _why_ it happens at that point in the flow.
+
+The inspector is **optional instrumentation** layered on top of the SDK calls -- it does not change the SDK's behavior or API surface. If you are reading the source code to learn how to build your own frontend, here is how to navigate it:
+
+### Reading through the inspector code
+
+SDK calls in hooks like `useTransfer.ts` are wrapped in `logSDKCall()`:
+
+```ts
+// The wrapper adds inspector instrumentation around the SDK call.
+// The actual SDK usage is always the second argument (the lambda).
+const tokenInfo = await logSDKCall(
+  { method: "chain.getTokenInfo", phase: "estimation", ... },
+  () => chain.getTokenInfo(tokenAddress)  // <-- this is the SDK call
+);
+```
+
+To extract the SDK pattern, read the lambda. The config object above it (`method`, `phase`, `displayArgs`, `annotation`) is purely for the inspector UI.
+
+### What you can ignore
+
+| File / directory                         | Purpose                                  | Needed for your app? |
+| ---------------------------------------- | ---------------------------------------- | -------------------- |
+| `src/inspector/`                         | Inspector store, annotations, re-exports | No                   |
+| `logSDKCall` / `logSDKCallSync` wrappers | Record calls to the inspector            | No                   |
+| `getAnnotation(...)`                     | Educational text for each method         | No                   |
+| `displayArgs` in hook calls              | Badge labels shown in the inspector      | No                   |
+
+### What to focus on
+
+| File                         | What it teaches                                                                                                        |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `hooks/useTransfer.ts`       | End-to-end transfer flow: `networkInfo` → `getTokenInfo` → `getFee` → `getLaneLatency` → `generateUnsignedSendMessage` |
+| `hooks/useEVMTransfer.ts`    | EVM-specific signing: approval txs, simulation, `sendTransaction`, `getMessagesInTx`                                   |
+| `hooks/useSolanaTransfer.ts` | Solana-specific signing: `VersionedTransaction`, wallet adapter `sendTransaction`                                      |
+| `hooks/useAptosTransfer.ts`  | Aptos-specific signing: `signAndSubmitTransaction`, transaction polling                                                |
+| `hooks/useTokenPoolInfo.ts`  | Token pool discovery: registry → pool config → remote token + rate limits                                              |
+| `hooks/ChainContext.tsx`     | Lazy chain instantiation: `EVMChain.fromUrl` / `SolanaChain.fromUrl` / `AptosChain.fromUrl`                            |
+
+Every SDK call in these files follows the same pattern: strip the `logSDKCall` wrapper and you have production-ready code.
+
 ## Concepts
 
 - **Network IDs:** SDK format only (e.g. `ethereum-testnet-sepolia`, `solana-devnet`, `aptos-testnet`).

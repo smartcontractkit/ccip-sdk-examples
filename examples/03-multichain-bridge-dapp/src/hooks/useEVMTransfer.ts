@@ -8,6 +8,8 @@ import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { networkInfo, type EVMChain } from "@chainlink/ccip-sdk";
 import { NETWORKS } from "@ccip-examples/shared-config";
 import { parseEVMError } from "@ccip-examples/shared-utils";
+import { logSDKCall } from "../inspector/index.js";
+import { getAnnotation } from "../inspector/annotations.js";
 import type { TransactionResult, TransferMessage } from "./transferTypes.js";
 
 type HexString = `0x${string}`;
@@ -43,12 +45,21 @@ export function useEVMTransfer({ onStateChange, onTxHash, onMessageId }: UseEVMT
 
       const destChainSelector = networkInfo(destNetworkId).chainSelector;
 
-      const unsignedTx = await chain.generateUnsignedSendMessage({
-        sender: evmAddress,
-        router,
-        destChainSelector,
-        message: { ...message, fee },
-      });
+      const unsignedTx = await logSDKCall(
+        {
+          method: "chain.generateUnsignedSendMessage",
+          phase: "transfer",
+          displayArgs: { sender: evmAddress, router, destChainSelector: String(destChainSelector) },
+          ...getAnnotation("chain.generateUnsignedSendMessage"),
+        },
+        () =>
+          chain.generateUnsignedSendMessage({
+            sender: evmAddress,
+            router,
+            destChainSelector,
+            message: { ...message, fee },
+          })
+      );
 
       const transactions = unsignedTx.transactions;
       const approvalTxs = transactions.slice(0, -1);
@@ -66,11 +77,15 @@ export function useEVMTransfer({ onStateChange, onTxHash, onMessageId }: UseEVMT
       const sendTx = transactions[transactions.length - 1];
       if (!sendTx) throw new Error("No send transaction");
 
+      // When paying with an ERC-20 fee token, no native value should be sent.
+      // Native value is only needed when feeToken is not specified (paying in ETH).
+      const txValue = message.feeToken ? 0n : fee;
+
       try {
         await publicClient.call({
           to: toHex(sendTx.to),
           data: toHex(sendTx.data),
-          value: fee,
+          value: txValue,
           account: evmAddress,
         });
       } catch (simError: unknown) {
@@ -82,7 +97,7 @@ export function useEVMTransfer({ onStateChange, onTxHash, onMessageId }: UseEVMT
       const sendHash = await walletClient.sendTransaction({
         to: toHex(sendTx.to),
         data: toHex(sendTx.data),
-        value: fee,
+        value: txValue,
         account: evmAddress,
       });
 
@@ -100,7 +115,7 @@ export function useEVMTransfer({ onStateChange, onTxHash, onMessageId }: UseEVMT
           await publicClient.call({
             to: toHex(sendTx.to),
             data: toHex(sendTx.data),
-            value: fee,
+            value: txValue,
             account: evmAddress,
             blockNumber: receipt.blockNumber,
           });
@@ -113,7 +128,15 @@ export function useEVMTransfer({ onStateChange, onTxHash, onMessageId }: UseEVMT
       }
 
       onStateChange("tracking");
-      const messages = await chain.getMessagesInTx(sendHash);
+      const messages = await logSDKCall(
+        {
+          method: "chain.getMessagesInTx",
+          phase: "transfer",
+          displayArgs: { txHash: sendHash },
+          ...getAnnotation("chain.getMessagesInTx"),
+        },
+        () => chain.getMessagesInTx(sendHash)
+      );
       const msgId = messages[0]?.message.messageId;
       if (msgId) onMessageId(msgId);
 

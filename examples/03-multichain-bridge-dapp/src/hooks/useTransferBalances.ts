@@ -1,12 +1,17 @@
 /**
  * Source and destination token balances during an in-progress transfer.
  * Composes useDestinationBalance for destination; adds source balance and polling when isActive.
+ *
+ * Uses sequential timeout-based polling (waits for fetch completion before scheduling next)
+ * to prevent connection exhaustion when RPC responses are slow.
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { BALANCE_POLLING_INTERVAL_MS } from "@ccip-examples/shared-config";
 import { useChains } from "./useChains.js";
 import { useDestinationBalance } from "./useDestinationBalance.js";
+import { logSDKCall } from "../inspector/index.js";
+import { getAnnotation } from "../inspector/annotations.js";
 
 export interface UseTransferBalancesParams {
   sourceNetworkId: string | null;
@@ -14,6 +19,8 @@ export interface UseTransferBalancesParams {
   senderAddress: string | null;
   receiverAddress: string | null;
   tokenAddress: string | null;
+  /** Already-resolved remote token address (skips useTokenPoolInfo in useDestinationBalance) */
+  remoteToken?: string | null;
   isActive: boolean;
   tokenDecimals?: number;
   /** Captured before transfer for "before vs after" display */
@@ -42,6 +49,7 @@ export function useTransferBalances({
   senderAddress,
   receiverAddress,
   tokenAddress,
+  remoteToken,
   isActive,
   tokenDecimals = 18,
   initialSourceBalance: initialSourceBalanceParam,
@@ -55,14 +63,15 @@ export function useTransferBalances({
   const [sourceError, setSourceError] = useState<string | null>(null);
 
   const mountedRef = useRef(true);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dest = useDestinationBalance(
     sourceNetworkId ?? undefined,
     destNetworkId ?? undefined,
     tokenAddress ?? undefined,
     receiverAddress ?? undefined,
-    tokenDecimals
+    tokenDecimals,
+    remoteToken ?? undefined
   );
 
   const fetchSourceBalance = useCallback(async () => {
@@ -75,10 +84,17 @@ export function useTransferBalances({
     setSourceError(null);
     try {
       const chain = await getChain(sourceNetworkId);
-      const balance = await chain.getBalance({
-        holder: senderAddress,
-        token: tokenAddress,
-      });
+      const balance = await logSDKCall(
+        {
+          method: "chain.getBalance",
+          phase: "tracking",
+          displayArgs: { holder: senderAddress, token: tokenAddress, side: "source" },
+          ...getAnnotation("chain.getBalance"),
+          isPolling: true,
+          pollingId: "chain.getBalance:source",
+        },
+        () => chain.getBalance({ holder: senderAddress, token: tokenAddress })
+      );
       if (mountedRef.current) {
         setSourceBalance(balance);
       }
@@ -99,7 +115,7 @@ export function useTransferBalances({
     dest.refetch();
   }, [fetchSourceBalance, dest]);
 
-  // Initial fetch and capture initial dest when first available
+  // Initial fetch
   useEffect(() => {
     mountedRef.current = true;
     void fetchSourceBalance();
@@ -108,24 +124,34 @@ export function useTransferBalances({
     };
   }, [fetchSourceBalance]);
 
-  // Poll when isActive
+  // Sequential polling: wait for fetch to complete, then wait BALANCE_POLLING_INTERVAL_MS, then repeat
   useEffect(() => {
     if (!isActive) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
       return;
     }
-    const tick = () => {
-      void fetchSourceBalance();
+
+    let cancelled = false;
+
+    const pollOnce = async () => {
+      await fetchSourceBalance();
       dest.refetch();
+      if (!cancelled) {
+        timeoutRef.current = setTimeout(() => void pollOnce(), BALANCE_POLLING_INTERVAL_MS);
+      }
     };
-    intervalRef.current = setInterval(tick, BALANCE_POLLING_INTERVAL_MS);
+
+    // Start first poll after the interval (initial fetch already ran)
+    timeoutRef.current = setTimeout(() => void pollOnce(), BALANCE_POLLING_INTERVAL_MS);
+
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      cancelled = true;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
     };
   }, [isActive, fetchSourceBalance, dest]);

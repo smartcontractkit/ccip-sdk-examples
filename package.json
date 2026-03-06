@@ -12,6 +12,8 @@
     "dev:01": "pnpm -F 01-getting-started dev",
     "dev:02": "pnpm -F 02-evm-simple-bridge dev",
     "dev:03": "pnpm -F 03-multichain-bridge-dapp dev",
+    "prod:02": "pnpm -F 02-evm-simple-bridge build && pnpm -F 02-evm-simple-bridge preview",
+    "prod:03": "pnpm -F 03-multichain-bridge-dapp build && pnpm -F 03-multichain-bridge-dapp preview",
     "build": "pnpm -r build",
     "build:examples": "pnpm -F './examples/*' build",
     "build:packages": "pnpm -F './packages/*' build",

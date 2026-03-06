@@ -10,6 +10,8 @@ import { Deserializer, SimpleTransaction } from "@aptos-labs/ts-sdk";
 import type { AptosChain } from "@chainlink/ccip-sdk";
 import { networkInfo } from "@chainlink/ccip-sdk";
 import { NETWORKS } from "@ccip-examples/shared-config";
+import { logSDKCall } from "../inspector/index.js";
+import { getAnnotation } from "../inspector/annotations.js";
 import type { TransactionResult, TransferMessage } from "./transferTypes.js";
 
 export interface UseAptosTransferParams {
@@ -39,12 +41,25 @@ export function useAptosTransfer({ onStateChange, onTxHash, onMessageId }: UseAp
 
       const destChainSelector = networkInfo(destNetworkId).chainSelector;
 
-      const unsignedTx = await chain.generateUnsignedSendMessage({
-        sender: account.address.toString(),
-        router,
-        destChainSelector,
-        message: { ...message, fee },
-      });
+      const unsignedTx = await logSDKCall(
+        {
+          method: "chain.generateUnsignedSendMessage",
+          phase: "transfer",
+          displayArgs: {
+            sender: account.address.toString(),
+            router,
+            destChainSelector: String(destChainSelector),
+          },
+          ...getAnnotation("chain.generateUnsignedSendMessage"),
+        },
+        () =>
+          chain.generateUnsignedSendMessage({
+            sender: account.address.toString(),
+            router,
+            destChainSelector,
+            message: { ...message, fee },
+          })
+      );
 
       onStateChange("sending");
 
@@ -65,8 +80,24 @@ export function useAptosTransfer({ onStateChange, onTxHash, onMessageId }: UseAp
       await chain.provider.waitForTransaction({ transactionHash: txHash });
 
       onStateChange("tracking");
-      const tx = await chain.getTransaction(txHash);
-      const messages = await chain.getMessagesInTx(tx);
+      const tx = await logSDKCall(
+        {
+          method: "chain.getTransaction",
+          phase: "transfer",
+          displayArgs: { txHash },
+          ...getAnnotation("chain.getTransaction"),
+        },
+        () => chain.getTransaction(txHash)
+      );
+      const messages = await logSDKCall(
+        {
+          method: "chain.getMessagesInTx",
+          phase: "transfer",
+          displayArgs: { txHash },
+          ...getAnnotation("chain.getMessagesInTx"),
+        },
+        () => chain.getMessagesInTx(tx)
+      );
       const msgId = messages[0]?.message.messageId;
       if (msgId) onMessageId(msgId);
 

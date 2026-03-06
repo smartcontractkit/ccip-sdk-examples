@@ -36,3 +36,18 @@ export function formatRelativeTime(timestamp: number): string {
   if (minutes > 0) return `${minutes}m ago`;
   return "just now";
 }
+
+/**
+ * Obfuscate an RPC URL so API keys in .env are never displayed.
+ * Keeps protocol + hostname, replaces the rest with `***`.
+ *
+ * @example obfuscateRpcUrl("https://sepolia.infura.io/v3/abc123") => "https://sepolia.infura.io/***"
+ */
+export function obfuscateRpcUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.protocol}//${u.hostname}/***`;
+  } catch {
+    return "***";
+  }
+}
