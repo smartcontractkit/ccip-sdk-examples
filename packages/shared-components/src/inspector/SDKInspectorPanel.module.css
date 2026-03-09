@@ -1,0 +1,119 @@
+.panel {
+  width: 420px;
+  min-width: 280px;
+  max-width: 60vw;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  height: calc(100vh - 120px);
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+  z-index: 10;
+  resize: horizontal;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: 1px solid var(--color-border-light);
+  flex-shrink: 0;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+}
+
+.clearButton {
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.clearButton:hover {
+  background: var(--color-border);
+}
+
+.panelBody {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Empty state */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-8) var(--spacing-4);
+  text-align: center;
+  min-height: 200px;
+}
+
+.emptyIcon {
+  font-size: var(--font-size-3xl);
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-3);
+  opacity: 0.5;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.emptyHint {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  max-width: 240px;
+  line-height: 1.5;
+}
+
+/* Tablet: overlay */
+@media (max-width: 1024px) {
+  .panel {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 100;
+    box-shadow: var(--shadow-lg);
+    resize: horizontal;
+  }
+}
+
+/* Mobile: bottom sheet */
+@media (max-width: 768px) {
+  .panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    height: 50vh;
+    border-right: none;
+    border-top: 1px solid var(--color-border);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-lg);
+    resize: none;
+  }
+}

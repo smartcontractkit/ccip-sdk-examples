@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { Chain } from "@chainlink/ccip-sdk";
 import { NETWORKS, type FeeTokenOptionItem } from "@ccip-examples/shared-config";
 import { formatAmount } from "../validation.js";
+import type { SDKCallReporter } from "../inspector/types.js";
 
 export type GetChain = (networkId: string) => Promise<Chain>;
 
@@ -52,7 +53,8 @@ export function useFeeTokens(
   networkId: string | null,
   routerAddress: string | null,
   holderAddress: string | null,
-  getChain: GetChain
+  getChain: GetChain,
+  inspectorOptions?: { onSDKCall?: SDKCallReporter }
 ): UseFeeTokensResult {
   const [feeTokens, setFeeTokens] = useState<FeeTokenOptionItem[]>([]);
   const [selectedToken, setSelectedTokenState] = useState<FeeTokenOptionItem | null>(null);
@@ -96,13 +98,37 @@ export function useFeeTokens(
       }
 
       // Fetch native balance and fee tokens in parallel.
+      const nativeBalStart = performance.now();
+      const feeTokensStart = performance.now();
       const [nativeBal, feeTokenResult] = await Promise.all([
-        chain.getBalance({ holder: holderAddress }).catch((err) => {
-          console.error("Failed to fetch native balance for fee tokens:", err);
-          return null;
-        }),
+        chain
+          .getBalance({ holder: holderAddress })
+          .then((bal) => {
+            inspectorOptions?.onSDKCall?.(
+              "chain.getBalance",
+              { holder: holderAddress, token: config.nativeCurrency.symbol, type: "fee" },
+              bal,
+              performance.now() - nativeBalStart
+            );
+            return bal;
+          })
+          .catch((err) => {
+            console.error("Failed to fetch native balance for fee tokens:", err);
+            return null;
+          }),
         withTimeout(
-          chain.getFeeTokens(routerAddress).catch(() => null),
+          chain
+            .getFeeTokens(routerAddress)
+            .then((tokens) => {
+              inspectorOptions?.onSDKCall?.(
+                "chain.getFeeTokens",
+                { routerAddress },
+                tokens,
+                performance.now() - feeTokensStart
+              );
+              return tokens;
+            })
+            .catch(() => null),
           GET_FEE_TOKENS_TIMEOUT_MS
         ),
       ]);
@@ -121,10 +147,17 @@ export function useFeeTokens(
           feeTokenEntries.map(async ([address, info]): Promise<FeeTokenOptionItem> => {
             let balance = 0n;
             try {
+              const feeBalStart = performance.now();
               balance = await chain.getBalance({
                 holder: holderAddress,
                 token: address,
               });
+              inspectorOptions?.onSDKCall?.(
+                "chain.getBalance",
+                { holder: holderAddress, token: info.symbol, type: "fee" },
+                balance,
+                performance.now() - feeBalStart
+              );
             } catch {
               // Token account may not exist (e.g. Solana wallet without this token) — treat as 0
             }

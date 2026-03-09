@@ -45,8 +45,13 @@
     "./solana": {
       "types": "./dist/solana.d.ts",
       "import": "./dist/solana.js"
+    },
+    "./inspector": {
+      "types": "./dist/inspector/index.d.ts",
+      "import": "./dist/inspector/index.js"
     }
   },
+  "sideEffects": false,
   "files": [
     "dist"
   ],

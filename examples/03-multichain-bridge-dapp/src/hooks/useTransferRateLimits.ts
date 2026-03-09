@@ -10,6 +10,8 @@ import { RATE_LIMIT_POLLING_INTERVAL_MS } from "@ccip-examples/shared-config";
 import { NETWORKS } from "@ccip-examples/shared-config";
 import { useChains } from "./useChains.js";
 import type { RateLimitBucket } from "@ccip-examples/shared-utils";
+import { logSDKCall } from "../inspector/index.js";
+import { getAnnotation } from "../inspector/annotations.js";
 
 function toRateLimitBucket(state: RateLimiterState): RateLimitBucket | null {
   if (!state) return null;
@@ -61,7 +63,7 @@ export function useTransferRateLimits({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchRateLimits = useCallback(async () => {
     if (!sourceNetworkId || !destNetworkId || !tokenAddress) {
@@ -91,10 +93,27 @@ export function useTransferRateLimits({
     try {
       const sourceChain = await getChain(sourceNetworkId);
       const sourceRouter = sourceConfig.routerAddress;
-      const sourceRegistry = await sourceChain.getTokenAdminRegistryFor(sourceRouter);
-      const sourceTokenConfig = await sourceChain.getRegistryTokenConfig(
-        sourceRegistry,
-        tokenAddress
+      const sourceRegistry = await logSDKCall(
+        {
+          method: "chain.getTokenAdminRegistryFor",
+          phase: "tracking",
+          displayArgs: { routerAddress: sourceRouter, side: "source" },
+          ...getAnnotation("chain.getTokenAdminRegistryFor"),
+          isPolling: true,
+          pollingId: "chain.getTokenAdminRegistryFor:source",
+        },
+        () => sourceChain.getTokenAdminRegistryFor(sourceRouter)
+      );
+      const sourceTokenConfig = await logSDKCall(
+        {
+          method: "chain.getRegistryTokenConfig",
+          phase: "tracking",
+          displayArgs: { registryAddress: String(sourceRegistry), tokenAddress, side: "source" },
+          ...getAnnotation("chain.getRegistryTokenConfig"),
+          isPolling: true,
+          pollingId: "chain.getRegistryTokenConfig:source",
+        },
+        () => sourceChain.getRegistryTokenConfig(sourceRegistry, tokenAddress)
       );
       const sourcePoolAddress = sourceTokenConfig.tokenPool;
 
@@ -109,9 +128,20 @@ export function useTransferRateLimits({
       let sourceInbound: RateLimitBucket | null = null;
 
       try {
-        const sourceRemote = await sourceChain.getTokenPoolRemote(
-          sourcePoolAddress,
-          destChainSelector
+        const sourceRemote = await logSDKCall(
+          {
+            method: "chain.getTokenPoolRemote",
+            phase: "tracking",
+            displayArgs: {
+              poolAddress: sourcePoolAddress,
+              destChainSelector: String(destChainSelector),
+              side: "source",
+            },
+            ...getAnnotation("chain.getTokenPoolRemote"),
+            isPolling: true,
+            pollingId: "chain.getTokenPoolRemote:source",
+          },
+          () => sourceChain.getTokenPoolRemote(sourcePoolAddress, destChainSelector)
         );
         remoteToken = sourceRemote.remoteToken;
         sourceOutbound = toRateLimitBucket(sourceRemote.outboundRateLimiterState);
@@ -127,14 +157,49 @@ export function useTransferRateLimits({
         try {
           const destChain = await getChain(destNetworkId);
           const destRouter = destConfig.routerAddress;
-          const destRegistry = await destChain.getTokenAdminRegistryFor(destRouter);
-          const destTokenConfig = await destChain.getRegistryTokenConfig(destRegistry, remoteToken);
+          const destRegistry = await logSDKCall(
+            {
+              method: "chain.getTokenAdminRegistryFor",
+              phase: "tracking",
+              displayArgs: { routerAddress: destRouter, side: "destination" },
+              ...getAnnotation("chain.getTokenAdminRegistryFor"),
+              isPolling: true,
+              pollingId: "chain.getTokenAdminRegistryFor:destination",
+            },
+            () => destChain.getTokenAdminRegistryFor(destRouter)
+          );
+          const destTokenConfig = await logSDKCall(
+            {
+              method: "chain.getRegistryTokenConfig",
+              phase: "tracking",
+              displayArgs: {
+                registryAddress: String(destRegistry),
+                tokenAddress: remoteToken,
+                side: "destination",
+              },
+              ...getAnnotation("chain.getRegistryTokenConfig"),
+              isPolling: true,
+              pollingId: "chain.getRegistryTokenConfig:destination",
+            },
+            () => destChain.getRegistryTokenConfig(destRegistry, remoteToken)
+          );
           const destPoolAddress = destTokenConfig.tokenPool;
 
           if (destPoolAddress) {
-            const destRemote = await destChain.getTokenPoolRemote(
-              destPoolAddress,
-              sourceChainSelector
+            const destRemote = await logSDKCall(
+              {
+                method: "chain.getTokenPoolRemote",
+                phase: "tracking",
+                displayArgs: {
+                  poolAddress: destPoolAddress,
+                  destChainSelector: String(sourceChainSelector),
+                  side: "destination",
+                },
+                ...getAnnotation("chain.getTokenPoolRemote"),
+                isPolling: true,
+                pollingId: "chain.getTokenPoolRemote:destination",
+              },
+              () => destChain.getTokenPoolRemote(destPoolAddress, sourceChainSelector)
             );
             destOutbound = toRateLimitBucket(destRemote.outboundRateLimiterState);
             destInbound = toRateLimitBucket(destRemote.inboundRateLimiterState);
@@ -172,19 +237,33 @@ export function useTransferRateLimits({
     };
   }, [fetchRateLimits]);
 
+  // Sequential polling: wait for fetch to complete, then wait interval, then repeat
   useEffect(() => {
     if (!isActive) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
       return;
     }
-    intervalRef.current = setInterval(() => void fetchRateLimits(), RATE_LIMIT_POLLING_INTERVAL_MS);
+
+    let cancelled = false;
+
+    const pollOnce = async () => {
+      await fetchRateLimits();
+      if (!cancelled) {
+        timeoutRef.current = setTimeout(() => void pollOnce(), RATE_LIMIT_POLLING_INTERVAL_MS);
+      }
+    };
+
+    // Start first poll after the interval (initial fetch already ran)
+    timeoutRef.current = setTimeout(() => void pollOnce(), RATE_LIMIT_POLLING_INTERVAL_MS);
+
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      cancelled = true;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
     };
   }, [isActive, fetchRateLimits]);

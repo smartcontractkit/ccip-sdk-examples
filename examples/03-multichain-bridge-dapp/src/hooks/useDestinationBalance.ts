@@ -8,6 +8,8 @@ import { networkInfo, ChainFamily } from "@chainlink/ccip-sdk";
 import { formatAmount, isValidAddress } from "@ccip-examples/shared-utils";
 import { useChains } from "./useChains.js";
 import { useTokenPoolInfo } from "./useTokenPoolInfo.js";
+import { logSDKCall } from "../inspector/index.js";
+import { getAnnotation } from "../inspector/annotations.js";
 
 export interface UseDestinationBalanceResult {
   balance: bigint | null;
@@ -23,12 +25,17 @@ function formatBalance(balance: bigint | null, decimals: number): string {
   return formatAmount(balance, decimals);
 }
 
+/**
+ * @param remoteTokenProp - When provided, skips the internal useTokenPoolInfo
+ *   lookup (avoids redundant registry calls when caller already resolved it).
+ */
 export function useDestinationBalance(
   sourceNetworkId: string | undefined,
   destNetworkId: string | undefined,
   sourceTokenAddress: string | undefined,
   receiverAddress: string | undefined,
-  tokenDecimals?: number
+  tokenDecimals?: number,
+  remoteTokenProp?: string
 ): UseDestinationBalanceResult {
   const { getChain } = useChains();
   const [balance, setBalance] = useState<bigint | null>(null);
@@ -36,11 +43,13 @@ export function useDestinationBalance(
   const [error, setError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 
-  const { remoteToken, isLoading: poolLoading } = useTokenPoolInfo(
-    sourceNetworkId,
-    destNetworkId,
-    sourceTokenAddress
+  // Skip internal pool lookup when caller already provides remoteToken
+  const { remoteToken: poolRemoteToken, isLoading: poolLoading } = useTokenPoolInfo(
+    remoteTokenProp ? undefined : sourceNetworkId,
+    remoteTokenProp ? undefined : destNetworkId,
+    remoteTokenProp ? undefined : sourceTokenAddress
   );
+  const remoteToken = remoteTokenProp ?? poolRemoteToken;
 
   const fetchBalance = useCallback(async () => {
     if (!destNetworkId || !receiverAddress || !remoteToken) {
@@ -62,10 +71,17 @@ export function useDestinationBalance(
 
     try {
       const chain = await getChain(destNetworkId);
-      const tokenBalance = await chain.getBalance({
-        holder: receiverAddress,
-        token: remoteToken,
-      });
+      const tokenBalance = await logSDKCall(
+        {
+          method: "chain.getBalance",
+          phase: "tracking",
+          displayArgs: { holder: receiverAddress, token: remoteToken, side: "destination" },
+          ...getAnnotation("chain.getBalance"),
+          isPolling: true,
+          pollingId: "chain.getBalance:destination",
+        },
+        () => chain.getBalance({ holder: receiverAddress, token: remoteToken })
+      );
 
       if (isMountedRef.current) {
         setBalance(tokenBalance);

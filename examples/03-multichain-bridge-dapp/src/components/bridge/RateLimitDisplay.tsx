@@ -58,11 +58,11 @@ export function RateLimitDisplay({
           style={{ width: `${Math.min(formatted.percentage, 100)}%` }}
         />
       </div>
-      <span className={`${styles.percentage} ${getColorClass(formatted.percentage)}`}>
-        {formatted.percentage}%
-      </span>
-      <div className={styles.refillRate}>
-        <span>Refill: {formatted.rate}</span>
+      <div className={styles.footer}>
+        <span className={`${styles.percentage} ${getColorClass(formatted.percentage)}`}>
+          {formatted.percentage}% available
+        </span>
+        <span className={styles.refillRate}>Refill: {formatted.rate}</span>
       </div>
     </div>
   );

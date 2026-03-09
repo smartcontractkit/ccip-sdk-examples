@@ -29,7 +29,12 @@ export {
 } from "./ccipErrors.js";
 
 // Formatting (no React)
-export { formatLatency, formatElapsedTime, formatRelativeTime } from "./formatting.js";
+export {
+  formatLatency,
+  formatElapsedTime,
+  formatRelativeTime,
+  obfuscateRpcUrl,
+} from "./formatting.js";
 export { copyToClipboard, COPIED_FEEDBACK_MS } from "./clipboard.js";
 
 // Validation exports

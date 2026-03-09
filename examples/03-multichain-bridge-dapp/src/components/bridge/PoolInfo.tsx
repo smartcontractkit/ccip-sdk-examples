@@ -1,12 +1,15 @@
 /**
  * Pool info: type, addresses, rate limits (collapsible).
+ * Calls useTokenPoolInfo internally and reports remoteToken via callback.
  */
 
-import { useState } from "react";
-import { useTokenPoolInfo } from "../../hooks/useTokenPoolInfo.js";
+import { useState, useEffect } from "react";
+import { useTokenPoolInfo, type TokenPoolInfo } from "../../hooks/useTokenPoolInfo.js";
 import { RateLimitDisplay } from "./RateLimitDisplay.js";
 import { truncateAddress, copyToClipboard } from "@ccip-examples/shared-utils";
 import styles from "./PoolInfo.module.css";
+
+export type { TokenPoolInfo };
 
 interface PoolInfoProps {
   sourceNetworkId: string | undefined;
@@ -14,6 +17,8 @@ interface PoolInfoProps {
   tokenAddress: string | undefined;
   tokenDecimals?: number;
   tokenSymbol?: string;
+  /** Called whenever remoteToken is resolved (or becomes null) */
+  onRemoteTokenResolved?: (remoteToken: string | null) => void;
 }
 
 export function PoolInfo({
@@ -22,13 +27,21 @@ export function PoolInfo({
   tokenAddress,
   tokenDecimals = 18,
   tokenSymbol = "tokens",
+  onRemoteTokenResolved,
 }: PoolInfoProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { poolInfo, isLaneSupported, isLoading, error } = useTokenPoolInfo(
+
+  const { poolInfo, remoteToken, isLaneSupported, isLoading, error } = useTokenPoolInfo(
     sourceNetworkId,
     destNetworkId,
-    tokenAddress
+    tokenAddress,
+    tokenSymbol
   );
+
+  // Report remoteToken changes to parent
+  useEffect(() => {
+    onRemoteTokenResolved?.(remoteToken);
+  }, [remoteToken, onRemoteTokenResolved]);
 
   if (!sourceNetworkId || !destNetworkId || !tokenAddress) return null;
 
@@ -95,22 +108,23 @@ export function PoolInfo({
           </div>
           {poolInfo.remoteToken != null &&
             (() => {
-              const remoteToken = poolInfo.remoteToken;
+              const rt = poolInfo.remoteToken;
               return (
                 <div className={styles.row}>
                   <span className={styles.rowLabel}>Remote Token</span>
                   <button
                     type="button"
                     className={styles.copyable}
-                    onClick={() => copyToClipboard(remoteToken)}
+                    onClick={() => copyToClipboard(rt)}
                     title="Copy"
                   >
-                    {truncateAddress(remoteToken, 8)}
+                    {truncateAddress(rt, 8)}
                   </button>
                 </div>
               );
             })()}
           <div className={styles.rateLimits}>
+            <span className={styles.rateLimitsLabel}>Rate Limits</span>
             <RateLimitDisplay
               bucket={poolInfo.outboundRateLimit}
               label="Outbound"

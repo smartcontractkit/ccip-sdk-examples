@@ -34,6 +34,9 @@ import {
   type BalanceItem,
 } from "@ccip-examples/shared-components";
 import { useWalletBalances, useFeeTokens } from "@ccip-examples/shared-utils/hooks";
+import { inspectorStore } from "../../inspector/index.js";
+import { getAnnotation } from "../../inspector/annotations.js";
+import { serializeForDisplay } from "@ccip-examples/shared-utils/inspector";
 import { PoolInfo } from "./PoolInfo.js";
 import { useChains } from "../../hooks/useChains.js";
 import { NETWORK_TO_CHAIN_ID } from "@ccip-examples/shared-config/wagmi";
@@ -62,7 +65,8 @@ interface BridgeFormProps {
     token: string,
     amount: string,
     receiver: string,
-    feeToken: FeeTokenOptionItem | null
+    feeToken: FeeTokenOptionItem | null,
+    remoteToken: string | null
   ) => Promise<void>;
   onSwitchChain: (chainId: number) => void;
   onClearEstimate: () => void;
@@ -88,15 +92,17 @@ export function BridgeForm({
   const [receiver, setReceiver] = useState("");
   const [useSelfAsReceiver, setUseSelfAsReceiver] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [poolRemoteToken, setPoolRemoteToken] = useState<string | null>(null);
 
   const { isEVM, getChain } = useChains();
 
-  /** Clear stale transfer result + fee when the user changes networks */
+  /** Clear stale transfer result + fee + inspector when the user changes source network */
   const handleSourceChange = useCallback(
     (id: string) => {
       setSourceNetworkId(id);
       onReset();
       onClearEstimate();
+      inspectorStore.clearCalls();
     },
     [onReset, onClearEstimate]
   );
@@ -127,13 +133,40 @@ export function BridgeForm({
     ? (getTokenAddress(TOKEN_SYMBOL, sourceNetworkId) ?? null)
     : null;
 
+  /** Stable callback for PoolInfo to report remoteToken changes */
+  const handleRemoteTokenResolved = useCallback((rt: string | null) => {
+    setPoolRemoteToken(rt);
+  }, []);
+
+  const recordSDKCall = useCallback(
+    (method: string, args: Record<string, string>, result?: unknown, durationMs?: number) => {
+      if (!inspectorStore.getSnapshot().enabled) return;
+      const ann = getAnnotation(method);
+      inspectorStore.addCall({
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        phase: "setup",
+        method,
+        displayArgs: args,
+        codeSnippet: ann.codeSnippet,
+        annotation: ann.annotation,
+        status: "success",
+        result: serializeForDisplay(result),
+        durationMs,
+      });
+    },
+    []
+  );
+
   const {
     feeTokens,
     selectedToken: feeToken,
     setSelectedToken: setFeeToken,
     isLoading: feeTokensLoading,
     error: feeTokensError,
-  } = useFeeTokens(sourceNetworkId || null, routerAddress, walletAddress, getChain);
+  } = useFeeTokens(sourceNetworkId || null, routerAddress, walletAddress, getChain, {
+    onSDKCall: recordSDKCall,
+  });
 
   const {
     token,
@@ -144,7 +177,8 @@ export function BridgeForm({
     tokenAddress,
     walletAddress ?? null,
     getChain,
-    TOKEN_SYMBOL
+    TOKEN_SYMBOL,
+    { onSDKCall: recordSDKCall, skipNative: true, skipLink: true }
   );
 
   /** Wallet address on the destination chain (for "send to myself") */
@@ -195,7 +229,15 @@ export function BridgeForm({
 
   const handleTransfer = () => {
     if (canTransfer && token)
-      void onTransfer(sourceNetworkId, destNetworkId, TOKEN_SYMBOL, amount, receiver, feeToken);
+      void onTransfer(
+        sourceNetworkId,
+        destNetworkId,
+        TOKEN_SYMBOL,
+        amount,
+        receiver,
+        feeToken,
+        poolRemoteToken
+      );
   };
 
   const handleSwitchChain = () => {
@@ -258,6 +300,7 @@ export function BridgeForm({
         tokenAddress={tokenAddress ?? undefined}
         tokenDecimals={token?.decimals}
         tokenSymbol={TOKEN_SYMBOL}
+        onRemoteTokenResolved={handleRemoteTokenResolved}
       />
 
       <div className={styles.tokenRow}>

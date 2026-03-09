@@ -10,6 +10,8 @@ import type { SolanaChain } from "@chainlink/ccip-sdk";
 import { networkInfo } from "@chainlink/ccip-sdk";
 import { NETWORKS } from "@ccip-examples/shared-config";
 import { parseSolanaError, confirmTransaction } from "@ccip-examples/shared-utils";
+import { logSDKCall } from "../inspector/index.js";
+import { getAnnotation } from "../inspector/annotations.js";
 import type { TransactionResult, TransferMessage } from "./transferTypes.js";
 
 export interface UseSolanaTransferParams {
@@ -46,12 +48,25 @@ export function useSolanaTransfer({
       const destChainSelector = networkInfo(destNetworkId).chainSelector;
 
       try {
-        const unsignedTx = await chain.generateUnsignedSendMessage({
-          sender: solanaPublicKey.toBase58(),
-          router,
-          destChainSelector,
-          message: { ...message, fee },
-        });
+        const unsignedTx = await logSDKCall(
+          {
+            method: "chain.generateUnsignedSendMessage",
+            phase: "transfer",
+            displayArgs: {
+              sender: solanaPublicKey.toBase58(),
+              router,
+              destChainSelector: String(destChainSelector),
+            },
+            ...getAnnotation("chain.generateUnsignedSendMessage"),
+          },
+          () =>
+            chain.generateUnsignedSendMessage({
+              sender: solanaPublicKey.toBase58(),
+              router,
+              destChainSelector,
+              message: { ...message, fee },
+            })
+        );
 
         // Retry loop covering both send AND confirm: if the user takes too long
         // to sign in the wallet popup the blockhash expires. This can surface as
@@ -123,8 +138,24 @@ export function useSolanaTransfer({
         }
 
         onStateChange("tracking");
-        const tx = await chain.getTransaction(signature);
-        const messages = await chain.getMessagesInTx(tx);
+        const tx = await logSDKCall(
+          {
+            method: "chain.getTransaction",
+            phase: "transfer",
+            displayArgs: { txHash: signature },
+            ...getAnnotation("chain.getTransaction"),
+          },
+          () => chain.getTransaction(signature)
+        );
+        const messages = await logSDKCall(
+          {
+            method: "chain.getMessagesInTx",
+            phase: "transfer",
+            displayArgs: { txHash: signature },
+            ...getAnnotation("chain.getMessagesInTx"),
+          },
+          () => chain.getMessagesInTx(tx)
+        );
         const msgId = messages[0]?.message.messageId;
         if (msgId) onMessageId(msgId);
 

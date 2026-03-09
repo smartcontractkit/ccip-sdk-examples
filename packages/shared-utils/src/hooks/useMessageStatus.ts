@@ -14,6 +14,7 @@ import {
   getStatusDescription as getSharedStatusDescription,
 } from "@ccip-examples/shared-config";
 import { formatElapsedTime } from "../formatting.js";
+import type { SDKCallReporter } from "../inspector/types.js";
 
 export interface MessageStatusResult {
   status: MessageStatus | null;
@@ -45,7 +46,10 @@ function isFinalStatus(status: MessageStatus | null): boolean {
  *
  * @param messageId - CCIP message ID to track (null to disable polling)
  */
-export function useMessageStatus(messageId: string | null): MessageStatusResult {
+export function useMessageStatus(
+  messageId: string | null,
+  options?: { onSDKCall?: SDKCallReporter }
+): MessageStatusResult {
   const [status, setStatus] = useState<MessageStatus | null>(null);
   const [destTxHash, setDestTxHash] = useState<string | null>(null);
   const [isPolling, setIsPolling] = useState(false);
@@ -58,6 +62,10 @@ export function useMessageStatus(messageId: string | null): MessageStatusResult 
   const currentDelayRef = useRef<number>(POLLING_CONFIG.initialDelay);
   const shouldStopRef = useRef(false);
   const apiClientRef = useRef<CCIPAPIClient | null>(null);
+
+  // Store onSDKCall in a ref so it never triggers dependency cascades
+  const onSDKCallRef = useRef(options?.onSDKCall);
+  onSDKCallRef.current = options?.onSDKCall;
 
   const stopPolling = useCallback(() => {
     shouldStopRef.current = true;
@@ -74,7 +82,15 @@ export function useMessageStatus(messageId: string | null): MessageStatusResult 
     ): Promise<Awaited<ReturnType<CCIPAPIClient["getMessageById"]>> | null> => {
       if (!messageId) return null;
       apiClientRef.current ??= new CCIPAPIClient();
+      const start = performance.now();
       const result = await apiClientRef.current.getMessageById(messageId);
+      const durationMs = performance.now() - start;
+      onSDKCallRef.current?.(
+        "CCIPAPIClient.getMessageById",
+        { messageId, type: "api" },
+        result,
+        durationMs
+      );
       if (signal?.aborted) return null;
       return result;
     },

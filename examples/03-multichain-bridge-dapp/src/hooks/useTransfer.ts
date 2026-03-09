@@ -3,7 +3,7 @@
  * Uses getChain from context (lazy); supports EVM, Solana, and Aptos by ChainFamily.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useAccount } from "wagmi";
 import { useWallet as useSolanaWallet } from "@solana/wallet-adapter-react";
 import { useWallet as useAptosWallet } from "@aptos-labs/wallet-adapter-react";
@@ -23,6 +23,8 @@ import {
 import { useChains } from "./useChains.js";
 import { useTransactionExecution } from "./useTransactionExecution.js";
 import type { TransferMessage } from "./transferTypes.js";
+import { logSDKCall, logSDKCallSync } from "../inspector/index.js";
+import { getAnnotation } from "../inspector/annotations.js";
 
 const initialState: TransferState = {
   status: "idle",
@@ -36,8 +38,15 @@ const initialState: TransferState = {
   lastTransferContext: null,
 };
 
+interface EstimationCache {
+  destChainSelector: bigint;
+  tokenDecimals: number;
+  message: TransferMessage;
+}
+
 export function useTransfer() {
   const [state, setState] = useState<TransferState>(initialState);
+  const estimationCacheRef = useRef<EstimationCache | null>(null);
   const { getChain } = useChains();
   const { address: evmAddress } = useAccount();
   const { publicKey: solanaPublicKey } = useSolanaWallet();
@@ -55,10 +64,14 @@ export function useTransfer() {
     onMessageId: (id) => setState((prev) => ({ ...prev, messageId: id })),
   });
 
-  const reset = useCallback(() => setState(initialState), []);
+  const reset = useCallback(() => {
+    setState(initialState);
+    estimationCacheRef.current = null;
+  }, []);
 
   const clearEstimate = useCallback(() => {
     setState((prev) => ({ ...prev, fee: null, feeFormatted: null, estimatedTime: null }));
+    estimationCacheRef.current = null;
   }, []);
 
   const estimateFee = useCallback(
@@ -80,29 +93,92 @@ export function useTransfer() {
         if (!tokenAddress) throw new Error(`Token ${tokenSymbol} not found on ${sourceNetworkId}`);
 
         const chain = await getChain(sourceNetworkId);
-        const destChainSelector = networkInfo(destNetworkId).chainSelector;
-        const tokenInfo = await chain.getTokenInfo(tokenAddress);
+
+        const destInfo = logSDKCallSync(
+          {
+            method: "networkInfo",
+            phase: "estimation",
+            displayArgs: { networkId: destNetworkId, side: "destination" },
+            ...getAnnotation("networkInfo"),
+          },
+          () => networkInfo(destNetworkId)
+        );
+        const destChainSelector = destInfo.chainSelector;
+
+        const tokenInfo = await logSDKCall(
+          {
+            method: "chain.getTokenInfo",
+            phase: "estimation",
+            displayArgs: { tokenAddress, side: "source" },
+            ...getAnnotation("chain.getTokenInfo"),
+          },
+          () => chain.getTokenInfo(tokenAddress)
+        );
+
         const amountWei = parseAmount(amount, tokenInfo.decimals);
         const feeTokenAddress = feeToken?.address;
 
-        const message = buildTokenTransferMessage({
-          receiver,
-          tokenAddress,
-          amount: amountWei,
-          feeToken: feeTokenAddress,
-        });
+        const message = logSDKCallSync(
+          {
+            method: "MessageInput",
+            phase: "estimation",
+            displayArgs: {
+              receiver,
+              token: tokenAddress,
+              amount: amountWei.toString(),
+              ...(feeTokenAddress ? { feeToken: feeTokenAddress } : {}),
+            },
+            ...getAnnotation("MessageInput"),
+          },
+          () =>
+            buildTokenTransferMessage({
+              receiver,
+              tokenAddress,
+              amount: amountWei,
+              feeToken: feeTokenAddress,
+            })
+        );
 
         const [fee, latency] = await Promise.all([
-          chain.getFee({
-            router: sourceConfig.routerAddress,
-            destChainSelector,
-            message,
-          }),
-          chain.getLaneLatency(destChainSelector).catch((err) => {
-            console.warn("Failed to fetch lane latency:", err);
-            return null;
-          }),
+          logSDKCall(
+            {
+              method: "chain.getFee",
+              phase: "estimation",
+              displayArgs: {
+                router: sourceConfig.routerAddress,
+                destChainSelector: String(destChainSelector),
+                side: "source",
+              },
+              ...getAnnotation("chain.getFee"),
+            },
+            () =>
+              chain.getFee({
+                router: sourceConfig.routerAddress,
+                destChainSelector,
+                message,
+              })
+          ),
+          logSDKCall(
+            {
+              method: "chain.getLaneLatency",
+              phase: "estimation",
+              displayArgs: { destChainSelector: String(destChainSelector), side: "source" },
+              ...getAnnotation("chain.getLaneLatency"),
+            },
+            () =>
+              chain.getLaneLatency(destChainSelector).catch((err) => {
+                console.warn("Failed to fetch lane latency:", err);
+                return null;
+              })
+          ),
         ]);
+
+        // Cache estimation results for reuse in transfer()
+        estimationCacheRef.current = {
+          destChainSelector,
+          tokenDecimals: tokenInfo.decimals,
+          message,
+        };
 
         const feeDecimals = feeToken?.decimals ?? sourceConfig.nativeCurrency.decimals;
         const feeSymbol = feeToken?.symbol ?? sourceConfig.nativeCurrency.symbol;
@@ -140,7 +216,8 @@ export function useTransfer() {
       tokenSymbol: string,
       amount: string,
       receiver: string,
-      feeToken: FeeTokenOptionItem | null
+      feeToken: FeeTokenOptionItem | null,
+      remoteTokenFromPool?: string | null
     ): Promise<{ txHash: string; messageId: string | undefined } | null> => {
       const senderWallet = getWalletAddress(sourceNetworkId, walletAddresses);
       if (!senderWallet) {
@@ -162,56 +239,181 @@ export function useTransfer() {
         if (!tokenAddress) throw new Error(`Token ${tokenSymbol} not found`);
 
         const chain = await getChain(sourceNetworkId);
-        const destChainSelector = networkInfo(destNetworkId).chainSelector;
-        const tokenInfo = await chain.getTokenInfo(tokenAddress);
-        const amountWei = parseAmount(amount, tokenInfo.decimals);
-        const feeTokenAddress = feeToken?.address;
+        const cache = estimationCacheRef.current;
 
-        const message: TransferMessage = buildTokenTransferMessage({
-          receiver,
-          tokenAddress,
-          amount: amountWei,
-          feeToken: feeTokenAddress,
-        });
+        // Use cached values from estimation when available, otherwise compute fresh
+        let destChainSelector: bigint;
+        let tokenDecimals: number;
+        let message: TransferMessage;
+
+        if (cache) {
+          destChainSelector = cache.destChainSelector;
+          tokenDecimals = cache.tokenDecimals;
+          message = cache.message;
+        } else {
+          const destInfo = logSDKCallSync(
+            {
+              method: "networkInfo",
+              phase: "transfer",
+              displayArgs: { networkId: destNetworkId, side: "destination" },
+              ...getAnnotation("networkInfo"),
+            },
+            () => networkInfo(destNetworkId)
+          );
+          destChainSelector = destInfo.chainSelector;
+
+          const tokenInfo = await logSDKCall(
+            {
+              method: "chain.getTokenInfo",
+              phase: "transfer",
+              displayArgs: { tokenAddress, side: "source" },
+              ...getAnnotation("chain.getTokenInfo"),
+            },
+            () => chain.getTokenInfo(tokenAddress)
+          );
+          tokenDecimals = tokenInfo.decimals;
+
+          const amountWei = parseAmount(amount, tokenDecimals);
+          const feeTokenAddress = feeToken?.address;
+
+          message = logSDKCallSync(
+            {
+              method: "MessageInput",
+              phase: "transfer",
+              displayArgs: {
+                receiver,
+                token: tokenAddress,
+                amount: amountWei.toString(),
+                ...(feeTokenAddress ? { feeToken: feeTokenAddress } : {}),
+              },
+              ...getAnnotation("MessageInput"),
+            },
+            () =>
+              buildTokenTransferMessage({
+                receiver,
+                tokenAddress,
+                amount: amountWei,
+                feeToken: feeTokenAddress,
+              })
+          );
+        }
 
         let fee: bigint;
         if (state.fee != null) {
           fee = state.fee;
         } else {
-          fee = await chain.getFee({
-            router: sourceConfig.routerAddress,
-            destChainSelector,
-            message,
-          });
+          fee = await logSDKCall(
+            {
+              method: "chain.getFee",
+              phase: "transfer",
+              displayArgs: {
+                router: sourceConfig.routerAddress,
+                destChainSelector: String(destChainSelector),
+                side: "source",
+              },
+              ...getAnnotation("chain.getFee"),
+            },
+            () =>
+              chain.getFee({
+                router: sourceConfig.routerAddress,
+                destChainSelector,
+                message,
+              })
+          );
         }
 
         const senderAddress = senderWallet;
 
         let initialSourceBalance: bigint | null = null;
         let initialDestBalance: bigint | null = null;
-        let destTokenDecimals = tokenInfo.decimals;
+        let destTokenDecimals = tokenDecimals;
+
+        // Resolve remoteToken: use prop from PoolInfo if available, otherwise fall back to registry calls
+        let resolvedRemoteToken: string | null = remoteTokenFromPool ?? null;
+
         try {
           const [sourceBal, remoteToken] = await Promise.all([
-            chain.getBalance({ holder: senderAddress, token: tokenAddress }),
-            (async (): Promise<string | null> => {
-              const registry = await chain.getTokenAdminRegistryFor(sourceConfig.routerAddress);
-              const tokenConfig = await chain.getRegistryTokenConfig(registry, tokenAddress);
-              const poolAddress = tokenConfig.tokenPool;
-              if (!poolAddress) return null;
-              try {
-                const remote = await chain.getTokenPoolRemote(poolAddress, destChainSelector);
-                return remote.remoteToken;
-              } catch {
-                return null;
-              }
-            })(),
+            logSDKCall(
+              {
+                method: "chain.getBalance",
+                phase: "transfer",
+                displayArgs: { holder: senderAddress, token: tokenSymbol, side: "source" },
+                ...getAnnotation("chain.getBalance"),
+              },
+              () => chain.getBalance({ holder: senderAddress, token: tokenAddress })
+            ),
+            // Only do registry lookup if we don't already have remoteToken from PoolInfo
+            resolvedRemoteToken
+              ? Promise.resolve(resolvedRemoteToken)
+              : (async (): Promise<string | null> => {
+                  const registry = await logSDKCall(
+                    {
+                      method: "chain.getTokenAdminRegistryFor",
+                      phase: "transfer",
+                      displayArgs: { routerAddress: sourceConfig.routerAddress, side: "source" },
+                      ...getAnnotation("chain.getTokenAdminRegistryFor"),
+                    },
+                    () => chain.getTokenAdminRegistryFor(sourceConfig.routerAddress)
+                  );
+                  const tokenConfig = await logSDKCall(
+                    {
+                      method: "chain.getRegistryTokenConfig",
+                      phase: "transfer",
+                      displayArgs: {
+                        registryAddress: String(registry),
+                        tokenAddress,
+                        side: "source",
+                      },
+                      ...getAnnotation("chain.getRegistryTokenConfig"),
+                    },
+                    () => chain.getRegistryTokenConfig(registry, tokenAddress)
+                  );
+                  const poolAddress = tokenConfig.tokenPool;
+                  if (!poolAddress) return null;
+                  try {
+                    const remote = await logSDKCall(
+                      {
+                        method: "chain.getTokenPoolRemote",
+                        phase: "transfer",
+                        displayArgs: {
+                          poolAddress,
+                          destChainSelector: String(destChainSelector),
+                          side: "source",
+                        },
+                        ...getAnnotation("chain.getTokenPoolRemote"),
+                      },
+                      () => chain.getTokenPoolRemote(poolAddress, destChainSelector)
+                    );
+                    return remote.remoteToken;
+                  } catch {
+                    return null;
+                  }
+                })(),
           ]);
           initialSourceBalance = sourceBal;
-          if (remoteToken) {
-            const destChain = await getChain(destNetworkId);
+          resolvedRemoteToken = remoteToken;
+          if (resolvedRemoteToken) {
+            const destToken = resolvedRemoteToken; // narrow for closures
+            const destChain = await getChain(destNetworkId, "transfer");
             const [destBal, destTokenInfo] = await Promise.all([
-              destChain.getBalance({ holder: receiver, token: remoteToken }),
-              destChain.getTokenInfo(remoteToken),
+              logSDKCall(
+                {
+                  method: "chain.getBalance",
+                  phase: "transfer",
+                  displayArgs: { holder: receiver, token: tokenSymbol, side: "destination" },
+                  ...getAnnotation("chain.getBalance"),
+                },
+                () => destChain.getBalance({ holder: receiver, token: destToken })
+              ),
+              logSDKCall(
+                {
+                  method: "chain.getTokenInfo",
+                  phase: "transfer",
+                  displayArgs: { tokenAddress: destToken, side: "destination" },
+                  ...getAnnotation("chain.getTokenInfo"),
+                },
+                () => destChain.getTokenInfo(destToken)
+              ),
             ]);
             initialDestBalance = destBal;
             destTokenDecimals = destTokenInfo.decimals;
@@ -228,8 +430,9 @@ export function useTransfer() {
           tokenAddress,
           receiverAddress: receiver,
           senderAddress,
-          tokenDecimals: tokenInfo.decimals,
+          tokenDecimals,
           destTokenDecimals,
+          remoteToken: resolvedRemoteToken,
           initialSourceBalance,
           initialDestBalance,
         };

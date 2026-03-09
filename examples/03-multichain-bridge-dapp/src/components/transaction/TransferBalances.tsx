@@ -14,6 +14,8 @@ export interface TransferBalancesProps {
   senderAddress: string | null;
   receiverAddress: string | null;
   tokenAddress: string | null;
+  /** Already-resolved remote token address (avoids redundant registry lookups) */
+  remoteToken: string | null;
   isActive: boolean;
   tokenDecimals?: number;
   /** Token decimals on destination chain (may differ from source, e.g. 9 vs 18) */
@@ -42,6 +44,7 @@ export function TransferBalances({
   senderAddress,
   receiverAddress,
   tokenAddress,
+  remoteToken,
   isActive,
   tokenDecimals = 18,
   destTokenDecimals,
@@ -56,6 +59,7 @@ export function TransferBalances({
       senderAddress,
       receiverAddress,
       tokenAddress,
+      remoteToken,
       isActive,
       tokenDecimals,
       initialSourceBalance,

@@ -19,6 +19,8 @@ export interface LastTransferContext {
   tokenDecimals: number;
   /** Token decimals on the destination chain (may differ, e.g. 9 on Solana vs 18 on EVM) */
   destTokenDecimals: number;
+  /** Token address on the destination chain (resolved from pool info) */
+  remoteToken?: string | null;
   /** Captured before executeTransfer for "before vs after" display */
   initialSourceBalance?: bigint | null;
   /** Captured before executeTransfer for "before vs after" display */

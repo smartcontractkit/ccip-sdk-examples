@@ -9,6 +9,8 @@ import type { RateLimiterState } from "@chainlink/ccip-sdk";
 import { NETWORKS } from "@ccip-examples/shared-config";
 import type { RateLimitBucket } from "@ccip-examples/shared-utils";
 import { useChains } from "./useChains.js";
+import { logSDKCall } from "../inspector/index.js";
+import { getAnnotation } from "../inspector/annotations.js";
 
 export type { RateLimitBucket };
 
@@ -44,7 +46,8 @@ export interface UseTokenPoolInfoResult {
 export function useTokenPoolInfo(
   sourceNetworkId: string | undefined,
   destNetworkId: string | undefined,
-  tokenAddress: string | undefined
+  tokenAddress: string | undefined,
+  tokenSymbol?: string
 ): UseTokenPoolInfoResult {
   const { getChain } = useChains();
   const [poolInfo, setPoolInfo] = useState<TokenPoolInfo | null>(null);
@@ -74,8 +77,29 @@ export function useTokenPoolInfo(
       const chain = await getChain(sourceNetworkId);
       const router = sourceConfig.routerAddress;
 
-      const registryAddress = await chain.getTokenAdminRegistryFor(router);
-      const tokenConfig = await chain.getRegistryTokenConfig(registryAddress, tokenAddress);
+      const registryAddress = await logSDKCall(
+        {
+          method: "chain.getTokenAdminRegistryFor",
+          phase: "setup",
+          displayArgs: { routerAddress: router, token: tokenSymbol ?? "token", side: "source" },
+          ...getAnnotation("chain.getTokenAdminRegistryFor"),
+        },
+        () => chain.getTokenAdminRegistryFor(router)
+      );
+      const tokenConfig = await logSDKCall(
+        {
+          method: "chain.getRegistryTokenConfig",
+          phase: "setup",
+          displayArgs: {
+            registryAddress: String(registryAddress),
+            tokenAddress,
+            token: tokenSymbol ?? "token",
+            side: "source",
+          },
+          ...getAnnotation("chain.getRegistryTokenConfig"),
+        },
+        () => chain.getRegistryTokenConfig(registryAddress, tokenAddress)
+      );
       const poolAddress = tokenConfig.tokenPool;
 
       if (!poolAddress) {
@@ -85,7 +109,15 @@ export function useTokenPoolInfo(
         return;
       }
 
-      const poolConfig = await chain.getTokenPoolConfig(poolAddress);
+      const poolConfig = await logSDKCall(
+        {
+          method: "chain.getTokenPoolConfig",
+          phase: "setup",
+          displayArgs: { poolAddress, token: tokenSymbol ?? "token", side: "source" },
+          ...getAnnotation("chain.getTokenPoolConfig"),
+        },
+        () => chain.getTokenPoolConfig(poolAddress)
+      );
       const typeAndVersion =
         "typeAndVersion" in poolConfig && typeof poolConfig.typeAndVersion === "string"
           ? poolConfig.typeAndVersion
@@ -97,7 +129,20 @@ export function useTokenPoolInfo(
       let outboundRateLimit: RateLimitBucket | null = null;
 
       try {
-        const remote = await chain.getTokenPoolRemote(poolAddress, destChainSelector);
+        const remote = await logSDKCall(
+          {
+            method: "chain.getTokenPoolRemote",
+            phase: "setup",
+            displayArgs: {
+              poolAddress,
+              destChainSelector: String(destChainSelector),
+              token: tokenSymbol ?? "token",
+              side: "source",
+            },
+            ...getAnnotation("chain.getTokenPoolRemote"),
+          },
+          () => chain.getTokenPoolRemote(poolAddress, destChainSelector)
+        );
         remoteToken = remote.remoteToken;
         remotePools = remote.remotePools;
         inboundRateLimit = toRateLimitBucket(remote.inboundRateLimiterState);

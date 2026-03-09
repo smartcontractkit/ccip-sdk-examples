@@ -23,6 +23,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { Chain } from "@chainlink/ccip-sdk";
 import { NETWORKS, getTokenAddress } from "@ccip-examples/shared-config";
 import { formatAmount } from "../validation.js";
+import type { SDKCallReporter } from "../inspector/types.js";
 
 export interface BalanceData {
   /** Raw balance in smallest unit */
@@ -69,7 +70,14 @@ export function useWalletBalances(
   tokenAddress: string | null,
   holderAddress: string | null,
   getChain: GetChain,
-  tokenSymbolHint?: string
+  tokenSymbolHint?: string,
+  options?: {
+    onSDKCall?: SDKCallReporter;
+    /** Skip native balance fetch (e.g. when useFeeTokens already handles it) */
+    skipNative?: boolean;
+    /** Skip LINK balance + getTokenInfo fetch (e.g. when useFeeTokens already handles it) */
+    skipLink?: boolean;
+  }
 ): WalletBalances {
   const [native, setNative] = useState<BalanceData>(defaultBalanceData("", 18));
   const [link, setLink] = useState<BalanceData | null>(null);
@@ -106,31 +114,58 @@ export function useWalletBalances(
 
       const promises: Promise<void>[] = [];
 
-      promises.push(
-        chain
-          .getBalance({ holder: holderAddress })
-          .then((bal) => {
-            if (fetchId !== fetchIdRef.current) return;
-            setNative({
-              balance: bal,
-              formatted: formatAmount(bal, config.nativeCurrency.decimals),
-              symbol: config.nativeCurrency.symbol,
-              decimals: config.nativeCurrency.decimals,
-            });
-          })
-          .catch((err) => {
-            if (fetchId !== fetchIdRef.current) return;
-            console.error("Failed to fetch native balance:", err);
-          })
-      );
+      if (!options?.skipNative) {
+        const nativeStart = performance.now();
+        promises.push(
+          chain
+            .getBalance({ holder: holderAddress })
+            .then((bal) => {
+              options?.onSDKCall?.(
+                "chain.getBalance",
+                { holder: holderAddress, token: config.nativeCurrency.symbol, type: "native" },
+                bal,
+                performance.now() - nativeStart
+              );
+              if (fetchId !== fetchIdRef.current) return;
+              setNative({
+                balance: bal,
+                formatted: formatAmount(bal, config.nativeCurrency.decimals),
+                symbol: config.nativeCurrency.symbol,
+                decimals: config.nativeCurrency.decimals,
+              });
+            })
+            .catch((err) => {
+              if (fetchId !== fetchIdRef.current) return;
+              console.error("Failed to fetch native balance:", err);
+            })
+        );
+      }
 
-      if (linkAddress) {
+      if (linkAddress && !options?.skipLink) {
         promises.push(
           (async () => {
             try {
+              const linkInfoStart = performance.now();
+              const linkBalStart = performance.now();
               const [linkInfo, linkBal] = await Promise.all([
-                chain.getTokenInfo(linkAddress),
-                chain.getBalance({ holder: holderAddress, token: linkAddress }),
+                chain.getTokenInfo(linkAddress).then((info) => {
+                  options?.onSDKCall?.(
+                    "chain.getTokenInfo",
+                    { tokenAddress: linkAddress, token: "LINK" },
+                    info,
+                    performance.now() - linkInfoStart
+                  );
+                  return info;
+                }),
+                chain.getBalance({ holder: holderAddress, token: linkAddress }).then((bal) => {
+                  options?.onSDKCall?.(
+                    "chain.getBalance",
+                    { holder: holderAddress, token: "LINK" },
+                    bal,
+                    performance.now() - linkBalStart
+                  );
+                  return bal;
+                }),
               ]);
               if (fetchId !== fetchIdRef.current) return;
               const linkSymbol =
@@ -156,9 +191,31 @@ export function useWalletBalances(
         promises.push(
           (async () => {
             try {
+              const tokenInfoStart = performance.now();
+              const tokenBalStart = performance.now();
               const [tokenInfo, tokenBal] = await Promise.all([
-                chain.getTokenInfo(tokenAddress),
-                chain.getBalance({ holder: holderAddress, token: tokenAddress }),
+                chain.getTokenInfo(tokenAddress).then((info) => {
+                  const sym =
+                    info.symbol && info.symbol !== "UNKNOWN"
+                      ? info.symbol
+                      : (tokenSymbolHint ?? "token");
+                  options?.onSDKCall?.(
+                    "chain.getTokenInfo",
+                    { tokenAddress, token: sym },
+                    info,
+                    performance.now() - tokenInfoStart
+                  );
+                  return info;
+                }),
+                chain.getBalance({ holder: holderAddress, token: tokenAddress }).then((bal) => {
+                  options?.onSDKCall?.(
+                    "chain.getBalance",
+                    { holder: holderAddress, token: tokenSymbolHint ?? tokenAddress },
+                    bal,
+                    performance.now() - tokenBalStart
+                  );
+                  return bal;
+                }),
               ]);
               if (fetchId !== fetchIdRef.current) return;
               // Prefer on-chain symbol; fall back to hint for tokens without metadata (e.g. Solana SPL)

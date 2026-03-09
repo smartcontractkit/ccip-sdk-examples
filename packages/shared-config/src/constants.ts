@@ -111,22 +111,22 @@ export function getStageFromStatus(status: string): number {
  * Polling interval for live balances during an in-progress transfer (source + destination).
  * Separate from POLLING_CONFIG which is for message-status polling.
  */
-export const BALANCE_POLLING_INTERVAL_MS = 5_000;
+export const BALANCE_POLLING_INTERVAL_MS = 15_000;
 
 /**
  * Polling interval for live rate limits during an in-progress transfer (source + destination pools).
  * Separate from POLLING_CONFIG which is for message-status polling.
  */
-export const RATE_LIMIT_POLLING_INTERVAL_MS = 10_000;
+export const RATE_LIMIT_POLLING_INTERVAL_MS = 30_000;
 
 /**
  * Polling configuration for message status
  */
 export const POLLING_CONFIG = {
   /** Initial delay between polls (ms) */
-  initialDelay: 10_000,
+  initialDelay: 15_000,
   /** Maximum delay between polls (ms) */
-  maxDelay: 30_000,
+  maxDelay: 60_000,
   /** Delay increment per poll (ms) */
   delayIncrement: 5_000,
   /** Maximum polling duration before timeout (ms) - 35 minutes */

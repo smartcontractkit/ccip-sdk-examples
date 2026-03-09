@@ -21,14 +21,23 @@
     },
     "./layout/AppLayout.module.css": "./dist/layout/AppLayout.module.css",
     "./bridge/BridgeForm.module.css": "./dist/bridge/BridgeForm.module.css",
-    "./bridge/WalletConnect.module.css": "./dist/bridge/WalletConnect.module.css"
+    "./bridge/WalletConnect.module.css": "./dist/bridge/WalletConnect.module.css",
+    "./inspector": {
+      "types": "./dist/inspector/index.d.ts",
+      "import": "./dist/inspector/index.js"
+    },
+    "./inspector/SDKInspectorPanel.module.css": "./dist/inspector/SDKInspectorPanel.module.css",
+    "./inspector/PhaseGroup.module.css": "./dist/inspector/PhaseGroup.module.css",
+    "./inspector/CallEntry.module.css": "./dist/inspector/CallEntry.module.css",
+    "./inspector/CodeSnippet.module.css": "./dist/inspector/CodeSnippet.module.css",
+    "./inspector/SDKInspectorToggle.module.css": "./dist/inspector/SDKInspectorToggle.module.css"
   },
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsc && pnpm run copy-css",
-    "copy-css": "mkdir -p dist/primitives dist/bridge dist/styles && cp src/primitives/*.module.css dist/primitives/ && cp src/bridge/*.module.css dist/bridge/ && cp src/styles/*.css dist/styles/ && mkdir -p dist/layout && cp src/layout/*.module.css dist/layout/ && cp src/*.module.css dist/",
+    "copy-css": "mkdir -p dist/primitives dist/bridge dist/styles dist/layout dist/inspector && cp src/primitives/*.module.css dist/primitives/ && cp src/bridge/*.module.css dist/bridge/ && cp src/styles/*.css dist/styles/ && cp src/layout/*.module.css dist/layout/ && cp src/inspector/*.module.css dist/inspector/ && cp src/*.module.css dist/",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },

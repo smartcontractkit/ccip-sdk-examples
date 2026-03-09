@@ -1,0 +1,65 @@
+.container {
+  position: relative;
+  background: var(--color-dark);
+  border-radius: var(--radius-sm);
+  margin-top: var(--spacing-2);
+  overflow: hidden;
+}
+
+.pre {
+  margin: 0;
+  padding: var(--spacing-3);
+  padding-right: var(--spacing-8);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  overflow-x: auto;
+  color: var(--color-light);
+  white-space: pre;
+}
+
+.copyButton {
+  position: absolute;
+  top: var(--spacing-1);
+  right: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: 10px;
+  font-family: var(--font-mono);
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.container:hover .copyButton,
+.container:focus-within .copyButton {
+  opacity: 1;
+}
+
+.keyword {
+  color: #c792ea;
+}
+
+.string {
+  color: #c3e88d;
+}
+
+.number {
+  color: #f78c6c;
+}
+
+.comment {
+  color: #546e7a;
+  font-style: italic;
+}
+
+.punct {
+  color: #89ddff;
+}
+
+.ident {
+  color: #82aaff;
+}
