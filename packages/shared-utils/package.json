@@ -74,7 +74,7 @@
   },
   "devDependencies": {
     "typescript": "^5.9.3",
-    "@chainlink/ccip-sdk": "1.0.0"
+    "@chainlink/ccip-sdk": "1.2.0"
   },
   "keywords": [
     "ccip",
@@ -84,6 +84,6 @@
   ],
   "peerDependencies": {
     "react": ">=18.0.0",
-    "@chainlink/ccip-sdk": "1.0.0"
+    "@chainlink/ccip-sdk": "1.2.0"
   }
 }

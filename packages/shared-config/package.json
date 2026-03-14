@@ -39,7 +39,7 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@chainlink/ccip-sdk": "1.0.0",
+    "@chainlink/ccip-sdk": "1.2.0",
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@tanstack/react-query": "^5.62.0",
     "typescript": "^5.9.3",
@@ -53,7 +53,7 @@
     "tokens"
   ],
   "peerDependencies": {
-    "@chainlink/ccip-sdk": "1.0.0",
+    "@chainlink/ccip-sdk": "1.2.0",
     "@rainbow-me/rainbowkit": ">=2.2.0",
     "@tanstack/react-query": ">=5.0.0",
     "viem": ">=2.21.0",

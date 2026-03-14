@@ -1,0 +1,35 @@
+{
+  "name": "@ccip-examples/04-hardhat-ccip",
+  "version": "1.0.0",
+  "description": "Hardhat v3 project with CCIP SDK for deploying and interacting with custom Sender/Receiver contracts",
+  "type": "module",
+  "scripts": {
+    "build": "hardhat compile",
+    "typecheck": "tsc --noEmit",
+    "lint": "solhint --max-warnings 0 \"./contracts/**/*.sol\" && eslint hardhat.config.ts tasks helpers --max-warnings 0",
+    "lint:fix": "solhint --fix --max-warnings 0 \"./contracts/**/*.sol\" --noPrompt && eslint hardhat.config.ts tasks helpers --fix",
+    "clean": "hardhat clean && rm -rf dist"
+  },
+  "dependencies": {
+    "@ccip-examples/shared-config": "workspace:*",
+    "@ccip-examples/shared-utils": "workspace:*",
+    "@chainlink/ccip-sdk": "1.2.0",
+    "@chainlink/contracts-ccip": "^1.6.4",
+    "@openzeppelin/contracts": "^5.1.0",
+    "dotenv": "^16.4.5",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "hardhat": "^3.0.0",
+    "solhint": "^6.0.2",
+    "solhint-plugin-chainlink-solidity": "github:smartcontractkit/chainlink-solhint-rules#v1.2.1",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "ccip",
+    "hardhat",
+    "smart-contracts",
+    "sender",
+    "receiver"
+  ]
+}
