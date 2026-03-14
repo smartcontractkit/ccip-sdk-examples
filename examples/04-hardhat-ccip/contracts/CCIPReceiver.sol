@@ -10,7 +10,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title CCIPReceiverExample
-/// @notice CCIP receiver with 3 modes: token-only, data-only, and data+tokens.
+/// @notice CCIP receiver with 3 modes: token-only, data-only (inbox), and data+tokens.
 /// @dev Implements the defensive pattern recommended by Chainlink:
 ///      - Separates message reception from business logic via try/catch
 ///      - Uses try/catch to prevent message failure from locking tokens
@@ -18,7 +18,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 ///
 ///      Message modes:
 ///      - Token-only: holds received tokens in the contract.
-///      - Data-only: emits event with the data payload.
+///      - Data-only: stores messages in an on-chain inbox, queryable by anyone.
 ///      - Data+tokens: decodes a recipient address from data and forwards tokens.
 ///
 ///      Security patterns:
@@ -31,6 +31,26 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 ///      - Defensive try/catch: failed processing stores messageId, tokens stay in contract
 contract CCIPReceiverExample is CCIPReceiver, Ownable2Step, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
+
+    // Cross-chain inbox: stores data-only messages for on-chain querying
+    struct InboxMessage {
+        bytes32 messageId;
+        uint64 sourceChainSelector;
+        address sender;
+        bytes data;
+        uint256 timestamp;
+    }
+
+    InboxMessage[] public inbox;
+    /// @dev Stores index + 1, so 0 means "not found". Subtract 1 to get the actual inbox index.
+    mapping(bytes32 messageId => uint256 indexPlusOne) public messageIndex;
+
+    // Batch allowlist entry
+    struct AllowlistEntry {
+        uint64 sourceChainSelector;
+        address sender;
+        bool allowed;
+    }
 
     // Allowlisting: sender is allowlisted per source chain to prevent
     // a contract on chain B from impersonating an allowlisted sender on chain A.
@@ -48,8 +68,9 @@ contract CCIPReceiverExample is CCIPReceiver, Ownable2Step, Pausable, Reentrancy
 
     // Events
     event TokensReceived(bytes32 indexed messageId, address[] tokens, uint256[] amounts);
-    event DataReceived(bytes32 indexed messageId, bytes data);
+    event DataReceived(bytes32 indexed messageId, uint64 indexed sourceChainSelector, address sender, bytes data);
     event TokensForwarded(bytes32 indexed messageId, address indexed recipient, address[] tokens, uint256[] amounts);
+    event AllowlistUpdated(uint64 indexed sourceChainSelector, address indexed sender, bool allowed);
     event MessageFailed(bytes32 indexed messageId, bytes reason);
 
     /// @dev Only this contract can call processMessage (used by the try/catch pattern).
@@ -66,6 +87,15 @@ contract CCIPReceiverExample is CCIPReceiver, Ownable2Step, Pausable, Reentrancy
     /// @param allowed Whether the sender is allowed.
     function allowlistSender(uint64 sourceChainSelector, address sender, bool allowed) external onlyOwner {
         allowlistedSenders[sourceChainSelector][sender] = allowed;
+    }
+
+    /// @notice Batch update the allowlist — add/remove multiple (chain, sender) pairs in one call.
+    /// @param entries Array of AllowlistEntry structs with chain selector, sender, and allowed flag.
+    function updateAllowlist(AllowlistEntry[] calldata entries) external onlyOwner {
+        for (uint256 i = 0; i < entries.length; i++) {
+            allowlistedSenders[entries[i].sourceChainSelector][entries[i].sender] = entries[i].allowed;
+            emit AllowlistUpdated(entries[i].sourceChainSelector, entries[i].sender, entries[i].allowed);
+        }
     }
 
     /// @notice Defensive receive: validates allowlists, then delegates to processMessage
@@ -112,7 +142,41 @@ contract CCIPReceiverExample is CCIPReceiver, Ownable2Step, Pausable, Reentrancy
     }
 
     function _handleDataOnly(Client.Any2EVMMessage memory message) internal {
-        emit DataReceived(message.messageId, message.data);
+        address sender = abi.decode(message.sender, (address));
+        messageIndex[message.messageId] = inbox.length + 1; // +1 so that 0 means "not found"
+        inbox.push(InboxMessage({
+            messageId: message.messageId,
+            sourceChainSelector: message.sourceChainSelector,
+            sender: sender,
+            data: message.data,
+            timestamp: block.timestamp
+        }));
+        emit DataReceived(message.messageId, message.sourceChainSelector, sender, message.data);
+    }
+
+    /// @notice Get the total number of messages in the inbox.
+    function getInboxLength() external view returns (uint256) {
+        return inbox.length;
+    }
+
+    /// @notice Get a message from the inbox by index.
+    /// @param index The inbox index (0-based).
+    function getInboxMessage(uint256 index) external view returns (InboxMessage memory) {
+        return inbox[index];
+    }
+
+    /// @notice Get the latest N messages from the inbox.
+    /// @param count Maximum number of messages to return.
+    function getLatestMessages(uint256 count) external view returns (InboxMessage[] memory) {
+        uint256 len = inbox.length;
+        if (count > len) {
+            count = len;
+        }
+        InboxMessage[] memory result = new InboxMessage[](count);
+        for (uint256 i = 0; i < count; i++) {
+            result[i] = inbox[len - count + i];
+        }
+        return result;
     }
 
     function _handleDataAndTokens(Client.Any2EVMMessage memory message) internal {

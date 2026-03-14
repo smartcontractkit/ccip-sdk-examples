@@ -1,6 +1,9 @@
 {
   "name": "@ccip-examples/03-multichain-bridge-dapp",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "description": "Multichain EVM + Solana + Aptos bridge using CCIP SDK",
   "type": "module",
   "scripts": {
@@ -15,7 +18,7 @@
   "dependencies": {
     "@aptos-labs/ts-sdk": "^5.2.1",
     "@aptos-labs/wallet-adapter-react": "^3.7.2",
-    "@chainlink/ccip-sdk": "1.2.0",
+    "@chainlink/ccip-sdk": "1.3.1",
     "@ccip-examples/shared-brand": "workspace:*",
     "@ccip-examples/shared-config": "workspace:*",
     "@ccip-examples/shared-components": "workspace:*",

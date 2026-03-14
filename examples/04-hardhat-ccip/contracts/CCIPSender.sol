@@ -35,6 +35,7 @@ contract CCIPSender is Ownable2Step, Pausable, ReentrancyGuard {
     /// @dev Only registered (chain, receiver) pairs can be used as destinations.
     mapping(uint64 destChainSelector => address peer) public peers;
 
+    error ArrayLengthMismatch();
     error NothingToWithdraw();
     error FailedToWithdrawEth(address owner, address target, uint256 value);
     error InsufficientNativeFee(uint256 required, uint256 provided);
@@ -53,6 +54,17 @@ contract CCIPSender is Ownable2Step, Pausable, ReentrancyGuard {
     function setPeer(uint64 destChainSelector, address peer) external onlyOwner {
         peers[destChainSelector] = peer;
         emit PeerSet(destChainSelector, peer);
+    }
+
+    /// @notice Register or remove multiple trusted peers in one call.
+    /// @param destChainSelectors The CCIP chain selectors of the destinations.
+    /// @param peerAddresses The trusted receiver addresses (address(0) to remove).
+    function setPeers(uint64[] calldata destChainSelectors, address[] calldata peerAddresses) external onlyOwner {
+        if (destChainSelectors.length != peerAddresses.length) revert ArrayLengthMismatch();
+        for (uint256 i = 0; i < destChainSelectors.length; i++) {
+            peers[destChainSelectors[i]] = peerAddresses[i];
+            emit PeerSet(destChainSelectors[i], peerAddresses[i]);
+        }
     }
 
     /// @notice Send a CCIP message with pre-encoded extraArgs.
