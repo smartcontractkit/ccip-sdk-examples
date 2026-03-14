@@ -236,11 +236,11 @@ importers:
         specifier: 1.2.0
         version: 1.2.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10)(viem@2.45.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
       "@chainlink/contracts-ccip":
-        specifier: ^1.6.4
+        specifier: 1.6.4
         version: 1.6.4(@types/node@22.19.11)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
       "@openzeppelin/contracts":
-        specifier: ^5.1.0
-        version: 5.6.1
+        specifier: 5.1.0
+        version: 5.1.0
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
@@ -248,6 +248,15 @@ importers:
         specifier: ^2.21.0
         version: 2.45.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
     devDependencies:
+      "@chainlink/local":
+        specifier: 0.2.7
+        version: 0.2.7(@types/node@22.19.11)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+      "@nomicfoundation/hardhat-node-test-runner":
+        specifier: ^3.0.0
+        version: 3.0.11(hardhat@3.1.12(bufferutil@4.1.0)(utf-8-validate@5.0.10))
+      "@nomicfoundation/hardhat-viem":
+        specifier: ^3.0.4
+        version: 3.0.4(hardhat@3.1.12(bufferutil@4.1.0)(utf-8-validate@5.0.10))(viem@2.45.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       hardhat:
         specifier: ^3.0.0
         version: 3.1.12(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -373,6 +382,30 @@ packages:
     peerDependencies:
       graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
       typescript: ^5.0.0
+
+  "@actions/core@1.11.1":
+    resolution:
+      {
+        integrity: sha512-hXJCSrkwfA46Vd9Z3q4cpEpHB1rL5NG04+/rbqW9d3+CSvtB1tYe8UTpAlixa1vj0m/ULglfEK2UKxMGxCxv5A==,
+      }
+
+  "@actions/exec@1.1.1":
+    resolution:
+      {
+        integrity: sha512-+sCcHHbVdk93a0XT19ECtO/gIXoxvdsgQLzb2fE2/5sIZmWQuluYyjPQtrtTHdU1YzTZ7bAPN4sITq2xi1679w==,
+      }
+
+  "@actions/http-client@2.2.3":
+    resolution:
+      {
+        integrity: sha512-mx8hyJi/hjFvbPokCg4uRd4ZX78t+YyRPtnKWwIl+RzNaVuFpQHfmlGVfsKEJN8LwTCvL+DfVgAM04XaHkm6bA==,
+      }
+
+  "@actions/io@1.1.3":
+    resolution:
+      {
+        integrity: sha512-wi9JjgKLYS7U/z8PPbco+PvTb/nRWjeoFlJ1Qer83k/3C5PHQi28hiVdeE2kHXmIL99mQFawx8qt/JPjZilJ8Q==,
+      }
 
   "@adraffy/ens-normalize@1.10.1":
     resolution:
@@ -830,6 +863,13 @@ packages:
       viem:
         optional: true
 
+  "@chainlink/contracts-ccip@1.6.2":
+    resolution:
+      {
+        integrity: sha512-dHAOxhpTo9Dp1S5wFeSEN3hV9t2gy7iCXNdnZxmskD+gRVb7qGpTqoXPXXu8qEf2zVmRsrs/nSbrTU/UpqfHQg==,
+      }
+    engines: { node: ">=20", pnpm: ">=10" }
+
   "@chainlink/contracts-ccip@1.6.4":
     resolution:
       {
@@ -843,6 +883,12 @@ packages:
         integrity: sha512-1fGJwjvivqAxvVOTqZUEXGR54CATtg0vjcXgSIk4Cfoad2nUhSG/qaWHXjLg1CkNTeOoteoxGQcpP/HiA5HsUA==,
       }
     engines: { node: ">=22", pnpm: ">=10" }
+
+  "@chainlink/local@0.2.7":
+    resolution:
+      {
+        integrity: sha512-tdsRQEkiZE5nHv35bRcMKSIvIkNl0SV7hQV4wPpimTgIDqe60YH4NAC/j21k7f+ief/oUpyi+gNacvxZBPN9sw==,
+      }
 
   "@chainlink/solhint-plugin-chainlink-solidity@https://codeload.github.com/smartcontractkit/chainlink-solhint-rules/tar.gz/1b4c0c2663fcd983589d4f33a2e73908624ed43c":
     resolution:
@@ -1811,6 +1857,13 @@ packages:
         integrity: sha512-j7+Ksi/9KfGviws6Qtf9Q7KCqRhpwrYKQPs+JBA/rKVFF/yaWLHJEH3zfVP2plVu+eys0d2DlFmhoQJayFewcw==,
       }
 
+  "@fastify/busboy@2.1.1":
+    resolution:
+      {
+        integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==,
+      }
+    engines: { node: ">=14" }
+
   "@fivebinaries/coin-selection@3.0.0":
     resolution:
       {
@@ -2562,6 +2615,20 @@ packages:
         integrity: sha512-gHAZDYb0e5joq+WecgC3ciz5OcgqUBgK2zLQmNoKSn/I52h3SH1stxXsY4dcVsj0OY4ZksqIRhJDKskHC5DvTA==,
       }
 
+  "@nomicfoundation/hardhat-node-test-reporter@3.0.2":
+    resolution:
+      {
+        integrity: sha512-lbbOVOVxHY+x3olztf8m19nuxpkx/6zN8dmGlbb1CA0V3QvN8EyQWl8O6xtxmTQhLTPKUGwA2r02ikE5Qa02dw==,
+      }
+
+  "@nomicfoundation/hardhat-node-test-runner@3.0.11":
+    resolution:
+      {
+        integrity: sha512-agkepXlHGbMiTHqrbL/4aIaezlUhV2xf+Od7HmbRyp31Ppqit/GWIbaE45jx5w5/eNXhA5IKjEghYCwzIZb8AA==,
+      }
+    peerDependencies:
+      hardhat: ^3.1.12
+
   "@nomicfoundation/hardhat-utils@4.0.1":
     resolution:
       {
@@ -2573,6 +2640,15 @@ packages:
       {
         integrity: sha512-jBOAqmEAMJ8zdfiQmTLV+c0IaSyySqkDSJ9spTy8Ts/m/mO8w364TClyfn+p4ZpxBjyX4LMa3NfC402hoDtwCg==,
       }
+
+  "@nomicfoundation/hardhat-viem@3.0.4":
+    resolution:
+      {
+        integrity: sha512-zauCnEMOgy8+nijwVOAQr7piGYsWtUFb0i2snaBF4e7TJWbcXbyJL3wGBplo3h0D9UOYYmLDE7DWTxuqZjEsZA==,
+      }
+    peerDependencies:
+      hardhat: ^3.1.11
+      viem: ^2.43.0
 
   "@nomicfoundation/hardhat-zod-utils@3.0.3":
     resolution:
@@ -2684,12 +2760,6 @@ packages:
     resolution:
       {
         integrity: sha512-p1ULhl7BXzjjbha5aqst+QMLY+4/LCWADXOCsmLHRM77AqiPjnd9vvUN9sosUfhL9JGKpZ0TjEGxgvnizmWGSA==,
-      }
-
-  "@openzeppelin/contracts@5.6.1":
-    resolution:
-      {
-        integrity: sha512-Ly6SlsVJ3mj+b18W3R8gNufB7dTICT105fJhodGAGgyC2oqnBAhqSiNDJ8V8DLY05cCz81GLI0CU5vNYA1EC/w==,
       }
 
   "@particle-network/analytics@1.0.2":
@@ -7444,6 +7514,13 @@ packages:
         integrity: sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ==,
       }
 
+  diff-sequences@29.6.3:
+    resolution:
+      {
+        integrity: sha512-EjePK1srD3P08o2j4f0ExnylqRs5B9tJjcp9t1krH2qRi8CCdsYfwe9JgSLurFBWwq4uOlipzfk5fHNvwFKr8Q==,
+      }
+    engines: { node: ^14.15.0 || ^16.10.0 || >=18.0.0 }
+
   diffie-hellman@5.0.3:
     resolution:
       {
@@ -8977,6 +9054,13 @@ packages:
       }
     engines: { node: ">=8" }
     hasBin: true
+
+  jest-diff@29.7.0:
+    resolution:
+      {
+        integrity: sha512-LMIgiIrhigmPrs03JHpxUh2yISK3vLFPkAodPeo0+BuF7wA2FoQbkEg1u8gBYBThncu7e1oEDUfIXVuTqLRUjw==,
+      }
+    engines: { node: ^14.15.0 || ^16.10.0 || >=18.0.0 }
 
   jest-environment-node@29.7.0:
     resolution:
@@ -11857,6 +11941,13 @@ packages:
         integrity: sha512-C3TaO7K81YvjCgQH9Q1S3R3P3BtN3RIM8n+OvX4il1K1zgE8ZhI0op7kClgkxtutIE8hQrcrHBXvIheqKUUCxw==,
       }
 
+  tunnel@0.0.6:
+    resolution:
+      {
+        integrity: sha512-1h/Lnq9yajKY2PEbBadPXj3VxsDDu844OnaAo52UVmIzIvwwtBPIuNvkjuzBlTWpfJyUbG3ez0KSBibQkj4ojg==,
+      }
+    engines: { node: ">=0.6.11 <=0.7.0 || >=0.7.3" }
+
   tweetnacl-util@0.15.1:
     resolution:
       {
@@ -11997,6 +12088,13 @@ packages:
       {
         integrity: sha512-w9IMgQrz4O0YN1LtB7K5P63vhlIOvC7opSmouCJ+ZywlPAlO9gIkJ+otk6LvGpAs2wg4econaCz3TvQ9xPoyuQ==,
       }
+
+  undici@5.29.0:
+    resolution:
+      {
+        integrity: sha512-raqeBD6NQK4SkWhQzeYKd1KmIG6dllBOTt55Rmkt4HtI9mwdWtJljnrXjAFUBLTSN67HWrOIZ3EPF4kjUw80Bg==,
+      }
+    engines: { node: ">=14.0" }
 
   undici@6.24.0:
     resolution:
@@ -12746,6 +12844,22 @@ snapshots:
       graphql: 16.12.0
       typescript: 5.9.3
 
+  "@actions/core@1.11.1":
+    dependencies:
+      "@actions/exec": 1.1.1
+      "@actions/http-client": 2.2.3
+
+  "@actions/exec@1.1.1":
+    dependencies:
+      "@actions/io": 1.1.3
+
+  "@actions/http-client@2.2.3":
+    dependencies:
+      tunnel: 0.0.6
+      undici: 5.29.0
+
+  "@actions/io@1.1.3": {}
+
   "@adraffy/ens-normalize@1.10.1": {}
 
   "@adraffy/ens-normalize@1.11.1": {}
@@ -13252,6 +13366,22 @@ snapshots:
       - utf-8-validate
       - zod
 
+  "@chainlink/contracts-ccip@1.6.2(@types/node@22.19.11)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)":
+    dependencies:
+      "@chainlink/contracts": 1.5.0(@types/node@22.19.11)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+      "@changesets/cli": 2.30.0(@types/node@22.19.11)
+      "@changesets/get-github-info": 0.6.0
+      "@openzeppelin/contracts-4.8.3": "@openzeppelin/contracts@4.8.3"
+      "@openzeppelin/contracts-5.0.2": "@openzeppelin/contracts@5.0.2"
+      semver: 7.7.4
+    transitivePeerDependencies:
+      - "@types/node"
+      - bufferutil
+      - encoding
+      - ethers
+      - supports-color
+      - utf-8-validate
+
   "@chainlink/contracts-ccip@1.6.4(@types/node@22.19.11)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)":
     dependencies:
       "@chainlink/contracts": 1.5.0(@types/node@22.19.11)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
@@ -13284,6 +13414,18 @@ snapshots:
       "@scroll-tech/contracts": 2.0.0
       "@zksync/contracts": era-contracts@https://codeload.github.com/matter-labs/era-contracts/tar.gz/446d391d34bdb48255d5f8fef8a8248925fc98b9
       semver: 7.7.4
+    transitivePeerDependencies:
+      - "@types/node"
+      - bufferutil
+      - encoding
+      - ethers
+      - supports-color
+      - utf-8-validate
+
+  "@chainlink/local@0.2.7(@types/node@22.19.11)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)":
+    dependencies:
+      "@chainlink/contracts": 1.5.0(@types/node@22.19.11)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+      "@chainlink/contracts-ccip": 1.6.2(@types/node@22.19.11)(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - "@types/node"
       - bufferutil
@@ -14051,6 +14193,8 @@ snapshots:
       "@ethersproject/properties": 5.8.0
       "@ethersproject/strings": 5.8.0
 
+  "@fastify/busboy@2.1.1": {}
+
   "@fivebinaries/coin-selection@3.0.0":
     dependencies:
       "@emurgo/cardano-serialization-lib-browser": 13.2.1
@@ -14693,6 +14837,24 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  "@nomicfoundation/hardhat-node-test-reporter@3.0.2":
+    dependencies:
+      "@actions/core": 1.11.1
+      chalk: 5.6.2
+      jest-diff: 29.7.0
+
+  "@nomicfoundation/hardhat-node-test-runner@3.0.11(hardhat@3.1.12(bufferutil@4.1.0)(utf-8-validate@5.0.10))":
+    dependencies:
+      "@nomicfoundation/hardhat-errors": 3.0.8
+      "@nomicfoundation/hardhat-node-test-reporter": 3.0.2
+      "@nomicfoundation/hardhat-utils": 4.0.1
+      "@nomicfoundation/hardhat-zod-utils": 3.0.3(zod@3.25.76)
+      hardhat: 3.1.12(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      tsx: 4.21.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+
   "@nomicfoundation/hardhat-utils@4.0.1":
     dependencies:
       "@streamparser/json-node": 0.0.22
@@ -14707,6 +14869,15 @@ snapshots:
       - supports-color
 
   "@nomicfoundation/hardhat-vendored@3.0.1": {}
+
+  "@nomicfoundation/hardhat-viem@3.0.4(hardhat@3.1.12(bufferutil@4.1.0)(utf-8-validate@5.0.10))(viem@2.45.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))":
+    dependencies:
+      "@nomicfoundation/hardhat-errors": 3.0.8
+      "@nomicfoundation/hardhat-utils": 4.0.1
+      hardhat: 3.1.12(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      viem: 2.45.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+    transitivePeerDependencies:
+      - supports-color
 
   "@nomicfoundation/hardhat-zod-utils@3.0.3(zod@3.25.76)":
     dependencies:
@@ -14765,8 +14936,6 @@ snapshots:
   "@openzeppelin/contracts@5.0.2": {}
 
   "@openzeppelin/contracts@5.1.0": {}
-
-  "@openzeppelin/contracts@5.6.1": {}
 
   "@particle-network/analytics@1.0.2":
     dependencies:
@@ -20492,6 +20661,8 @@ snapshots:
 
   detect-node-es@1.1.0: {}
 
+  diff-sequences@29.6.3: {}
+
   diffie-hellman@5.0.3:
     dependencies:
       bn.js: 4.12.3
@@ -21458,6 +21629,13 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+
+  jest-diff@29.7.0:
+    dependencies:
+      chalk: 4.1.2
+      diff-sequences: 29.6.3
+      jest-get-type: 29.6.3
+      pretty-format: 29.7.0
 
   jest-environment-node@29.7.0:
     dependencies:
@@ -23417,6 +23595,8 @@ snapshots:
 
   tty-browserify@0.0.1: {}
 
+  tunnel@0.0.6: {}
+
   tweetnacl-util@0.15.1: {}
 
   tweetnacl@1.0.3: {}
@@ -23481,6 +23661,10 @@ snapshots:
   undici-types@6.21.0: {}
 
   undici-types@7.21.0: {}
+
+  undici@5.29.0:
+    dependencies:
+      "@fastify/busboy": 2.1.1
 
   undici@6.24.0: {}
 
