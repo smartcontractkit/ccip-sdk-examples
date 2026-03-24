@@ -7,14 +7,18 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { networkInfo, ChainFamily } from "@chainlink/ccip-sdk";
-import { NETWORKS, getTokenAddress, type FeeTokenOptionItem } from "@ccip-examples/shared-config";
+import {
+  NETWORKS,
+  getTokenAddress,
+  type FeeTokenOptionItem,
+} from "@chainlink/ccip-examples-shared-config";
 import {
   isValidEVMAddress,
   isValidAmount,
   formatAmountFull,
   copyToClipboard,
   COPIED_FEEDBACK_MS,
-} from "@ccip-examples/shared-utils";
+} from "@chainlink/ccip-examples-shared-utils";
 import {
   Select,
   Input,
@@ -26,11 +30,11 @@ import {
   CopyIcon,
   CheckIcon,
   type BalanceItem,
-} from "@ccip-examples/shared-components";
-import { useWalletBalances, useFeeTokens } from "@ccip-examples/shared-utils/hooks";
+} from "@chainlink/ccip-examples-shared-components";
+import { useWalletBalances, useFeeTokens } from "@chainlink/ccip-examples-shared-utils/hooks";
 import { useGetChain } from "../../hooks/useGetChain.js";
-import { NETWORK_TO_CHAIN_ID } from "@ccip-examples/shared-config/wagmi";
-import styles from "@ccip-examples/shared-components/bridge/BridgeForm.module.css";
+import { NETWORK_TO_CHAIN_ID } from "@chainlink/ccip-examples-shared-config/wagmi";
+import styles from "@chainlink/ccip-examples-shared-components/bridge/BridgeForm.module.css";
 
 /** Fixed token symbol for this bridge example */
 const TOKEN_SYMBOL = "CCIP-BnM";

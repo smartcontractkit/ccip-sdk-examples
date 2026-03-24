@@ -13,7 +13,7 @@ import {
   type ChainFamily,
   getAllNetworks,
   CHAIN_FAMILY_LABELS,
-} from "@ccip-examples/shared-config";
+} from "@chainlink/ccip-examples-shared-config";
 
 function main() {
   console.log("=".repeat(60));

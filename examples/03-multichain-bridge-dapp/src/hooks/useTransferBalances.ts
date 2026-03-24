@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { BALANCE_POLLING_INTERVAL_MS } from "@ccip-examples/shared-config";
+import { BALANCE_POLLING_INTERVAL_MS } from "@chainlink/ccip-examples-shared-config";
 import { useChains } from "./useChains.js";
 import { useDestinationBalance } from "./useDestinationBalance.js";
 import { logSDKCall } from "../inspector/index.js";

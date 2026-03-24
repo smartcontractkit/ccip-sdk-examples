@@ -2,7 +2,7 @@
  * Rate limit visualization (capacity bar + refill rate).
  */
 
-import { type RateLimitBucket, formatRateLimitBucket } from "@ccip-examples/shared-utils";
+import { type RateLimitBucket, formatRateLimitBucket } from "@chainlink/ccip-examples-shared-utils";
 import styles from "./RateLimitDisplay.module.css";
 
 interface RateLimitDisplayProps {

@@ -1,6 +1,6 @@
 /**
  * Wagmi & RainbowKit configuration for EVM examples.
- * Import from "@ccip-examples/shared-config/wagmi" so the main entry stays wagmi-free (e.g. for Node/CLI).
+ * Import from "@chainlink/ccip-examples-shared-config/wagmi" so the main entry stays wagmi-free (e.g. for Node/CLI).
  */
 
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";

@@ -3,7 +3,7 @@
  * Radio list: symbol + formatted balance per token; chain-agnostic (address = native vs token).
  */
 
-import type { FeeTokenOptionItem } from "@ccip-examples/shared-config";
+import type { FeeTokenOptionItem } from "@chainlink/ccip-examples-shared-config";
 import styles from "./FeeTokenOptions.module.css";
 
 export interface FeeTokenOptionsProps {

@@ -16,8 +16,8 @@
 import "dotenv/config";
 import { Command } from "commander";
 import { networkInfo, CCIPError, CCIPTokenPoolChainConfigNotFoundError } from "@chainlink/ccip-sdk";
-import { NETWORKS, NETWORK_IDS, CHAIN_FAMILY_LABELS } from "@ccip-examples/shared-config";
-import { formatAmount, createChain } from "@ccip-examples/shared-utils";
+import { NETWORKS, NETWORK_IDS, CHAIN_FAMILY_LABELS } from "@chainlink/ccip-examples-shared-config";
+import { formatAmount, createChain } from "@chainlink/ccip-examples-shared-utils";
 
 function validateChainKey(key: string): string {
   if (!NETWORK_IDS.includes(key)) {

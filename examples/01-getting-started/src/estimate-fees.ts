@@ -26,14 +26,14 @@ import {
   resolveFeeTokenAddress,
   type FeeTokenOption,
   type NetworkConfig,
-} from "@ccip-examples/shared-config";
+} from "@chainlink/ccip-examples-shared-config";
 import {
   formatAmount,
   parseAmount,
   buildTokenTransferMessage,
   createChain,
   getErrorMessage,
-} from "@ccip-examples/shared-utils";
+} from "@chainlink/ccip-examples-shared-utils";
 
 const DEFAULT_TOKEN = "CCIP-BnM";
 const DEFAULT_AMOUNT = "1.0";

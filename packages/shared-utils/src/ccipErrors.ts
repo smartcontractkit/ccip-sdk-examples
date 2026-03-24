@@ -1,5 +1,5 @@
 /**
- * @ccip-examples/shared-utils — CCIP error parsing
+ * @chainlink/ccip-examples-shared-utils — CCIP error parsing
  *
  * Parses CCIP-specific errors using @chainlink/ccip-sdk chain parse methods.
  * - EVMChain.parse(error) — decodes hex error selectors via CCIP contract ABIs

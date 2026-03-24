@@ -3,8 +3,8 @@
  */
 
 import { useState, useCallback } from "react";
-import type { CategorizedError as CategorizedErrorType } from "@ccip-examples/shared-utils";
-import { copyToClipboard, COPIED_FEEDBACK_MS } from "@ccip-examples/shared-utils";
+import type { CategorizedError as CategorizedErrorType } from "@chainlink/ccip-examples-shared-utils";
+import { copyToClipboard, COPIED_FEEDBACK_MS } from "@chainlink/ccip-examples-shared-utils";
 import { Button } from "./Button.js";
 import styles from "./ErrorMessage.module.css";
 

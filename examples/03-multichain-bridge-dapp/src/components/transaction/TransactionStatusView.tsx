@@ -4,14 +4,18 @@
  */
 
 import { useCallback } from "react";
-import { getExplorerTxUrl } from "@ccip-examples/shared-config";
-import type { CategorizedError, LastTransferContext } from "@ccip-examples/shared-utils";
-import type { TransferStatusStatus } from "@ccip-examples/shared-utils";
-import { useMessageStatus } from "@ccip-examples/shared-utils/hooks";
-import { TransferStatus, MessageProgress, ErrorMessage } from "@ccip-examples/shared-components";
+import { getExplorerTxUrl } from "@chainlink/ccip-examples-shared-config";
+import type { CategorizedError, LastTransferContext } from "@chainlink/ccip-examples-shared-utils";
+import type { TransferStatusStatus } from "@chainlink/ccip-examples-shared-utils";
+import { useMessageStatus } from "@chainlink/ccip-examples-shared-utils/hooks";
+import {
+  TransferStatus,
+  MessageProgress,
+  ErrorMessage,
+} from "@chainlink/ccip-examples-shared-components";
 import { inspectorStore } from "../../inspector/index.js";
 import { getAnnotation } from "../../inspector/annotations.js";
-import { serializeForDisplay } from "@ccip-examples/shared-utils/inspector";
+import { serializeForDisplay } from "@chainlink/ccip-examples-shared-utils/inspector";
 import { TransferBalances } from "./TransferBalances.js";
 import { TransferRateLimits } from "./TransferRateLimits.js";
 import styles from "./TransactionStatusView.module.css";

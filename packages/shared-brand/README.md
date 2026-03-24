@@ -1,4 +1,4 @@
-# @ccip-examples/shared-brand
+# @chainlink/ccip-examples-shared-brand
 
 Shared design tokens and brand assets for CCIP SDK examples.
 
@@ -30,7 +30,7 @@ Already included in the monorepo workspace.
 # Examples automatically have access via workspace:*
 {
   "dependencies": {
-    "@ccip-examples/shared-brand": "workspace:*"
+    "@chainlink/ccip-examples-shared-brand": "workspace:*"
   }
 }
 ```
@@ -45,7 +45,7 @@ In your example's main entry point (`main.tsx` or `index.tsx`):
 
 ```typescript
 // Import shared design tokens
-import "@ccip-examples/shared-brand/design-tokens.css";
+import "@chainlink/ccip-examples-shared-brand/design-tokens.css";
 
 // Then your app's styles
 import "./styles/globals.css";
@@ -58,7 +58,7 @@ import "./styles/globals.css";
 ### 2. Use Logo
 
 ```tsx
-import { BRAND_ASSETS } from "@ccip-examples/shared-brand";
+import { BRAND_ASSETS } from "@chainlink/ccip-examples-shared-brand";
 
 function Header() {
   return (
@@ -73,7 +73,7 @@ function Header() {
 **Or directly in your build process:**
 
 ```bash
-# Vite will copy from node_modules/@ccip-examples/shared-brand/assets/
+# Vite will copy from node_modules/@chainlink/ccip-examples-shared-brand/assets/
 # Access as: /chainlink-logo.svg
 ```
 
@@ -82,7 +82,7 @@ function Header() {
 ### 3. Use Brand Colors Programmatically
 
 ```typescript
-import { CHAINLINK_COLORS } from "@ccip-examples/shared-brand";
+import { CHAINLINK_COLORS } from "@chainlink/ccip-examples-shared-brand";
 
 // Use in JavaScript/TypeScript
 const chartColor = CHAINLINK_COLORS.primary; // "#0847F7"
@@ -103,7 +103,7 @@ canvas.fillStyle = CHAINLINK_COLORS.success; // "#217B71"
 ### 4. Use Design Tokens
 
 ```typescript
-import { DESIGN_TOKENS } from "@ccip-examples/shared-brand";
+import { DESIGN_TOKENS } from "@chainlink/ccip-examples-shared-brand";
 
 // Access any design token programmatically
 const buttonPadding = DESIGN_TOKENS.spacing[4]; // "1rem"
@@ -169,7 +169,7 @@ packages/shared-brand/
 │                            │                                │
 │                            ▼                                │
 │              ┌─────────────────────────────┐                │
-│              │  @ccip-examples/shared-brand │                │
+│              │  @chainlink/ccip-examples-shared-brand │                │
 │              ├─────────────────────────────┤                │
 │              │ • Consistent color palette  │                │
 │              │ • Logo SVG                  │                │
@@ -188,7 +188,7 @@ packages/shared-brand/
 
 ```typescript
 // examples/my-example/src/main.tsx
-import "@ccip-examples/shared-brand/design-tokens.css";
+import "@chainlink/ccip-examples-shared-brand/design-tokens.css";
 import "./styles/globals.css"; // Your app-specific styles
 ```
 
@@ -257,7 +257,7 @@ body {
 
 3. **Use in examples:**
    ```tsx
-   import { BRAND_ASSETS } from "@ccip-examples/shared-brand";
+   import { BRAND_ASSETS } from "@chainlink/ccip-examples-shared-brand";
    <img src={BRAND_ASSETS.myIcon} />;
    ```
 
@@ -267,7 +267,7 @@ body {
 
 When creating a new frontend example:
 
-1. ✅ Add `@ccip-examples/shared-brand` to dependencies
+1. ✅ Add `@chainlink/ccip-examples-shared-brand` to dependencies
 2. ✅ Import `design-tokens.css` in main entry
 3. ✅ Use `BRAND_ASSETS` for logos/icons
 4. ✅ Use CSS variables for all colors/spacing

@@ -11,12 +11,15 @@
  * @see https://wagmi.sh/react/api/hooks
  */
 export { useTransfer } from "./useTransfer.js";
-export type { TransferStatusStatus, TransferState } from "@ccip-examples/shared-utils";
-export { useMessageStatus, type MessageStatusResult } from "@ccip-examples/shared-utils/hooks";
+export type { TransferStatusStatus, TransferState } from "@chainlink/ccip-examples-shared-utils";
+export {
+  useMessageStatus,
+  type MessageStatusResult,
+} from "@chainlink/ccip-examples-shared-utils/hooks";
 export { useGetChain } from "./useGetChain.js";
 export {
   useTokenInfo,
   type TokenInfo,
   type UseTokenInfoResult,
-} from "@ccip-examples/shared-utils/hooks";
-export type { WalletBalances, BalanceData } from "@ccip-examples/shared-utils/hooks";
+} from "@chainlink/ccip-examples-shared-utils/hooks";
+export type { WalletBalances, BalanceData } from "@chainlink/ccip-examples-shared-utils/hooks";

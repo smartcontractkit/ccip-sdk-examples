@@ -6,8 +6,8 @@
 import { useCallback } from "react";
 import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { networkInfo, type EVMChain } from "@chainlink/ccip-sdk";
-import { NETWORKS } from "@ccip-examples/shared-config";
-import { parseEVMError } from "@ccip-examples/shared-utils";
+import { NETWORKS } from "@chainlink/ccip-examples-shared-config";
+import { parseEVMError } from "@chainlink/ccip-examples-shared-utils";
 import { logSDKCall } from "../inspector/index.js";
 import { getAnnotation } from "../inspector/annotations.js";
 import type { TransactionResult, TransferMessage } from "./transferTypes.js";

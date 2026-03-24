@@ -4,7 +4,7 @@
  * Uses centralized URLs from shared-config to avoid duplication.
  */
 
-import { EXTERNAL_URLS } from "@ccip-examples/shared-config";
+import { EXTERNAL_URLS } from "@chainlink/ccip-examples-shared-config";
 import styles from "./Footer.module.css";
 
 export function Footer() {

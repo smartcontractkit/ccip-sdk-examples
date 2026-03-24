@@ -25,22 +25,22 @@ import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { useAccount, useSwitchChain } from "wagmi";
 
-import { BRAND_COLORS } from "@ccip-examples/shared-brand";
-import { wagmiConfig } from "@ccip-examples/shared-config/wagmi";
-import { createDefaultQueryClient } from "@ccip-examples/shared-config/queryClient";
-import type { FeeTokenOptionItem } from "@ccip-examples/shared-config";
+import { BRAND_COLORS } from "@chainlink/ccip-examples-shared-brand";
+import { wagmiConfig } from "@chainlink/ccip-examples-shared-config/wagmi";
+import { createDefaultQueryClient } from "@chainlink/ccip-examples-shared-config/queryClient";
+import type { FeeTokenOptionItem } from "@chainlink/ccip-examples-shared-config";
 import {
   ErrorBoundary,
   MessageProgress,
   TransferStatus,
   Header,
-} from "@ccip-examples/shared-components";
+} from "@chainlink/ccip-examples-shared-components";
 import { Footer } from "./components/layout";
 import { WalletConnect, BridgeForm } from "./components/bridge";
 import { useTransfer } from "./hooks";
-import "@ccip-examples/shared-components/styles/globals.css";
+import "@chainlink/ccip-examples-shared-components/styles/globals.css";
 import "@rainbow-me/rainbowkit/styles.css";
-import styles from "@ccip-examples/shared-components/layout/AppLayout.module.css";
+import styles from "@chainlink/ccip-examples-shared-components/layout/AppLayout.module.css";
 
 const queryClient = createDefaultQueryClient();
 

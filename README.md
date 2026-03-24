@@ -70,22 +70,22 @@ ccip-sdk-examples/
 
 ## Shared packages
 
-### @ccip-examples/shared-config
+### @chainlink/ccip-examples-shared-config
 
 Network and token config; wagmi config and query client; constants (status labels, polling, explorer URLs). RPC URLs come from `getRpcUrl(networkId)` (env vars `RPC_<NETWORK_ID>` or public fallbacks).
 
 - **Exports:** `NETWORKS`, `NETWORK_IDS`, `getNetwork`, `getEVMNetworks`, `getSolanaNetworks`, `getAptosNetworks`, `getAllNetworks`, `getChainIdForNetwork`, `getExplorerTxUrl`, `getExplorerAddressUrl`; `getTokenAddress`, `resolveFeeTokenAddress`, `TOKEN_ADDRESSES`, etc.; `ChainFamily`; `POLLING_CONFIG`, `getStatusDescription`, `getFaucetUrl`, `getDummyReceiver`, etc.
 - **Subpaths:** `./wagmi`, `./queryClient`, `./networks`, `./tokens`.
 
-### @ccip-examples/shared-utils
+### @chainlink/ccip-examples-shared-utils
 
-Browser-safe utilities: validation (`isValidAddress`, `isValidAmount`, `parseAmount`, `formatAmount`, `truncateAddress`), CCIP error parsing (`getCCIPErrorMessage`, `parseEVMError`, `parseSolanaError`), formatting (`formatLatency`, `formatElapsedTime`, `formatRelativeTime`), message building (`buildTokenTransferMessage`), clipboard (`copyToClipboard`, `COPIED_FEEDBACK_MS`), viem adapter (`toGenericPublicClient`). Node-only wallet/chain helpers live in `@ccip-examples/shared-utils/wallet`.
+Browser-safe utilities: validation (`isValidAddress`, `isValidAmount`, `parseAmount`, `formatAmount`, `truncateAddress`), CCIP error parsing (`getCCIPErrorMessage`, `parseEVMError`, `parseSolanaError`), formatting (`formatLatency`, `formatElapsedTime`, `formatRelativeTime`), message building (`buildTokenTransferMessage`), clipboard (`copyToClipboard`, `COPIED_FEEDBACK_MS`), viem adapter (`toGenericPublicClient`). Node-only wallet/chain helpers live in `@chainlink/ccip-examples-shared-utils/wallet`.
 
 - **Subpaths:** `./hooks` (e.g. `useMessageStatus`, `useCopyToClipboard`).
 
-### @ccip-examples/shared-components
+### @chainlink/ccip-examples-shared-components
 
-React UI: primitives (Button, Input, Select, Alert), bridge (MessageProgress, TransferStatus, FeeTokenOptions, BalancesList), ErrorBoundary. All use design tokens from `@ccip-examples/shared-components/styles/tokens.css`. Import tokens once in app globals.
+React UI: primitives (Button, Input, Select, Alert), bridge (MessageProgress, TransferStatus, FeeTokenOptions, BalancesList), ErrorBoundary. All use design tokens from `@chainlink/ccip-examples-shared-components/styles/tokens.css`. Import tokens once in app globals.
 
 - **FeeTokenOptions:** Radio group for choosing fee token (native currency, LINK, or other tokens discovered from the router). Displays token name, symbol, balance, and a "Native" badge for native currency options.
 - **BalancesList:** Displays multiple token balances with loading skeletons.

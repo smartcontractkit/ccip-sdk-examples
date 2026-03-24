@@ -4,7 +4,7 @@
  */
 
 import { useMemo } from "react";
-import { useCopyToClipboard } from "@ccip-examples/shared-utils/hooks";
+import { useCopyToClipboard } from "@chainlink/ccip-examples-shared-utils/hooks";
 import styles from "./CodeSnippet.module.css";
 
 interface CodeSnippetProps {

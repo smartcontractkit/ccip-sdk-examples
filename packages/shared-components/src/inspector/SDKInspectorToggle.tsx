@@ -3,7 +3,10 @@
  * Designed to be placed in Header's children slot.
  */
 
-import { useSDKInspector, useSDKInspectorActions } from "@ccip-examples/shared-utils/inspector";
+import {
+  useSDKInspector,
+  useSDKInspectorActions,
+} from "@chainlink/ccip-examples-shared-utils/inspector";
 import styles from "./SDKInspectorToggle.module.css";
 
 export function SDKInspectorToggle() {

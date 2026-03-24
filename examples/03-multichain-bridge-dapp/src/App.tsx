@@ -19,15 +19,15 @@ import { useWallet as useAptosWallet } from "@aptos-labs/wallet-adapter-react";
 import { Network } from "@aptos-labs/ts-sdk";
 import { useAccount, useSwitchChain } from "wagmi";
 
-import { BRAND_COLORS } from "@ccip-examples/shared-brand";
-import { wagmiConfig } from "@ccip-examples/shared-config/wagmi";
-import { createDefaultQueryClient } from "@ccip-examples/shared-config/queryClient";
-import { NETWORKS, type FeeTokenOptionItem } from "@ccip-examples/shared-config";
+import { BRAND_COLORS } from "@chainlink/ccip-examples-shared-brand";
+import { wagmiConfig } from "@chainlink/ccip-examples-shared-config/wagmi";
+import { createDefaultQueryClient } from "@chainlink/ccip-examples-shared-config/queryClient";
+import { NETWORKS, type FeeTokenOptionItem } from "@chainlink/ccip-examples-shared-config";
 import { networkInfo, NetworkType } from "@chainlink/ccip-sdk";
-import { getWalletAddress, type WalletAddresses } from "@ccip-examples/shared-utils";
-import { ErrorBoundary, Header } from "@ccip-examples/shared-components";
-import { SDKInspectorToggle } from "@ccip-examples/shared-components/inspector";
-import { useSDKInspector } from "@ccip-examples/shared-utils/inspector";
+import { getWalletAddress, type WalletAddresses } from "@chainlink/ccip-examples-shared-utils";
+import { ErrorBoundary, Header } from "@chainlink/ccip-examples-shared-components";
+import { SDKInspectorToggle } from "@chainlink/ccip-examples-shared-components/inspector";
+import { useSDKInspector } from "@chainlink/ccip-examples-shared-utils/inspector";
 import { ChainContextProvider } from "./hooks/ChainContext.jsx";
 import { TransactionHistoryContext } from "./hooks/transactionHistoryTypes.js";
 import { TransactionHistoryProvider } from "./hooks/TransactionHistoryContext.jsx";
@@ -36,14 +36,14 @@ import { TransactionStatusView } from "./components/transaction/TransactionStatu
 import { WalletConnect, BridgeForm } from "./components/bridge/index.js";
 import { TransactionHistory } from "./components/transaction/TransactionHistory.js";
 import { useTransfer } from "./hooks/useTransfer.js";
-import "@ccip-examples/shared-components/styles/globals.css";
-import styles from "@ccip-examples/shared-components/layout/AppLayout.module.css";
+import "@chainlink/ccip-examples-shared-components/styles/globals.css";
+import styles from "@chainlink/ccip-examples-shared-components/layout/AppLayout.module.css";
 import appStyles from "./App.module.css";
 import "@rainbow-me/rainbowkit/styles.css";
 
 // Lazy load the inspector panel — zero cost when inspector is disabled
 const SDKInspectorPanel = lazy(() =>
-  import("@ccip-examples/shared-components/inspector").then((m) => ({
+  import("@chainlink/ccip-examples-shared-components/inspector").then((m) => ({
     default: m.SDKInspectorPanel,
   }))
 );

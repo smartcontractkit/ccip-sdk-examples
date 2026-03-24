@@ -8,7 +8,11 @@ import { useAccount } from "wagmi";
 import { useWallet as useSolanaWallet } from "@solana/wallet-adapter-react";
 import { useWallet as useAptosWallet } from "@aptos-labs/wallet-adapter-react";
 import { networkInfo } from "@chainlink/ccip-sdk";
-import { NETWORKS, getTokenAddress, type FeeTokenOptionItem } from "@ccip-examples/shared-config";
+import {
+  NETWORKS,
+  getTokenAddress,
+  type FeeTokenOptionItem,
+} from "@chainlink/ccip-examples-shared-config";
 import {
   parseAmount,
   formatAmount,
@@ -19,7 +23,7 @@ import {
   type WalletAddresses,
   type LastTransferContext,
   type TransferState,
-} from "@ccip-examples/shared-utils";
+} from "@chainlink/ccip-examples-shared-utils";
 import { useChains } from "./useChains.js";
 import { useTransactionExecution } from "./useTransactionExecution.js";
 import type { TransferMessage } from "./transferTypes.js";

@@ -6,12 +6,12 @@
  *
  * Usage:
  * ```css
- * @import '@ccip-examples/shared-brand/design-tokens.css';
+ * @import '@chainlink/ccip-examples-shared-brand/design-tokens.css';
  * ```
  *
  * Or in your main.tsx/index.tsx:
  * ```typescript
- * import '@ccip-examples/shared-brand/design-tokens.css';
+ * import '@chainlink/ccip-examples-shared-brand/design-tokens.css';
  * ```
  */
 

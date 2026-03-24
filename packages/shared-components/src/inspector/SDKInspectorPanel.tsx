@@ -8,7 +8,7 @@ import {
   useSDKInspector,
   useSDKInspectorActions,
   type SDKCallPhase,
-} from "@ccip-examples/shared-utils/inspector";
+} from "@chainlink/ccip-examples-shared-utils/inspector";
 import { PhaseGroup } from "./PhaseGroup.js";
 import { InspectorEmptyState } from "./InspectorEmptyState.js";
 import styles from "./SDKInspectorPanel.module.css";

@@ -18,8 +18,8 @@
 import "dotenv/config";
 import type { Chain, RateLimiterState, TokenInfo } from "@chainlink/ccip-sdk";
 import { networkInfo, CCIPError, CCIPTokenPoolChainConfigNotFoundError } from "@chainlink/ccip-sdk";
-import { NETWORKS, NETWORK_IDS, getTokenAddress } from "@ccip-examples/shared-config";
-import { formatAmount, createChain } from "@ccip-examples/shared-utils";
+import { NETWORKS, NETWORK_IDS, getTokenAddress } from "@chainlink/ccip-examples-shared-config";
+import { formatAmount, createChain } from "@chainlink/ccip-examples-shared-utils";
 
 /**
  * Format a rate limiter state for display.

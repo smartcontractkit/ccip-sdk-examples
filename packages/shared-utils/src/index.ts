@@ -1,5 +1,5 @@
 /**
- * @ccip-examples/shared-utils
+ * @chainlink/ccip-examples-shared-utils
  *
  * Shared utilities for CCIP SDK examples.
  */
@@ -90,4 +90,4 @@ export {
 
 // NOTE: Wallet utilities (createWallet, createSolanaWallet, etc.) use Node.js
 // built-ins (fs, os, path) and are NOT re-exported here to keep the main
-// entry point browser-safe. Import them from "@ccip-examples/shared-utils/wallet".
+// entry point browser-safe. Import them from "@chainlink/ccip-examples-shared-utils/wallet".

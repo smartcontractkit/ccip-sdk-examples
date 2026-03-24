@@ -10,8 +10,8 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useWallet as useSolanaWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useWallet as useAptosWallet } from "@aptos-labs/wallet-adapter-react";
-import { truncateAddress } from "@ccip-examples/shared-utils";
-import styles from "@ccip-examples/shared-components/bridge/WalletConnect.module.css";
+import { truncateAddress } from "@chainlink/ccip-examples-shared-utils";
+import styles from "@chainlink/ccip-examples-shared-components/bridge/WalletConnect.module.css";
 
 // ── EVM ──────────────────────────────────────────────────────────────────────
 

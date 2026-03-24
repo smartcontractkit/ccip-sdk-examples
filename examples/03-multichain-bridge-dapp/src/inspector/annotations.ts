@@ -10,7 +10,7 @@
  * of the inspector UI via `displayArgs`.
  */
 
-import type { LogSDKCallOptions } from "@ccip-examples/shared-utils/inspector";
+import type { LogSDKCallOptions } from "@chainlink/ccip-examples-shared-utils/inspector";
 
 type Annotation = Pick<LogSDKCallOptions, "annotation" | "codeSnippet">;
 

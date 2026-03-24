@@ -6,4 +6,4 @@ export {
   CHAIN_ID_TO_NETWORK,
   NETWORK_TO_CHAIN_ID,
   getWagmiChain,
-} from "@ccip-examples/shared-config/wagmi";
+} from "@chainlink/ccip-examples-shared-config/wagmi";

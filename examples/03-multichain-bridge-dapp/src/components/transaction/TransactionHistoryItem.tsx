@@ -4,11 +4,11 @@
 
 import type { ReactNode } from "react";
 import { getCCIPExplorerUrl } from "@chainlink/ccip-sdk";
-import { getExplorerTxUrl } from "@ccip-examples/shared-config";
-import { truncateAddress } from "@ccip-examples/shared-utils";
-import { formatRelativeTime } from "@ccip-examples/shared-utils";
+import { getExplorerTxUrl } from "@chainlink/ccip-examples-shared-config";
+import { truncateAddress } from "@chainlink/ccip-examples-shared-utils";
+import { formatRelativeTime } from "@chainlink/ccip-examples-shared-utils";
 import type { StoredTransaction } from "../../utils/localStorage.js";
-import { NETWORKS } from "@ccip-examples/shared-config";
+import { NETWORKS } from "@chainlink/ccip-examples-shared-config";
 import styles from "./TransactionHistoryItem.module.css";
 
 interface TransactionHistoryItemProps {

@@ -12,6 +12,7 @@
     "dev:01": "pnpm -F 01-getting-started dev",
     "dev:02": "pnpm -F 02-evm-simple-bridge dev",
     "dev:03": "pnpm -F 03-multichain-bridge-dapp dev",
+    "dev:04": "pnpm -F 04-hardhat-ccip dev",
     "prod:02": "pnpm -F 02-evm-simple-bridge build && pnpm -F 02-evm-simple-bridge preview",
     "prod:03": "pnpm -F 03-multichain-bridge-dapp build && pnpm -F 03-multichain-bridge-dapp preview",
     "build": "pnpm -r build",
@@ -61,7 +62,11 @@
   ],
   "pnpm": {
     "overrides": {
-      "minimatch@<3.1.6": ">=3.1.6"
+      "minimatch@<3.1.6": ">=3.1.6",
+      "@openzeppelin/contracts@4.7.3": "4.9.6",
+      "@openzeppelin/contracts-upgradeable@4.7.3": "4.9.6",
+      "@openzeppelin/contracts-4.7.3": "npm:@openzeppelin/contracts@4.9.6",
+      "undici@<6.22.0": ">=6.22.0"
     }
   },
   "author": "Chainlink",
