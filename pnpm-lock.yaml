@@ -6,6 +6,8 @@ settings:
 
 overrides:
   minimatch@<3.1.6: ">=3.1.6"
+  "@openzeppelin/contracts@4.7.3": 4.9.6
+  "@openzeppelin/contracts-upgradeable@4.7.3": 4.9.6
 
 importers:
   .:
@@ -2718,12 +2720,6 @@ packages:
     resolution:
       {
         integrity: sha512-mpn6PHjH/KDDjNX0pXHEKdyv8m6DVGQiI2nGzQn0JbM1nOSHJpWx6fvfjtH7YxHJ6zBZTcsKkqGkFKDtCfoSLw==,
-      }
-
-  "@openzeppelin/contracts-upgradeable@4.7.3":
-    resolution:
-      {
-        integrity: sha512-+wuegAMaLcZnLCJIvrVUDzA9z/Wp93f0Dla/4jJvIhijRrPabjQbZe6fWiECLaJyfn5ci9fqf9vTw3xpQOad2A==,
       }
 
   "@openzeppelin/contracts-upgradeable@4.9.6":
@@ -13028,8 +13024,8 @@ snapshots:
   "@arbitrum/nitro-contracts@3.0.0":
     dependencies:
       "@offchainlabs/upgrade-executor": 1.1.0-beta.0
-      "@openzeppelin/contracts": 4.7.3
-      "@openzeppelin/contracts-upgradeable": 4.7.3
+      "@openzeppelin/contracts": 4.9.6
+      "@openzeppelin/contracts-upgradeable": 4.9.6
       patch-package: 6.5.1
       solady: 0.0.182
 
@@ -14920,10 +14916,8 @@ snapshots:
 
   "@offchainlabs/upgrade-executor@1.1.0-beta.0":
     dependencies:
-      "@openzeppelin/contracts": 4.7.3
-      "@openzeppelin/contracts-upgradeable": 4.7.3
-
-  "@openzeppelin/contracts-upgradeable@4.7.3": {}
+      "@openzeppelin/contracts": 4.9.6
+      "@openzeppelin/contracts-upgradeable": 4.9.6
 
   "@openzeppelin/contracts-upgradeable@4.9.6": {}
 
