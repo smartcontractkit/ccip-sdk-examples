@@ -1,6 +1,6 @@
 # 03-multichain-bridge-dapp
 
-Browser app: EVM, Solana, and Aptos transfers using [@chainlink/ccip-sdk](https://www.npmjs.com/package/@chainlink/ccip-sdk) (v1.0.0). Testnet only. Same layout and shared packages as 02, with Solana, Aptos, transaction history, pool info, and rate limits.
+Browser app: EVM, Solana, and Aptos transfers using [@chainlink/ccip-sdk](https://www.npmjs.com/package/@chainlink/ccip-sdk). Testnet only. Same layout and shared packages as 02, with Solana, Aptos, transaction history, pool info, and rate limits.
 
 **Send flow (difference from 02):** This app does **not** use `chain.sendMessage()`. It uses `chain.generateUnsignedSendMessage()` to build unsigned transaction data, then passes that to the connected wallet (EVM, Solana, or Aptos) for signing and sending via `sendTransaction`. 02 uses `sendMessage()`, which lets the SDK handle approval and send in one call. The unsigned-tx pattern here is required for Solana/Aptos and for explicit control over the sign/send step.
 

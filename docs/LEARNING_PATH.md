@@ -1,6 +1,6 @@
 # Learning Path
 
-Progressive examples for using `@chainlink/ccip-sdk` v1.0.0 (testnet only). Each example adds scope; shared packages provide config, utilities, UI, and brand assets.
+Progressive examples for using `@chainlink/ccip-sdk` (testnet only). Each example adds scope; shared packages provide config, utilities, UI, and brand assets.
 
 ## Example progression
 

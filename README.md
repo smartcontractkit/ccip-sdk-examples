@@ -5,7 +5,7 @@
 [![Node: >=22.0.0](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen)](package.json)
 [![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg)](https://pnpm.io/)
 
-Progressive examples for [@chainlink/ccip-sdk](https://www.npmjs.com/package/@chainlink/ccip-sdk) (v1.0.0). Testnet only. EVM, Solana, and Aptos.
+Progressive examples for [@chainlink/ccip-sdk](https://www.npmjs.com/package/@chainlink/ccip-sdk). Testnet only. EVM, Solana, and Aptos.
 
 > **Disclaimer**
 >
@@ -13,11 +13,12 @@ Progressive examples for [@chainlink/ccip-sdk](https://www.npmjs.com/package/@ch
 
 ## Examples
 
-| Example                                                           | Description                                                                                                                                | Runtime |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
-| [01-getting-started](./examples/01-getting-started)               | SDK basics: chains, fees, tokens, pools                                                                                                    | Node.js |
-| [02-evm-simple-bridge](./examples/02-evm-simple-bridge)           | EVM-to-EVM bridge; fee token selection (native/LINK); **send:** `chain.sendMessage()` (SDK does approval + send)                           | Browser |
-| [03-multichain-bridge-dapp](./examples/03-multichain-bridge-dapp) | EVM + Solana + Aptos; fee token selection; **send:** `generateUnsignedSendMessage()` then wallet `sendTransaction` (unsigned tx to wallet) | Browser |
+| Example                                                           | Description                                                                                                                                                                                                                                 | Runtime |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| [01-getting-started](./examples/01-getting-started)               | SDK basics: chains, fees, tokens, pools                                                                                                                                                                                                     | Node.js |
+| [02-evm-simple-bridge](./examples/02-evm-simple-bridge)           | EVM-to-EVM bridge; fee token selection (native/LINK); **send:** `chain.sendMessage()` (SDK does approval + send)                                                                                                                            | Browser |
+| [03-multichain-bridge-dapp](./examples/03-multichain-bridge-dapp) | EVM + Solana + Aptos; fee token selection; **send:** `generateUnsignedSendMessage()` then wallet `sendTransaction` (unsigned tx to wallet)                                                                                                  | Browser |
+| [04-hardhat-ccip](./examples/04-hardhat-ccip)                     | Hardhat v3 + custom Sender/Receiver contracts; token transfers (TT), arbitrary messaging, programmable token transfers (PTT); SDK-assisted destination gas estimation, fee quoting, extraArgs encoding, manual execution of failed messages | Node.js |
 
 ## Prerequisites
 
@@ -46,6 +47,10 @@ pnpm dev:02
 
 # 03 – Multichain bridge (dev server http://localhost:5173)
 pnpm dev:03
+
+# 04 – Hardhat tasks (compile, test, deploy, send)
+pnpm -F 04-hardhat-ccip build
+pnpm -F 04-hardhat-ccip test
 ```
 
 Optional: in 02 or 03, copy `.env.example` to `.env` and set `RPC_<NETWORK_ID>` (e.g. `RPC_ETHEREUM_TESTNET_SEPOLIA`) to use custom RPC endpoints. 03 also supports `VITE_WALLETCONNECT_PROJECT_ID`.
@@ -57,11 +62,13 @@ ccip-sdk-examples/
 ├── examples/
 │   ├── 01-getting-started/   # Node scripts
 │   ├── 02-evm-simple-bridge/ # EVM-only browser app
-│   └── 03-multichain-bridge-dapp/ # EVM + Solana + Aptos browser app
+│   ├── 03-multichain-bridge-dapp/ # EVM + Solana + Aptos browser app
+│   └── 04-hardhat-ccip/     # Hardhat v3 + custom contracts
 ├── packages/
+│   ├── shared-brand/        # Design tokens, logos, brand assets
 │   ├── shared-config/       # Networks, tokens, wagmi, constants
 │   ├── shared-utils/        # Validation, errors, formatting, message build, hooks
-│   └── shared-components/   # Button, Input, Select, Alert, MessageProgress, TransferStatus, ErrorBoundary, tokens.css
+│   └── shared-components/   # Button, Input, Select, Alert, MessageProgress, TransferStatus, ErrorBoundary
 ├── docs/
 │   └── LEARNING_PATH.md     # Progression and concepts
 ├── pnpm-workspace.yaml

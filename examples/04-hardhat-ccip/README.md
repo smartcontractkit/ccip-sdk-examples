@@ -1,6 +1,6 @@
 # 04 - Hardhat v3 + CCIP SDK
 
-> **CCIP SDK** [`@chainlink/ccip-sdk@1.2.0`](https://www.npmjs.com/package/@chainlink/ccip-sdk/v/1.2.0) | **Testnet only** | [CCIP Docs](https://docs.chain.link/ccip) | [CCIP Explorer](https://ccip.chain.link)
+> **CCIP SDK** [`@chainlink/ccip-sdk`](https://www.npmjs.com/package/@chainlink/ccip-sdk) | **Testnet only** | [CCIP Docs](https://docs.chain.link/ccip) | [CCIP Explorer](https://ccip.chain.link)
 
 > **Disclaimer**
 >
