@@ -14,7 +14,7 @@
  */
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import styles from "@ccip-examples/shared-components/bridge/WalletConnect.module.css";
+import styles from "@chainlink/ccip-examples-shared-components/bridge/WalletConnect.module.css";
 
 /**
  * Wallet connection with RainbowKit

@@ -18,7 +18,11 @@ import { fromViemClient, viemWallet } from "@chainlink/ccip-sdk/viem";
 import { networkInfo } from "@chainlink/ccip-sdk";
 import type { Chain } from "@chainlink/ccip-sdk";
 import { getPublicClient } from "wagmi/actions";
-import { NETWORKS, getTokenAddress, type FeeTokenOptionItem } from "@ccip-examples/shared-config";
+import {
+  NETWORKS,
+  getTokenAddress,
+  type FeeTokenOptionItem,
+} from "@chainlink/ccip-examples-shared-config";
 import {
   parseAmount,
   formatAmount,
@@ -27,8 +31,8 @@ import {
   categorizeError,
   buildTokenTransferMessage,
   type TransferState,
-} from "@ccip-examples/shared-utils";
-import { wagmiConfig, NETWORK_TO_CHAIN_ID } from "@ccip-examples/shared-config/wagmi";
+} from "@chainlink/ccip-examples-shared-utils";
+import { wagmiConfig, NETWORK_TO_CHAIN_ID } from "@chainlink/ccip-examples-shared-config/wagmi";
 
 const initialState: TransferState = {
   status: "idle",

@@ -1,5 +1,5 @@
 /**
- * @ccip-examples/shared-brand
+ * @chainlink/ccip-examples-shared-brand
  *
  * Shared design tokens and brand assets for CCIP SDK examples.
  *

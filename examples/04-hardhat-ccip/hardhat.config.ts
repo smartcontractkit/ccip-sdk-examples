@@ -2,7 +2,7 @@ import "dotenv/config";
 import { defineConfig, configVariable, task } from "hardhat/config";
 import hardhatViemPlugin from "@nomicfoundation/hardhat-viem";
 import hardhatNodeTestRunnerPlugin from "@nomicfoundation/hardhat-node-test-runner";
-import { NETWORKS, getChainIdForNetwork } from "@ccip-examples/shared-config";
+import { NETWORKS, getChainIdForNetwork } from "@chainlink/ccip-examples-shared-config";
 
 // Build Hardhat network entries from shared-config NETWORKS (EVM only)
 // Network names === CCIP SDK canonical networkIds — no mapping needed

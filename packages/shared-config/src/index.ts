@@ -1,5 +1,5 @@
 /**
- * @ccip-examples/shared-config
+ * @chainlink/ccip-examples-shared-config
  *
  * Shared network and token configuration for CCIP SDK examples.
  *

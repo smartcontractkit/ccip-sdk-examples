@@ -1,5 +1,6 @@
 {
-  "name": "@ccip-examples/shared-components",
+  "name": "@chainlink/ccip-examples-shared-components",
+  "private": true,
   "version": "1.0.0",
   "engines": {
     "node": ">=22.0.0"
@@ -63,9 +64,9 @@
     "ui"
   ],
   "dependencies": {
-    "@ccip-examples/shared-brand": "workspace:*",
-    "@ccip-examples/shared-config": "workspace:*",
-    "@ccip-examples/shared-utils": "workspace:*"
+    "@chainlink/ccip-examples-shared-brand": "workspace:*",
+    "@chainlink/ccip-examples-shared-config": "workspace:*",
+    "@chainlink/ccip-examples-shared-utils": "workspace:*"
   },
   "sideEffects": [
     "*.css",

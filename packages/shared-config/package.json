@@ -1,5 +1,6 @@
 {
-  "name": "@ccip-examples/shared-config",
+  "name": "@chainlink/ccip-examples-shared-config",
+  "private": true,
   "version": "1.0.0",
   "engines": {
     "node": ">=22.0.0"

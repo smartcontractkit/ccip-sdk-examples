@@ -239,7 +239,7 @@ Message Found!
 
 ### Chain (base class)
 
-All scripts use the abstract `Chain` base class. Concrete instances are created via the `createChain(networkId, rpcUrl)` factory from `@ccip-examples/shared-utils`.
+All scripts use the abstract `Chain` base class. Concrete instances are created via the `createChain(networkId, rpcUrl)` factory from `@chainlink/ccip-examples-shared-utils`.
 
 | Method                             | Description                           |
 | ---------------------------------- | ------------------------------------- |
@@ -263,17 +263,17 @@ Used by `get-status.ts` for message lookups. No chain instance needed.
 
 ### Shared Utilities
 
-| Function                      | Package                        | Description                                       |
-| ----------------------------- | ------------------------------ | ------------------------------------------------- |
-| `createChain()`               | `@ccip-examples/shared-utils`  | Family-agnostic chain factory                     |
-| `createWallet()`              | `@ccip-examples/shared-utils`  | Family-agnostic wallet factory (reads env vars)   |
-| `createSolanaWallet()`        | `@ccip-examples/shared-utils`  | Solana wallet from file path, hex, or base58      |
-| `createAptosWallet()`         | `@ccip-examples/shared-utils`  | Aptos wallet from AIP-80 or hex private key       |
-| `createLogger()`              | `@ccip-examples/shared-utils`  | Logger with configurable verbosity                |
-| `buildTokenTransferMessage()` | `@ccip-examples/shared-utils`  | Build a `MessageInput` for token transfers        |
-| `networkInfo()`               | `@chainlink/ccip-sdk`          | Get chain selector and metadata                   |
-| `resolveFeeTokenAddress()`    | `@ccip-examples/shared-config` | Resolve `"native"`/`"link"` to on-chain address   |
-| `getDummyReceiver()`          | `@ccip-examples/shared-config` | Get a format-valid dummy address per chain family |
+| Function                      | Package                                  | Description                                       |
+| ----------------------------- | ---------------------------------------- | ------------------------------------------------- |
+| `createChain()`               | `@chainlink/ccip-examples-shared-utils`  | Family-agnostic chain factory                     |
+| `createWallet()`              | `@chainlink/ccip-examples-shared-utils`  | Family-agnostic wallet factory (reads env vars)   |
+| `createSolanaWallet()`        | `@chainlink/ccip-examples-shared-utils`  | Solana wallet from file path, hex, or base58      |
+| `createAptosWallet()`         | `@chainlink/ccip-examples-shared-utils`  | Aptos wallet from AIP-80 or hex private key       |
+| `createLogger()`              | `@chainlink/ccip-examples-shared-utils`  | Logger with configurable verbosity                |
+| `buildTokenTransferMessage()` | `@chainlink/ccip-examples-shared-utils`  | Build a `MessageInput` for token transfers        |
+| `networkInfo()`               | `@chainlink/ccip-sdk`                    | Get chain selector and metadata                   |
+| `resolveFeeTokenAddress()`    | `@chainlink/ccip-examples-shared-config` | Resolve `"native"`/`"link"` to on-chain address   |
+| `getDummyReceiver()`          | `@chainlink/ccip-examples-shared-config` | Get a format-valid dummy address per chain family |
 
 ## Solana-Specific Notes
 

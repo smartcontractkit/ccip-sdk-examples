@@ -9,7 +9,7 @@ Progressive examples for using `@chainlink/ccip-sdk` v1.0.0 (testnet only). Each
 - **Runtime:** Node.js (no browser).
 - **Purpose:** SDK basics without UI—chain setup, fee estimation, token discovery, pool inspection, cross-chain transfers.
 - **Scripts:** `pnpm chains`, `pnpm fees`, `pnpm tokens`, `pnpm pools`, `pnpm transfer`, `pnpm status` (see example README).
-- **Dependencies:** `@chainlink/ccip-sdk`, `@ccip-examples/shared-config`, `@ccip-examples/shared-utils` (chain factory, validation, message building).
+- **Dependencies:** `@chainlink/ccip-sdk`, `@chainlink/ccip-examples-shared-config`, `@chainlink/ccip-examples-shared-utils` (chain factory, validation, message building).
 
 ### 02-evm-simple-bridge
 
@@ -19,7 +19,7 @@ Progressive examples for using `@chainlink/ccip-sdk` v1.0.0 (testnet only). Each
 - **Fee token:** User selects a fee token via `FeeTokenOptions` (native currency, LINK, or other tokens discovered dynamically from the router via `getFeeTokens()`). Each option shows token name, symbol, balance, and a "Native" badge for native currency.
 - **Balances:** `useWalletBalances` fetches native, LINK, and token balances in parallel; displayed via `BalancesList`.
 - **Stack:** wagmi, viem, RainbowKit; chain from `getPublicClient` + `fromViemClient(toGenericPublicClient(...))`.
-- **Shared:** `@ccip-examples/shared-config` (NETWORKS, wagmi config, tokens), `@ccip-examples/shared-utils` (validation, errors, formatting, hooks), `@ccip-examples/shared-components` (Button, Input, Select, Alert, FeeTokenOptions, BalancesList, TransferStatus, MessageProgress, ErrorBoundary), `@ccip-examples/shared-brand` (design tokens, logo).
+- **Shared:** `@chainlink/ccip-examples-shared-config` (NETWORKS, wagmi config, tokens), `@chainlink/ccip-examples-shared-utils` (validation, errors, formatting, hooks), `@chainlink/ccip-examples-shared-components` (Button, Input, Select, Alert, FeeTokenOptions, BalancesList, TransferStatus, MessageProgress, ErrorBoundary), `@chainlink/ccip-examples-shared-brand` (design tokens, logo).
 - **RPC:** Optional `.env` with `RPC_<NETWORK_ID>` (e.g. `RPC_ETHEREUM_TESTNET_SEPOLIA`) to override public RPC URLs.
 
 ### 03-multichain-bridge-dapp
@@ -54,8 +54,8 @@ CCIP routing uses **chain selectors** (64-bit identifiers), not wallet chain IDs
 Call `getFee()` on the source chain before sending. Message shape follows SDK `MessageInput` (receiver, tokenAmounts, feeToken, extraArgs, etc.). Use `buildTokenTransferMessage` (shared-utils) for token transfers:
 
 ```typescript
-import { buildTokenTransferMessage } from "@ccip-examples/shared-utils";
-import { resolveFeeTokenAddress } from "@ccip-examples/shared-config";
+import { buildTokenTransferMessage } from "@chainlink/ccip-examples-shared-utils";
+import { resolveFeeTokenAddress } from "@chainlink/ccip-examples-shared-config";
 
 // feeToken: undefined = native currency, address = ERC20 (e.g. LINK)
 const feeTokenAddress = resolveFeeTokenAddress("link", sourceNetworkId);

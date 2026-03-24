@@ -37,7 +37,7 @@ import {
   CCIPMessageIdNotFoundError,
   withRetry,
 } from "@chainlink/ccip-sdk";
-import { getStatusDescription, POLLING_CONFIG } from "@ccip-examples/shared-config";
+import { getStatusDescription, POLLING_CONFIG } from "@chainlink/ccip-examples-shared-config";
 
 async function main() {
   const args = process.argv.slice(2);

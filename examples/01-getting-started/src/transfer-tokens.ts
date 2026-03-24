@@ -32,15 +32,15 @@ import {
   getDummyReceiver,
   resolveFeeTokenAddress,
   type FeeTokenOption,
-} from "@ccip-examples/shared-config";
+} from "@chainlink/ccip-examples-shared-config";
 import {
   formatAmount,
   parseAmount,
   buildTokenTransferMessage,
   createChain,
   createLogger,
-} from "@ccip-examples/shared-utils";
-import { createWallet } from "@ccip-examples/shared-utils/wallet";
+} from "@chainlink/ccip-examples-shared-utils";
+import { createWallet } from "@chainlink/ccip-examples-shared-utils/wallet";
 
 const DEFAULT_TOKEN = "CCIP-BnM";
 const DEFAULT_AMOUNT = "0.001";

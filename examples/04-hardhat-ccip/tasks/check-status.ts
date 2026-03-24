@@ -16,7 +16,7 @@ import {
   CCIPError,
   withRetry,
 } from "@chainlink/ccip-sdk";
-import { getStatusDescription, POLLING_CONFIG } from "@ccip-examples/shared-config";
+import { getStatusDescription, POLLING_CONFIG } from "@chainlink/ccip-examples-shared-config";
 
 interface CheckStatusArgs {
   messageId: string;

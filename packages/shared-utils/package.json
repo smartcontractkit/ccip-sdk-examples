@@ -1,5 +1,6 @@
 {
-  "name": "@ccip-examples/shared-utils",
+  "name": "@chainlink/ccip-examples-shared-utils",
+  "private": true,
   "version": "1.0.0",
   "engines": {
     "node": ">=22.0.0"
@@ -73,7 +74,7 @@
     "bs58": "^6.0.0",
     "ethers": "^6.16.0",
     "viem": "^2.21.0",
-    "@ccip-examples/shared-config": "workspace:*"
+    "@chainlink/ccip-examples-shared-config": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

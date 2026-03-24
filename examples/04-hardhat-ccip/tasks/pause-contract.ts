@@ -17,7 +17,7 @@
  */
 
 import type { HardhatRuntimeEnvironment } from "hardhat/types/hre";
-import { getExplorerTxUrl } from "@ccip-examples/shared-config";
+import { getExplorerTxUrl } from "@chainlink/ccip-examples-shared-config";
 import { createClients } from "../helpers/sdk.js";
 
 interface PauseContractArgs {

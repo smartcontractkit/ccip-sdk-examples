@@ -8,8 +8,8 @@ import { useCallback, useRef } from "react";
 import { fromViemClient } from "@chainlink/ccip-sdk/viem";
 import type { Chain } from "@chainlink/ccip-sdk";
 import { getPublicClient } from "wagmi/actions";
-import { toGenericPublicClient } from "@ccip-examples/shared-utils";
-import { wagmiConfig, NETWORK_TO_CHAIN_ID } from "@ccip-examples/shared-config/wagmi";
+import { toGenericPublicClient } from "@chainlink/ccip-examples-shared-utils";
+import { wagmiConfig, NETWORK_TO_CHAIN_ID } from "@chainlink/ccip-examples-shared-config/wagmi";
 
 export function useGetChain(): (networkId: string) => Promise<Chain> {
   const chainCacheRef = useRef<Map<string, Chain>>(new Map());

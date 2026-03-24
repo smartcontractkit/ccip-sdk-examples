@@ -2,8 +2,8 @@
  * Fee estimate block: estimated fee (with symbol), delivery, "Your balance after" with checkmark.
  */
 
-import type { FeeTokenOptionItem } from "@ccip-examples/shared-config";
-import { formatAmount } from "@ccip-examples/shared-utils";
+import type { FeeTokenOptionItem } from "@chainlink/ccip-examples-shared-config";
+import { formatAmount } from "@chainlink/ccip-examples-shared-utils";
 import styles from "./FeeEstimateDisplay.module.css";
 
 export interface FeeEstimateDisplayProps {

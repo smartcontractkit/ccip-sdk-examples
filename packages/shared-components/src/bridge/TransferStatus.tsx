@@ -3,7 +3,7 @@
  */
 
 import { getCCIPExplorerUrl } from "@chainlink/ccip-sdk";
-import type { TransferStatusStatus } from "@ccip-examples/shared-utils";
+import type { TransferStatusStatus } from "@chainlink/ccip-examples-shared-utils";
 import { Button } from "../primitives/Button.js";
 import styles from "./TransferStatus.module.css";
 

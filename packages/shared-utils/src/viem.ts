@@ -8,7 +8,7 @@
  * ```typescript
  * import { getPublicClient } from "wagmi/actions";
  * import { fromViemClient } from "@chainlink/ccip-sdk/viem";
- * import { toGenericPublicClient } from "@ccip-examples/shared-utils";
+ * import { toGenericPublicClient } from "@chainlink/ccip-examples-shared-utils";
  *
  * const client = getPublicClient(wagmiConfig, { chainId });
  * const chain = await fromViemClient(toGenericPublicClient(client));

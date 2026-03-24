@@ -3,8 +3,8 @@
  * Two cards; uses useTransferBalances and shared formatAmount / NETWORKS.
  */
 
-import { getNetwork } from "@ccip-examples/shared-config";
-import { formatAmount } from "@ccip-examples/shared-utils";
+import { getNetwork } from "@chainlink/ccip-examples-shared-config";
+import { formatAmount } from "@chainlink/ccip-examples-shared-utils";
 import { useTransferBalances } from "../../hooks/useTransferBalances.js";
 import styles from "./TransferBalances.module.css";
 

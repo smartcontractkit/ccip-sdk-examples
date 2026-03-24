@@ -6,9 +6,13 @@
 
 import { createContext, useCallback, useMemo, useRef, type ReactNode } from "react";
 import { networkInfo, ChainFamily } from "@chainlink/ccip-sdk";
-import type { SDKCallPhase } from "@ccip-examples/shared-utils/inspector";
-import { NETWORKS, CHAIN_FAMILY_LABELS } from "@ccip-examples/shared-config";
-import { createChain, obfuscateRpcUrl, type ChainInstance } from "@ccip-examples/shared-utils";
+import type { SDKCallPhase } from "@chainlink/ccip-examples-shared-utils/inspector";
+import { NETWORKS, CHAIN_FAMILY_LABELS } from "@chainlink/ccip-examples-shared-config";
+import {
+  createChain,
+  obfuscateRpcUrl,
+  type ChainInstance,
+} from "@chainlink/ccip-examples-shared-utils";
 import { logSDKCall } from "../inspector/index.js";
 import { getAnnotation } from "../inspector/annotations.js";
 

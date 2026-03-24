@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { networkInfo, ChainFamily } from "@chainlink/ccip-sdk";
-import { formatAmount, isValidAddress } from "@ccip-examples/shared-utils";
+import { formatAmount, isValidAddress } from "@chainlink/ccip-examples-shared-utils";
 import { useChains } from "./useChains.js";
 import { useTokenPoolInfo } from "./useTokenPoolInfo.js";
 import { logSDKCall } from "../inspector/index.js";

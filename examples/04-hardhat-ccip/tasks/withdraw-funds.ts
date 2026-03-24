@@ -22,7 +22,7 @@
 
 import type { HardhatRuntimeEnvironment } from "hardhat/types/hre";
 import { erc20Abi, formatUnits } from "viem";
-import { getExplorerTxUrl } from "@ccip-examples/shared-config";
+import { getExplorerTxUrl } from "@chainlink/ccip-examples-shared-config";
 import { createClients } from "../helpers/sdk.js";
 
 interface WithdrawFundsArgs {

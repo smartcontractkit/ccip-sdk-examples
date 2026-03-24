@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from "react";
-import type { SDKCallEntry, SDKCallPhase } from "@ccip-examples/shared-utils/inspector";
+import type { SDKCallEntry, SDKCallPhase } from "@chainlink/ccip-examples-shared-utils/inspector";
 import { CallEntry } from "./CallEntry.js";
 import styles from "./PhaseGroup.module.css";
 

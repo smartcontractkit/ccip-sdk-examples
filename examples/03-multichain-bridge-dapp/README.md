@@ -25,10 +25,10 @@ Optional: copy `.env.example` to `.env`. Set `RPC_<NETWORK_ID>` (e.g. `RPC_ETHER
 
 ## Architecture
 
-- **Chains:** `ChainContext` exposes `getChain(networkId)`. Chains are created on demand via the shared `createChain(networkId, rpcUrl)` factory from `@ccip-examples/shared-utils`, which maps chain family to the appropriate SDK constructor (`EVMChain.fromUrl`, `SolanaChain.fromUrl`, `AptosChain.fromUrl`). RPC URLs come from `NETWORKS[networkId].rpcUrl` in shared-config (env override or fallback).
+- **Chains:** `ChainContext` exposes `getChain(networkId)`. Chains are created on demand via the shared `createChain(networkId, rpcUrl)` factory from `@chainlink/ccip-examples-shared-utils`, which maps chain family to the appropriate SDK constructor (`EVMChain.fromUrl`, `SolanaChain.fromUrl`, `AptosChain.fromUrl`). RPC URLs come from `NETWORKS[networkId].rpcUrl` in shared-config (env override or fallback).
 - **Chain family:** `networkInfo(networkId).family` (SDK); no custom chain-type strings.
 - **Provider order:** ErrorBoundary → QueryClientProvider → WagmiProvider → RainbowKitProvider → ConnectionProvider (Solana) → WalletProvider (Solana) → WalletModalProvider → AptosWalletAdapterProvider → ChainContextProvider → TransactionHistoryProvider → App.
-- **Config:** `@ccip-examples/shared-config` (NETWORKS, tokens, wagmi); SDK network IDs only (e.g. `ethereum-testnet-sepolia`, `solana-devnet`, `aptos-testnet`).
+- **Config:** `@chainlink/ccip-examples-shared-config` (NETWORKS, tokens, wagmi); SDK network IDs only (e.g. `ethereum-testnet-sepolia`, `solana-devnet`, `aptos-testnet`).
 
 ## Data flow
 

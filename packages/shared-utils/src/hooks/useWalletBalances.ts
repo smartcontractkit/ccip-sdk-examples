@@ -21,7 +21,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Chain } from "@chainlink/ccip-sdk";
-import { NETWORKS, getTokenAddress } from "@ccip-examples/shared-config";
+import { NETWORKS, getTokenAddress } from "@chainlink/ccip-examples-shared-config";
 import { formatAmount } from "../validation.js";
 import type { SDKCallReporter } from "../inspector/types.js";
 

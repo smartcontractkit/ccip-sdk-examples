@@ -6,7 +6,7 @@
 import { useState, useEffect } from "react";
 import { useTokenPoolInfo, type TokenPoolInfo } from "../../hooks/useTokenPoolInfo.js";
 import { RateLimitDisplay } from "./RateLimitDisplay.js";
-import { truncateAddress, copyToClipboard } from "@ccip-examples/shared-utils";
+import { truncateAddress, copyToClipboard } from "@chainlink/ccip-examples-shared-utils";
 import styles from "./PoolInfo.module.css";
 
 export type { TokenPoolInfo };

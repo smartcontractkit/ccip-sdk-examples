@@ -2,7 +2,7 @@
  * Global styles for CCIP example frontends.
  * Import design tokens from shared-brand (single source of truth).
  */
-@import "@ccip-examples/shared-brand/design-tokens.css";
+@import "@chainlink/ccip-examples-shared-brand/design-tokens.css";
 
 :root {
   --color-metamask: #f6851b;

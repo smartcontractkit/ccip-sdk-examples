@@ -3,7 +3,7 @@
  * Two cards (source / destination), each with Outbound and Inbound via RateLimitDisplay.
  */
 
-import { getNetwork } from "@ccip-examples/shared-config";
+import { getNetwork } from "@chainlink/ccip-examples-shared-config";
 import { RateLimitDisplay } from "../bridge/RateLimitDisplay.js";
 import { useTransferRateLimits } from "../../hooks/useTransferRateLimits.js";
 import styles from "./TransferRateLimits.module.css";

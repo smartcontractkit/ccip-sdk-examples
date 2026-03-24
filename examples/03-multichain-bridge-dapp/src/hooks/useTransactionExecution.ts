@@ -8,7 +8,7 @@ import {
   isSolanaChain,
   isAptosChain,
   type ChainInstance,
-} from "@ccip-examples/shared-utils";
+} from "@chainlink/ccip-examples-shared-utils";
 import { useEVMTransfer } from "./useEVMTransfer.js";
 import { useSolanaTransfer } from "./useSolanaTransfer.js";
 import { useAptosTransfer } from "./useAptosTransfer.js";

@@ -29,7 +29,7 @@ import {
   withRetry,
 } from "@chainlink/ccip-sdk";
 import { fromViemClient, viemWallet } from "@chainlink/ccip-sdk/viem";
-import { getExplorerTxUrl } from "@ccip-examples/shared-config";
+import { getExplorerTxUrl } from "@chainlink/ccip-examples-shared-config";
 import { createClients } from "../helpers/sdk.js";
 
 interface ManualExecuteArgs {

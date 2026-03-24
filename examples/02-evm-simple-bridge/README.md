@@ -131,7 +131,7 @@ const walletClient = useWalletClient();
 // 2. viem → CCIP SDK (adapters from SDK + shared-utils)
 import { fromViemClient, viemWallet } from "@chainlink/ccip-sdk/viem";
 import { CCIPAPIClient, networkInfo } from "@chainlink/ccip-sdk";
-import { toGenericPublicClient } from "@ccip-examples/shared-utils";
+import { toGenericPublicClient } from "@chainlink/ccip-examples-shared-utils";
 
 // Chain instance for on-chain operations (fee, send)
 const chain = await fromViemClient(toGenericPublicClient(publicClient));
@@ -298,7 +298,7 @@ src/
 └── main.tsx                     # Entry point
 ```
 
-**From shared packages** (via `@ccip-examples/*`):
+**From shared packages** (via `@chainlink/ccip-examples-*`):
 
 | Import                                                  | Package               | Purpose                   |
 | ------------------------------------------------------- | --------------------- | ------------------------- |
@@ -333,7 +333,7 @@ import {
   buildTokenTransferMessage,
   toGenericPublicClient,
   categorizeError,
-} from "@ccip-examples/shared-utils";
+} from "@chainlink/ccip-examples-shared-utils";
 
 // Create SDK chain from wagmi's public client
 const publicClient = getPublicClient(wagmiConfig, { chainId });

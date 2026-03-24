@@ -9,7 +9,7 @@ import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { Deserializer, SimpleTransaction } from "@aptos-labs/ts-sdk";
 import type { AptosChain } from "@chainlink/ccip-sdk";
 import { networkInfo } from "@chainlink/ccip-sdk";
-import { NETWORKS } from "@ccip-examples/shared-config";
+import { NETWORKS } from "@chainlink/ccip-examples-shared-config";
 import { logSDKCall } from "../inspector/index.js";
 import { getAnnotation } from "../inspector/annotations.js";
 import type { TransactionResult, TransferMessage } from "./transferTypes.js";

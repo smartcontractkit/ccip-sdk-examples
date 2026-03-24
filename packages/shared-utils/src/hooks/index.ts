@@ -1,6 +1,6 @@
 /**
  * React hooks for CCIP examples (EVM/Solana frontends).
- * Import from "@ccip-examples/shared-utils/hooks" to avoid pulling React into Node CLI (example 01).
+ * Import from "@chainlink/ccip-examples-shared-utils/hooks" to avoid pulling React into Node CLI (example 01).
  */
 
 export { useMessageStatus, type MessageStatusResult } from "./useMessageStatus.js";

@@ -3,8 +3,8 @@
  */
 
 import { MessageStatus, getCCIPExplorerUrl } from "@chainlink/ccip-sdk";
-import { useMessageStatus } from "@ccip-examples/shared-utils/hooks";
-import { MESSAGE_STAGES } from "@ccip-examples/shared-config";
+import { useMessageStatus } from "@chainlink/ccip-examples-shared-utils/hooks";
+import { MESSAGE_STAGES } from "@chainlink/ccip-examples-shared-config";
 import { CheckIcon, XIcon } from "../icons/index.js";
 import styles from "./MessageProgress.module.css";
 

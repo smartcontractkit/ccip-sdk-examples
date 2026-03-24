@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Chain } from "@chainlink/ccip-sdk";
-import { NETWORKS, type FeeTokenOptionItem } from "@ccip-examples/shared-config";
+import { NETWORKS, type FeeTokenOptionItem } from "@chainlink/ccip-examples-shared-config";
 import { formatAmount } from "../validation.js";
 import type { SDKCallReporter } from "../inspector/types.js";
 

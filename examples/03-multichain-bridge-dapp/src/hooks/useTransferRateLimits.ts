@@ -6,10 +6,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { networkInfo } from "@chainlink/ccip-sdk";
 import type { RateLimiterState } from "@chainlink/ccip-sdk";
-import { RATE_LIMIT_POLLING_INTERVAL_MS } from "@ccip-examples/shared-config";
-import { NETWORKS } from "@ccip-examples/shared-config";
+import { RATE_LIMIT_POLLING_INTERVAL_MS } from "@chainlink/ccip-examples-shared-config";
+import { NETWORKS } from "@chainlink/ccip-examples-shared-config";
 import { useChains } from "./useChains.js";
-import type { RateLimitBucket } from "@ccip-examples/shared-utils";
+import type { RateLimitBucket } from "@chainlink/ccip-examples-shared-utils";
 import { logSDKCall } from "../inspector/index.js";
 import { getAnnotation } from "../inspector/annotations.js";
 

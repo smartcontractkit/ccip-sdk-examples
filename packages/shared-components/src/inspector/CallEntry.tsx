@@ -3,7 +3,7 @@
  */
 
 import { useState } from "react";
-import type { SDKCallEntry } from "@ccip-examples/shared-utils/inspector";
+import type { SDKCallEntry } from "@chainlink/ccip-examples-shared-utils/inspector";
 import { CodeSnippet } from "./CodeSnippet.js";
 import { PollingIndicator } from "./PollingIndicator.js";
 import styles from "./CallEntry.module.css";

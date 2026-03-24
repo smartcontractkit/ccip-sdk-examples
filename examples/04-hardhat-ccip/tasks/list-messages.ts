@@ -33,7 +33,7 @@ import {
   getCCIPExplorerUrl,
   networkInfo,
 } from "@chainlink/ccip-sdk";
-import { formatRelativeTime } from "@ccip-examples/shared-utils";
+import { formatRelativeTime } from "@chainlink/ccip-examples-shared-utils";
 
 interface ListMessagesArgs {
   sender: string;

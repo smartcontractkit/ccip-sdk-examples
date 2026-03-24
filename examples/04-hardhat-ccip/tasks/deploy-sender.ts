@@ -10,7 +10,7 @@
 
 import type { HardhatRuntimeEnvironment } from "hardhat/types/hre";
 import { networkInfo } from "@chainlink/ccip-sdk";
-import { getExplorerTxUrl } from "@ccip-examples/shared-config";
+import { getExplorerTxUrl } from "@chainlink/ccip-examples-shared-config";
 import { createClients, getRouterAddress } from "../helpers/sdk.js";
 
 interface DeploySenderArgs {

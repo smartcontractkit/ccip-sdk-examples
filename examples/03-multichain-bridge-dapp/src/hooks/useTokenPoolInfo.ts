@@ -6,8 +6,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { networkInfo } from "@chainlink/ccip-sdk";
 import type { RateLimiterState } from "@chainlink/ccip-sdk";
-import { NETWORKS } from "@ccip-examples/shared-config";
-import type { RateLimitBucket } from "@ccip-examples/shared-utils";
+import { NETWORKS } from "@chainlink/ccip-examples-shared-config";
+import type { RateLimitBucket } from "@chainlink/ccip-examples-shared-utils";
 import { useChains } from "./useChains.js";
 import { logSDKCall } from "../inspector/index.js";
 import { getAnnotation } from "../inspector/annotations.js";

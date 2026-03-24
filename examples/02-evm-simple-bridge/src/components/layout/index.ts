@@ -1,6 +1,6 @@
 /**
  * Layout components barrel export.
- * Header is from @ccip-examples/shared-components.
+ * Header is from @chainlink/ccip-examples-shared-components.
  */
 
 export { Footer } from "./Footer";

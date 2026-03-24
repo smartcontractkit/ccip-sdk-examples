@@ -12,7 +12,7 @@ import { MessageStatus, CCIPAPIClient } from "@chainlink/ccip-sdk";
 import {
   POLLING_CONFIG,
   getStatusDescription as getSharedStatusDescription,
-} from "@ccip-examples/shared-config";
+} from "@chainlink/ccip-examples-shared-config";
 import { formatElapsedTime } from "../formatting.js";
 import type { SDKCallReporter } from "../inspector/types.js";
 

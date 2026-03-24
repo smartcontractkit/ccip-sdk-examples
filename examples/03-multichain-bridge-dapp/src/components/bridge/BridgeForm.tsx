@@ -10,7 +10,7 @@ import {
   getTokenAddress,
   CHAIN_FAMILY_LABELS,
   type FeeTokenOptionItem,
-} from "@ccip-examples/shared-config";
+} from "@chainlink/ccip-examples-shared-config";
 import {
   isValidAddress,
   isValidAmount,
@@ -20,7 +20,7 @@ import {
   getAddressPlaceholder,
   COPIED_FEEDBACK_MS,
   type WalletAddresses,
-} from "@ccip-examples/shared-utils";
+} from "@chainlink/ccip-examples-shared-utils";
 import {
   Select,
   Input,
@@ -32,15 +32,15 @@ import {
   CopyIcon,
   CheckIcon,
   type BalanceItem,
-} from "@ccip-examples/shared-components";
-import { useWalletBalances, useFeeTokens } from "@ccip-examples/shared-utils/hooks";
+} from "@chainlink/ccip-examples-shared-components";
+import { useWalletBalances, useFeeTokens } from "@chainlink/ccip-examples-shared-utils/hooks";
 import { inspectorStore } from "../../inspector/index.js";
 import { getAnnotation } from "../../inspector/annotations.js";
-import { serializeForDisplay } from "@ccip-examples/shared-utils/inspector";
+import { serializeForDisplay } from "@chainlink/ccip-examples-shared-utils/inspector";
 import { PoolInfo } from "./PoolInfo.js";
 import { useChains } from "../../hooks/useChains.js";
-import { NETWORK_TO_CHAIN_ID } from "@ccip-examples/shared-config/wagmi";
-import styles from "@ccip-examples/shared-components/bridge/BridgeForm.module.css";
+import { NETWORK_TO_CHAIN_ID } from "@chainlink/ccip-examples-shared-config/wagmi";
+import styles from "@chainlink/ccip-examples-shared-components/bridge/BridgeForm.module.css";
 
 const TOKEN_SYMBOL = "CCIP-BnM";
 

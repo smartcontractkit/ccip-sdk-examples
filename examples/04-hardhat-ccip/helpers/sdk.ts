@@ -8,7 +8,7 @@
 import { createPublicClient, createWalletClient, http, defineChain } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { networkInfo } from "@chainlink/ccip-sdk";
-import { NETWORKS, getChainIdForNetwork } from "@ccip-examples/shared-config";
+import { NETWORKS, getChainIdForNetwork } from "@chainlink/ccip-examples-shared-config";
 
 /**
  * Create viem clients for a given network

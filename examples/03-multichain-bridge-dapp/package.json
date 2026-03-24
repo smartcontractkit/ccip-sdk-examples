@@ -1,5 +1,6 @@
 {
-  "name": "@ccip-examples/03-multichain-bridge-dapp",
+  "name": "@chainlink/ccip-examples-03-multichain-bridge-dapp",
+  "private": true,
   "version": "1.0.0",
   "engines": {
     "node": ">=22.0.0"
@@ -19,10 +20,10 @@
     "@aptos-labs/ts-sdk": "^5.2.1",
     "@aptos-labs/wallet-adapter-react": "^3.7.2",
     "@chainlink/ccip-sdk": "1.3.1",
-    "@ccip-examples/shared-brand": "workspace:*",
-    "@ccip-examples/shared-config": "workspace:*",
-    "@ccip-examples/shared-components": "workspace:*",
-    "@ccip-examples/shared-utils": "workspace:*",
+    "@chainlink/ccip-examples-shared-brand": "workspace:*",
+    "@chainlink/ccip-examples-shared-config": "workspace:*",
+    "@chainlink/ccip-examples-shared-components": "workspace:*",
+    "@chainlink/ccip-examples-shared-utils": "workspace:*",
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@solana/wallet-adapter-base": "0.9.23",
     "@solana/wallet-adapter-react": "0.15.39",

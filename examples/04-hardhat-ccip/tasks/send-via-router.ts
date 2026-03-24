@@ -42,12 +42,12 @@ import {
   getExplorerTxUrl,
   getTokenAddress,
   resolveFeeTokenAddress,
-} from "@ccip-examples/shared-config";
+} from "@chainlink/ccip-examples-shared-config";
 import {
   buildTokenTransferMessage,
   formatAmount,
   formatLatency,
-} from "@ccip-examples/shared-utils";
+} from "@chainlink/ccip-examples-shared-utils";
 import { createClients, getRouterAddress, getDestChainSelector } from "../helpers/sdk.js";
 
 interface SendViaRouterArgs {
