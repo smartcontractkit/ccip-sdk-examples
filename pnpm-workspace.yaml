@@ -1,3 +1,6 @@
 packages:
   - "examples/*"
   - "packages/*"
+
+catalog:
+  "@chainlink/ccip-sdk": "1.4.2"
