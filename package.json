@@ -9,6 +9,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
+    "dev:00": "pnpm -F './examples/00-landing-page' dev",
     "dev:01": "pnpm -F 01-getting-started dev",
     "dev:02": "pnpm -F 02-evm-simple-bridge dev",
     "dev:03": "pnpm -F 03-multichain-bridge-dapp dev",
@@ -25,7 +26,9 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check",
-    "clean": "pnpm -r clean && rm -rf node_modules .pnpm-store",
+    "build:site": "pnpm build:packages && bash scripts/build-site.sh",
+    "preview:site": "pnpm build:site && npx serve dist",
+    "clean": "pnpm -r clean && rm -rf node_modules .pnpm-store dist",
     "prepare": "husky"
   },
   "devDependencies": {

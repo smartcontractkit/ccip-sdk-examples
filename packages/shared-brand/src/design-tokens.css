@@ -48,8 +48,8 @@
   --color-text: var(--color-dark);
   --color-text-primary: var(--color-dark);
   --color-text-secondary: #374151;
-  --color-text-tertiary: #6b7280;
-  --color-text-muted: #9ca3af;
+  --color-text-tertiary: #556170;
+  --color-text-muted: #6b7280;
 
   /* Backgrounds */
   --color-background: var(--color-light);

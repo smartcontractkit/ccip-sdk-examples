@@ -7,6 +7,7 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
  * Node polyfills required for Solana SDK; manualChunks for vendor splitting.
  */
 export default defineConfig({
+  base: process.env.VITE_BASE || "/",
   plugins: [
     react(),
     nodePolyfills({

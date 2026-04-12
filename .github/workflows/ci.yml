@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     name: Code Quality
@@ -39,5 +43,8 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
-      - name: Build examples
-        run: pnpm build:examples
+      - name: Build non-site examples
+        run: pnpm -F './examples/01-*' -F './examples/04-*' build
+
+      - name: Build combined site
+        run: bash scripts/build-site.sh

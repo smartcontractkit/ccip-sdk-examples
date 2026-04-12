@@ -18,6 +18,7 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
  * @see https://github.com/smartcontractkit/ccip-tools-ts
  */
 export default defineConfig({
+  base: process.env.VITE_BASE || "/",
   plugins: [
     react(),
     nodePolyfills({
