@@ -11,8 +11,8 @@ import { ChainFamily } from "@chainlink/ccip-sdk";
  * External documentation and resource URLs
  */
 export const EXTERNAL_URLS = {
-  /** CCIP Documentation */
-  docs: "https://docs.chain.link/ccip",
+  /** CCIP SDK Tools Documentation */
+  docs: "https://docs.chain.link/ccip/tools",
 
   /** CCIP Explorer - message tracking */
   ccipExplorer: "https://ccip.chain.link",
