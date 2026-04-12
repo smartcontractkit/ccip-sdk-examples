@@ -69,7 +69,8 @@
       "@openzeppelin/contracts@4.7.3": "4.9.6",
       "@openzeppelin/contracts-upgradeable@4.7.3": "4.9.6",
       "@openzeppelin/contracts-4.7.3": "npm:@openzeppelin/contracts@4.9.6",
-      "undici@<6.22.0": ">=6.22.0"
+      "undici@<6.22.0": ">=6.22.0",
+      "axios@<1.15.0": ">=1.15.0"
     }
   },
   "author": "Chainlink",
