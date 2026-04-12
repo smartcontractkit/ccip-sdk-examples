@@ -151,14 +151,50 @@ npx vercel build
 npx vercel dev
 ```
 
-## Adding a browser example
+## Adding a new example
 
-1. Create `examples/NN-name/` with a `vite.config.ts` that reads `base: process.env.VITE_BASE || "/"`.
-2. Add build and copy lines to `scripts/build-site.sh`.
-3. Add a rewrite rule to `vercel.json`.
-4. Add an entry to `examples/00-landing-page/src/data/examples.ts`.
+### Browser example (deployed to Vercel)
 
-Node.js-only examples (no `vite.config.ts` + `index.html`) require no deployment changes.
+1. Create `examples/NN-name/` with a `vite.config.ts` that includes `base: process.env.VITE_BASE || "/"`.
+
+2. Add build and copy lines to `scripts/build-site.sh`:
+
+   ```bash
+   VITE_BASE="/NN-name/" pnpm -F './examples/NN-name' build
+   # and in the assembly section:
+   cp -r "$ROOT/examples/NN-name/dist" "$DIST/NN-name"
+   ```
+
+3. Add a rewrite rule to `vercel.json`:
+
+   ```json
+   { "source": "/NN-name/:path*", "destination": "/NN-name/index.html" }
+   ```
+
+4. Add the verification entry in `scripts/build-site.sh` (the `for entry in` loop):
+
+   ```bash
+   "$DIST/NN-name/index.html" \
+   ```
+
+5. Add a card entry to `examples/00-landing-page/src/data/examples.ts`:
+
+   ```ts
+   {
+     id: "NN-name",
+     number: "NN",
+     title: "Your Title",
+     description: "One-sentence description.",
+     runtime: "Browser",
+     tags: ["relevant", "tags"],
+     appPath: "/NN-name/",
+     sourceUrl: `${GITHUB_BASE}/NN-name`,
+   },
+   ```
+
+### Node.js-only example
+
+No deployment changes needed. Add a card entry to `examples/00-landing-page/src/data/examples.ts` with `runtime: "Node.js"` and a `sourceUrl` (no `appPath`).
 
 ## License
 
