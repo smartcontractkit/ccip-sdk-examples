@@ -3,7 +3,7 @@
  * Desktop: fixed left panel. Mobile: bottom sheet.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   useSDKInspector,
   useSDKInspectorActions,
@@ -18,16 +18,29 @@ const PHASE_ORDER: SDKCallPhase[] = ["setup", "estimation", "transfer", "trackin
 export function SDKInspectorPanel() {
   const { calls, activePhase } = useSDKInspector();
   const { clear } = useSDKInspectorActions();
+  const [filter, setFilter] = useState("");
+
+  // Matches the method and its argument values, so "0x9c35" finds one message's
+  // polls and "fee" finds the quote.
+  const visibleCalls = useMemo(() => {
+    const needle = filter.trim().toLowerCase();
+    if (!needle) return calls;
+    return calls.filter(
+      (call) =>
+        call.method.toLowerCase().includes(needle) ||
+        Object.values(call.displayArgs).some((v) => String(v).toLowerCase().includes(needle))
+    );
+  }, [calls, filter]);
 
   const groupedCalls = useMemo(() => {
     const groups = new Map<SDKCallPhase, typeof calls>();
-    for (const call of calls) {
+    for (const call of visibleCalls) {
       const list = groups.get(call.phase) ?? [];
       list.push(call);
       groups.set(call.phase, list);
     }
     return groups;
-  }, [calls]);
+  }, [visibleCalls]);
 
   const phases = PHASE_ORDER.filter((p) => groupedCalls.has(p));
 
@@ -47,9 +60,26 @@ export function SDKInspectorPanel() {
         )}
       </div>
 
+      {calls.length > 0 && (
+        <div className={styles.filterRow}>
+          <input
+            type="search"
+            className={styles.filterInput}
+            placeholder="Filter calls"
+            aria-label="Filter SDK calls"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          />
+        </div>
+      )}
+
       <div className={styles.panelBody}>
         {phases.length === 0 ? (
-          <InspectorEmptyState />
+          filter.trim() ? (
+            <p className={styles.noMatches}>No calls match “{filter.trim()}”.</p>
+          ) : (
+            <InspectorEmptyState />
+          )
         ) : (
           phases.map((phase) => (
             <PhaseGroup

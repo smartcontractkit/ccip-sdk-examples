@@ -10,6 +10,24 @@ import { sepolia, baseSepolia, avalancheFuji } from "wagmi/chains";
 import type { Chain } from "viem";
 import { NETWORKS } from "./networks.js";
 
+/**
+ * WalletConnect project id, from VITE_WALLETCONNECT_PROJECT_ID.
+ *
+ * Injected wallets (MetaMask, Rainbow) connect without one. WalletConnect itself
+ * needs a real id from a Reown account: without it the entry still appears in the
+ * modal but its config request is rejected and no QR is offered.
+ */
+function walletConnectProjectId(): string {
+  try {
+    const fromEnv = (import.meta as { env?: Record<string, string | undefined> }).env
+      ?.VITE_WALLETCONNECT_PROJECT_ID;
+    if (typeof fromEnv === "string" && fromEnv.trim() !== "") return fromEnv.trim();
+  } catch {
+    // import.meta.env is absent outside Vite.
+  }
+  return "ccip-sdk-example";
+}
+
 const customSepolia: Chain = {
   ...sepolia,
   rpcUrls: {
@@ -38,7 +56,7 @@ export const chains = [customSepolia, customBaseSepolia, customAvalancheFuji] as
 // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- RainbowKit getDefaultConfig() has unresolved typings
 export const wagmiConfig = getDefaultConfig({
   appName: "CCIP Bridge Example",
-  projectId: "ccip-sdk-example",
+  projectId: walletConnectProjectId(),
   chains: [...chains],
   transports: {
     [sepolia.id]: http(NETWORKS["ethereum-testnet-sepolia"]?.rpcUrl),

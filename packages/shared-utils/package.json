@@ -65,12 +65,14 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --max-warnings 0",
     "lint:fix": "eslint src --fix",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@aptos-labs/ts-sdk": "^5.2.1",
     "@coral-xyz/anchor": "^0.30.1",
-    "@solana/web3.js": "^1.98.0",
+    "@solana/web3.js": "catalog:",
     "bs58": "^6.0.0",
     "ethers": "^6.16.0",
     "viem": "^2.21.0",
@@ -78,7 +80,8 @@
   },
   "devDependencies": {
     "typescript": "^5.9.3",
-    "@chainlink/ccip-sdk": "catalog:"
+    "@chainlink/ccip-sdk": "catalog:",
+    "vitest": "^3.2.4"
   },
   "keywords": [
     "ccip",

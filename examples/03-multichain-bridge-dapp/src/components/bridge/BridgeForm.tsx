@@ -1,5 +1,5 @@
 /**
- * Bridge form: all 4 networks, PoolInfo, validation with ChainFamily.
+ * Bridge form: every configured network, PoolInfo, validation with ChainFamily.
  * Fee payment via useFeeTokens + FeeTokenOptions (native + LINK or SDK fee tokens).
  */
 
@@ -8,6 +8,7 @@ import { networkInfo } from "@chainlink/ccip-sdk";
 import {
   NETWORKS,
   getTokenAddress,
+  getTokensForLane,
   CHAIN_FAMILY_LABELS,
   type FeeTokenOptionItem,
 } from "@chainlink/ccip-examples-shared-config";
@@ -42,7 +43,7 @@ import { useChains } from "../../hooks/useChains.js";
 import { NETWORK_TO_CHAIN_ID } from "@chainlink/ccip-examples-shared-config/wagmi";
 import styles from "@chainlink/ccip-examples-shared-components/bridge/BridgeForm.module.css";
 
-const TOKEN_SYMBOL = "CCIP-BnM";
+const DEFAULT_TOKEN_KEY = "CCIP-BnM";
 
 interface BridgeFormProps {
   walletAddresses: WalletAddresses;
@@ -100,6 +101,8 @@ export function BridgeForm({
   const handleSourceChange = useCallback(
     (id: string) => {
       setSourceNetworkId(id);
+      // The resolved remote token belongs to the old lane and feeds the send path.
+      setPoolRemoteToken(null);
       onReset();
       onClearEstimate();
       inspectorStore.clearCalls();
@@ -110,6 +113,7 @@ export function BridgeForm({
   const handleDestChange = useCallback(
     (id: string) => {
       setDestNetworkId(id);
+      setPoolRemoteToken(null);
       onReset();
       onClearEstimate();
     },
@@ -129,8 +133,26 @@ export function BridgeForm({
     [allNetworks, sourceNetworkId]
   );
 
+  const [tokenKey, setTokenKey] = useState<string>(DEFAULT_TOKEN_KEY);
+
+  // Only tokens deployed on both ends can cross the lane.
+  const laneTokens = useMemo(
+    () =>
+      sourceNetworkId && destNetworkId ? getTokensForLane(sourceNetworkId, destNetworkId) : [],
+    [sourceNetworkId, destNetworkId]
+  );
+
+  // Changing the lane can drop the selected token, so fall back to one it carries.
+  useEffect(() => {
+    if (laneTokens.length > 0 && !laneTokens.includes(tokenKey)) {
+      setTokenKey(laneTokens[0] ?? DEFAULT_TOKEN_KEY);
+      setPoolRemoteToken(null);
+      onClearEstimate();
+    }
+  }, [laneTokens, tokenKey, onClearEstimate]);
+
   const tokenAddress = sourceNetworkId
-    ? (getTokenAddress(TOKEN_SYMBOL, sourceNetworkId) ?? null)
+    ? (getTokenAddress(tokenKey, sourceNetworkId) ?? null)
     : null;
 
   /** Stable callback for PoolInfo to report remoteToken changes */
@@ -177,7 +199,7 @@ export function BridgeForm({
     tokenAddress,
     walletAddress ?? null,
     getChain,
-    TOKEN_SYMBOL,
+    tokenKey,
     { onSDKCall: recordSDKCall, skipNative: true, skipLink: true }
   );
 
@@ -188,7 +210,10 @@ export function BridgeForm({
   );
 
   useEffect(() => {
-    if (useSelfAsReceiver) setReceiver(selfReceiverAddress ?? "");
+    if (useSelfAsReceiver) {
+      setReceiver(selfReceiverAddress ?? "");
+      onClearEstimate();
+    }
   }, [useSelfAsReceiver, selfReceiverAddress]);
 
   const handleCopy = useCallback(() => {
@@ -224,7 +249,7 @@ export function BridgeForm({
 
   const handleEstimate = () => {
     if (canEstimate && token)
-      void onEstimateFee(sourceNetworkId, destNetworkId, TOKEN_SYMBOL, amount, receiver, feeToken);
+      void onEstimateFee(sourceNetworkId, destNetworkId, tokenKey, amount, receiver, feeToken);
   };
 
   const handleTransfer = () => {
@@ -232,7 +257,7 @@ export function BridgeForm({
       void onTransfer(
         sourceNetworkId,
         destNetworkId,
-        TOKEN_SYMBOL,
+        tokenKey,
         amount,
         receiver,
         feeToken,
@@ -299,12 +324,27 @@ export function BridgeForm({
         destNetworkId={destNetworkId || undefined}
         tokenAddress={tokenAddress ?? undefined}
         tokenDecimals={token?.decimals}
-        tokenSymbol={TOKEN_SYMBOL}
+        tokenSymbol={tokenKey}
         onRemoteTokenResolved={handleRemoteTokenResolved}
       />
 
       <div className={styles.tokenRow}>
-        <Input label="Token" value={token ? token.symbol : TOKEN_SYMBOL} disabled />
+        <Select
+          label="Token"
+          value={tokenKey}
+          onChange={(e) => {
+            setTokenKey(e.target.value);
+            setPoolRemoteToken(null);
+            onClearEstimate();
+          }}
+          disabled={isLoading || laneTokens.length < 2}
+        >
+          {laneTokens.map((key) => (
+            <option key={key} value={key}>
+              {key === tokenKey && token ? `${token.symbol} (${key})` : key}
+            </option>
+          ))}
+        </Select>
       </div>
       {sourceNetworkId && !tokenAddress && (
         <Alert variant="error">Token not available on this network</Alert>
@@ -316,7 +356,10 @@ export function BridgeForm({
           label="Amount"
           type="text"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => {
+            setAmount(e.target.value);
+            onClearEstimate();
+          }}
           placeholder="0.0"
           disabled={isLoading || balancesLoading}
           error={amount && !isAmountValid ? "Enter a valid positive amount" : undefined}
@@ -326,7 +369,7 @@ export function BridgeForm({
           className={styles.maxButton}
           onClick={() =>
             token?.balance != null
-              ? setAmount(formatAmountFull(token.balance, token.decimals))
+              ? (setAmount(formatAmountFull(token.balance, token.decimals)), onClearEstimate())
               : undefined
           }
           disabled={isLoading || balancesLoading || !token?.formatted}
@@ -352,7 +395,10 @@ export function BridgeForm({
             label="Receiver Address"
             type="text"
             value={receiver}
-            onChange={(e) => setReceiver(e.target.value)}
+            onChange={(e) => {
+              setReceiver(e.target.value);
+              onClearEstimate();
+            }}
             placeholder={getAddressPlaceholder(destFamily)}
             disabled={isLoading}
             error={

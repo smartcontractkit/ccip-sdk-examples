@@ -27,7 +27,7 @@ const annotations: Record<string, Annotation> = {
     annotation: {
       what: "Construct the CCIP MessageInput object",
       whyNow:
-        "This is the SDK's MessageInput shape -- passed to getFee() and generateUnsignedSendMessage()",
+        "This is the SDK's MessageInput shape, passed to getFee() and generateUnsignedSendMessage()",
     },
     codeSnippet:
       "const message: MessageInput = {\n  receiver,\n  tokenAmounts: [{ token: tokenAddress, amount }],\n  feeToken, // optional\n};",
@@ -35,7 +35,7 @@ const annotations: Record<string, Annotation> = {
   networkInfo: {
     annotation: {
       what: "Fetch CCIP network metadata (chain selector, family, type)",
-      whyNow: "Chain selector is CCIP's unique identifier -- needed for every cross-chain call",
+      whyNow: "Chain selector is CCIP's unique identifier, needed for every cross-chain call",
     },
     codeSnippet: "const { chainSelector } = networkInfo(networkId);",
   },
@@ -49,7 +49,7 @@ const annotations: Record<string, Annotation> = {
   "chain.getFee": {
     annotation: {
       what: "Query CCIP router for exact transfer fee on-chain",
-      whyNow: "Fees are dynamic -- depend on destination, token, amount, and network conditions",
+      whyNow: "Fees are dynamic: they depend on destination, token, amount, and network conditions",
     },
     codeSnippet:
       "const fee = await chain.getFee({\n  router,\n  destChainSelector,\n  message,\n});",
@@ -71,7 +71,7 @@ const annotations: Record<string, Annotation> = {
   "chain.generateUnsignedSendMessage": {
     annotation: {
       what: "Build the cross-chain transaction for wallet signing",
-      whyNow: "THE key SDK call -- everything before was preparation for this moment",
+      whyNow: "The send itself. Everything before this call prepares its arguments",
     },
     codeSnippet:
       "const unsignedTx = await chain.generateUnsignedSendMessage({\n  sender,\n  router,\n  destChainSelector,\n  message: { ...message, fee },\n});",
@@ -102,7 +102,7 @@ const annotations: Record<string, Annotation> = {
   "chain.getFeeTokens": {
     annotation: {
       what: "Fetch accepted fee payment tokens from the CCIP router",
-      whyNow: "Users can pay fees in native token or LINK -- need to show available options",
+      whyNow: "Users can pay fees in the native token or LINK, so the options must be shown",
     },
     codeSnippet: "const feeTokens = await chain.getFeeTokens(routerAddress);",
   },
@@ -133,6 +133,23 @@ const annotations: Record<string, Annotation> = {
       whyNow: "Track progress through CCIP lifecycle statuses until delivery completes",
     },
     codeSnippet: "const msg = await apiClient.getMessageById(messageId);",
+  },
+  "CCIPAPIClient.searchMessages": {
+    annotation: {
+      what: "Query the CCIP API for messages sent by this wallet, one page at a time",
+      whyNow: "The drawer pages through the wallet's past messages",
+    },
+    codeSnippet:
+      "const page = await apiClient.searchMessages(\n  { sender },\n  { limit, cursor },\n);\n// page.cursor feeds the next call while page.hasNextPage",
+  },
+  "chain.getExecutionReceiptsInTx": {
+    annotation: {
+      what: "Read what the destination OffRamp recorded for this message",
+      whyNow:
+        "The API reports a status; the receipt carries the on-chain execution state and, on a failure, the decoded revert reason",
+    },
+    codeSnippet:
+      "const [execution] = await destChain.getExecutionReceiptsInTx(\n  receiptTransactionHash,\n  { messageId },\n);\n// execution.receipt.state, execution.error",
   },
 };
 

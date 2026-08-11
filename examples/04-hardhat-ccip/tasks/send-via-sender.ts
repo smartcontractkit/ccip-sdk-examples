@@ -406,7 +406,7 @@ const sendViaSender = async (
     // receipt logs — no API call needed. We waited for the receipt above so
     // the logs are guaranteed to be available.
     const requests = await withRetry(() => sourceChain.getMessagesInTx(sendHash), {
-      maxRetries: 3,
+      maxAttempts: 3,
       initialDelayMs: 1000,
       maxDelayMs: 5000,
       backoffMultiplier: 1.5,

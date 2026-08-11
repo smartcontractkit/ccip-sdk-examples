@@ -29,7 +29,7 @@ export function serializeForDisplay(value: unknown): string {
 
 /**
  * Wrap an async SDK call with inspector logging.
- * Zero overhead when inspector is disabled -- immediately calls fn().
+ * Returns immediately when the inspector is disabled: calls fn() and returns.
  * NEVER swallows errors -- always re-throws.
  */
 export async function logSDKCall<T>(options: LogSDKCallOptions, fn: () => Promise<T>): Promise<T> {

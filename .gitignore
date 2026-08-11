@@ -34,6 +34,15 @@ pnpm-debug.log*
 coverage/
 .nyc_output/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright-mcp/
+playwright/.cache/
+# Regenerated on every visual run; review them locally, don't version them.
+e2e/screenshots/
+
 # Temporary files
 tmp/
 temp/

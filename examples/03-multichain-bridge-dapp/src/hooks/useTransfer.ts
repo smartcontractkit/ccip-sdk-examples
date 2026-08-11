@@ -7,7 +7,7 @@ import { useState, useCallback, useRef } from "react";
 import { useAccount } from "wagmi";
 import { useWallet as useSolanaWallet } from "@solana/wallet-adapter-react";
 import { useWallet as useAptosWallet } from "@aptos-labs/wallet-adapter-react";
-import { networkInfo } from "@chainlink/ccip-sdk";
+import { networkInfo, type Chain } from "@chainlink/ccip-sdk";
 import {
   NETWORKS,
   getTokenAddress,
@@ -19,7 +19,10 @@ import {
   formatLatency,
   buildTokenTransferMessage,
   categorizeError,
+  isRateLimitError,
+  withRateLimitDetail,
   getWalletAddress,
+  type RateLimitErrorDetail,
   type WalletAddresses,
   type LastTransferContext,
   type TransferState,
@@ -43,9 +46,64 @@ const initialState: TransferState = {
 };
 
 interface EstimationCache {
+  /** The inputs this quote was built from; a send with different ones must not reuse it. */
+  signature: string;
   destChainSelector: bigint;
   tokenDecimals: number;
   message: TransferMessage;
+}
+
+/** Identity of the inputs a fee quote was produced from. */
+function estimateSignature(
+  sourceNetworkId: string,
+  destNetworkId: string,
+  tokenSymbol: string,
+  amount: string,
+  receiver: string,
+  feeToken: FeeTokenOptionItem | null
+): string {
+  return [
+    sourceNetworkId,
+    destNetworkId,
+    tokenSymbol,
+    amount,
+    receiver,
+    feeToken?.address ?? "native",
+  ].join("|");
+}
+
+interface PoolLookup {
+  chain: Chain;
+  router: string;
+  token: string;
+  decimals: number;
+  dest: bigint;
+}
+
+/** Reads the outbound bucket the pool refused the transfer against. */
+async function resolveRateLimitDetail(
+  lookup: PoolLookup,
+  amount: string,
+  symbol: string
+): Promise<RateLimitErrorDetail | null> {
+  try {
+    const registry = await lookup.chain.getTokenAdminRegistryFor(lookup.router);
+    const { tokenPool } = await lookup.chain.getRegistryTokenConfig(registry, lookup.token);
+    if (!tokenPool) return null;
+    const remote = await lookup.chain.getTokenPoolRemote(tokenPool, lookup.dest);
+    const bucket = remote.outboundRateLimiterState;
+    if (!bucket) return null;
+    // A null state is how the SDK reports a disabled limiter, so reaching here means enabled.
+    return {
+      bucket: { ...bucket, isEnabled: true },
+      decimals: lookup.decimals,
+      symbol,
+      requested: amount,
+    };
+  } catch {
+    // The panel still shows the SDK's message without the bucket.
+    return null;
+  }
 }
 
 export function useTransfer() {
@@ -89,6 +147,9 @@ export function useTransfer() {
     ): Promise<{ fee: bigint; feeFormatted: string; estimatedTime: string | null } | null> => {
       setState((prev) => ({ ...prev, status: "estimating", error: null }));
 
+      // Hoisted so the catch can reach the pool.
+      let poolLookup: PoolLookup | null = null;
+
       try {
         const sourceConfig = NETWORKS[sourceNetworkId];
         if (!sourceConfig) throw new Error("Invalid source network");
@@ -121,6 +182,13 @@ export function useTransfer() {
 
         const amountWei = parseAmount(amount, tokenInfo.decimals);
         const feeTokenAddress = feeToken?.address;
+        poolLookup = {
+          chain,
+          router: sourceConfig.routerAddress,
+          token: tokenAddress,
+          decimals: tokenInfo.decimals,
+          dest: destChainSelector,
+        };
 
         const message = logSDKCallSync(
           {
@@ -179,6 +247,14 @@ export function useTransfer() {
 
         // Cache estimation results for reuse in transfer()
         estimationCacheRef.current = {
+          signature: estimateSignature(
+            sourceNetworkId,
+            destNetworkId,
+            tokenSymbol,
+            amount,
+            receiver,
+            feeToken
+          ),
           destChainSelector,
           tokenDecimals: tokenInfo.decimals,
           message,
@@ -200,7 +276,13 @@ export function useTransfer() {
         return { fee, feeFormatted, estimatedTime };
       } catch (err) {
         const family = sourceNetworkId ? networkInfo(sourceNetworkId).family : undefined;
-        const categorized = categorizeError(err, { chainFamily: family });
+        let categorized = categorizeError(err, { chainFamily: family });
+
+        if (isRateLimitError(err) && poolLookup) {
+          const detail = await resolveRateLimitDetail(poolLookup, amount, tokenSymbol);
+          if (detail) categorized = withRateLimitDetail(categorized, detail);
+        }
+
         setState((prev) => ({
           ...prev,
           status: "idle",
@@ -243,7 +325,17 @@ export function useTransfer() {
         if (!tokenAddress) throw new Error(`Token ${tokenSymbol} not found`);
 
         const chain = await getChain(sourceNetworkId);
-        const cache = estimationCacheRef.current;
+        const wanted = estimateSignature(
+          sourceNetworkId,
+          destNetworkId,
+          tokenSymbol,
+          amount,
+          receiver,
+          feeToken
+        );
+        // A quote built from other inputs would send the old amount or receiver.
+        const cache =
+          estimationCacheRef.current?.signature === wanted ? estimationCacheRef.current : null;
 
         // Use cached values from estimation when available, otherwise compute fresh
         let destChainSelector: bigint;
@@ -434,6 +526,7 @@ export function useTransfer() {
           tokenAddress,
           receiverAddress: receiver,
           senderAddress,
+          tokenSymbol,
           tokenDecimals,
           destTokenDecimals,
           remoteToken: resolvedRemoteToken,

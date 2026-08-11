@@ -12,7 +12,7 @@
  * Use these constants for programmatic color access (e.g., in charts, Canvas, etc.)
  * For CSS, prefer importing design-tokens.css to use CSS variables.
  *
- * Colors used across Chainlink CCIP properties (explorer, documentation, bazaar demo).
+ * Colors used across Chainlink CCIP web properties.
  */
 export const BRAND_COLORS = {
   /** Primary blue */

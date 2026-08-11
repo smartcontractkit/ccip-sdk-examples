@@ -1,41 +1,47 @@
-/**
- * Transaction history context and types.
- */
+/** Transfer history context. */
 
 import { createContext } from "react";
-import type { StoredTransaction } from "../utils/localStorage.js";
+import type { MessageSearchResult } from "@chainlink/ccip-sdk";
 
 export interface TransactionHistoryContextValue {
-  transactions: StoredTransaction[];
+  /** Messages sent by the active wallet, newest first. */
+  messages: MessageSearchResult[];
+  /** Every connected address the history is filtered on. */
+  senders: string[];
+  /** Loaded messages that have not reached a terminal status. */
   pendingCount: number;
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  /** The API has another page. */
+  hasMore: boolean;
+  error: string | null;
+  /** Append the next page. */
+  loadMore: () => void;
+  /** Discard and re-read from the first page. */
+  refresh: () => void;
+
   isDrawerOpen: boolean;
   openDrawer: (triggerElement?: HTMLElement | null) => void;
   closeDrawer: () => void;
   toggleDrawer: () => void;
-  addTransaction: (tx: {
-    messageId: string;
-    txHash: string;
-    sourceNetwork: string;
-    destNetwork: string;
-    amount: string;
-    tokenSymbol: string;
-    receiver: string;
-    sender: string;
-  }) => void;
-  removeTransaction: (messageId: string) => void;
-  clearHistory: () => void;
-  refresh: () => void;
+
+  /** Called after a transfer is broadcast. Schedules a refresh once the API has indexed it. */
+  onTransferSent: () => void;
 }
 
 export const TransactionHistoryContext = createContext<TransactionHistoryContextValue>({
-  transactions: [],
+  messages: [],
+  senders: [],
   pendingCount: 0,
+  isLoading: false,
+  isLoadingMore: false,
+  hasMore: false,
+  error: null,
+  loadMore: () => {},
+  refresh: () => {},
   isDrawerOpen: false,
   openDrawer: () => {},
   closeDrawer: () => {},
   toggleDrawer: () => {},
-  addTransaction: () => {},
-  removeTransaction: () => {},
-  clearHistory: () => {},
-  refresh: () => {},
+  onTransferSent: () => {},
 });

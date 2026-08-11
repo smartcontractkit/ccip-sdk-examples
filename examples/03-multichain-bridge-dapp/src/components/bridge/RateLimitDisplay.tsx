@@ -1,9 +1,42 @@
 /**
  * Rate limit visualization (capacity bar + refill rate).
+ *
+ * Between polls the bar is advanced locally. The pool refills by
+ * `rate * elapsed` capped at capacity (RateLimiter._calculateRefill), so this is
+ * the same arithmetic the contract runs, not an estimate; each poll re-syncs it.
  */
 
-import { type RateLimitBucket, formatRateLimitBucket } from "@chainlink/ccip-examples-shared-utils";
+import { useEffect, useRef, useState } from "react";
+import {
+  type RateLimitBucket,
+  formatRateLimitBucket,
+  refilledBucket,
+} from "@chainlink/ccip-examples-shared-utils";
 import styles from "./RateLimitDisplay.module.css";
+
+/**
+ * Re-renders about twice a second while the bucket is below capacity, so the bar
+ * fills continuously instead of stepping on each poll.
+ */
+function useRefilling(bucket: RateLimitBucket | null): RateLimitBucket | null {
+  const observedAt = useRef(Date.now());
+  const [, tick] = useState(0);
+
+  const key = bucket ? `${bucket.tokens}-${bucket.capacity}-${bucket.rate}` : "";
+  useEffect(() => {
+    observedAt.current = Date.now();
+  }, [key]);
+
+  const active = bucket !== null && bucket.isEnabled && bucket.tokens < bucket.capacity;
+  useEffect(() => {
+    if (!active) return;
+    const id = setInterval(() => tick((n) => n + 1), 500);
+    return () => clearInterval(id);
+  }, [active, key]);
+
+  if (!bucket) return null;
+  return refilledBucket(bucket, Date.now() - observedAt.current);
+}
 
 interface RateLimitDisplayProps {
   bucket: RateLimitBucket | null;
@@ -18,9 +51,10 @@ export function RateLimitDisplay({
   decimals = 18,
   symbol = "tokens",
 }: RateLimitDisplayProps) {
-  const formatted = formatRateLimitBucket(bucket, decimals);
+  const live = useRefilling(bucket);
+  const formatted = formatRateLimitBucket(live, decimals);
 
-  if (!formatted || !bucket?.isEnabled) {
+  if (!formatted || !live?.isEnabled) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>

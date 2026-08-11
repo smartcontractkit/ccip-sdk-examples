@@ -78,7 +78,10 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     rpcUrl: getRpcUrl("aptos-testnet"),
     explorerUrl: "https://explorer.aptoslabs.com",
     nativeCurrency: { name: "Aptos Coin", symbol: "APT", decimals: 8 },
-    routerAddress: "0xc748085bd02022a9696dfa2058774f92a07401208bbd34cfd0c6d0ac0287ee45",
+    // Carries the `::router` module suffix. Aptos view calls address a module
+    // rather than an account, and the SDK's typeAndVersion requires it. Calls
+    // that normalise a bare address internally accept this form unchanged.
+    routerAddress: "0xc748085bd02022a9696dfa2058774f92a07401208bbd34cfd0c6d0ac0287ee45::router",
   },
 } as const;
 

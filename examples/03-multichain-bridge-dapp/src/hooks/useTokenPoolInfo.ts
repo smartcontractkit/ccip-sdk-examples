@@ -3,7 +3,7 @@
  * Uses getChain from context, NETWORKS and networkInfo from shared-config/SDK.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { networkInfo } from "@chainlink/ccip-sdk";
 import type { RateLimiterState } from "@chainlink/ccip-sdk";
 import { NETWORKS } from "@chainlink/ccip-examples-shared-config";
@@ -25,6 +25,8 @@ function toRateLimitBucket(state: RateLimiterState): RateLimitBucket | null {
 }
 
 export interface TokenPoolInfo {
+  /** Token this pool was read for, so a caller never pairs it with another token's label. */
+  forToken: string;
   poolAddress: string;
   typeAndVersion: string;
   remoteToken: string | null;
@@ -54,7 +56,15 @@ export function useTokenPoolInfo(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Claimed before the first await. The SDK retries a throttled RPC for up to
+  // 15 attempts, so an earlier selection's request can resolve long after a
+  // later one and would otherwise overwrite it.
+  const fetchIdRef = useRef(0);
+
   const fetchPoolInfo = useCallback(async () => {
+    const fetchId = ++fetchIdRef.current;
+    const isCurrent = () => fetchId === fetchIdRef.current;
+
     if (!sourceNetworkId || !destNetworkId || !tokenAddress) {
       setPoolInfo(null);
       setIsLoading(false);
@@ -70,11 +80,13 @@ export function useTokenPoolInfo(
       return;
     }
 
+    setPoolInfo(null);
     setIsLoading(true);
     setError(null);
 
     try {
       const chain = await getChain(sourceNetworkId);
+      if (!isCurrent()) return;
       const router = sourceConfig.routerAddress;
 
       const registryAddress = await logSDKCall(
@@ -86,6 +98,7 @@ export function useTokenPoolInfo(
         },
         () => chain.getTokenAdminRegistryFor(router)
       );
+      if (!isCurrent()) return;
       const tokenConfig = await logSDKCall(
         {
           method: "chain.getRegistryTokenConfig",
@@ -100,6 +113,7 @@ export function useTokenPoolInfo(
         },
         () => chain.getRegistryTokenConfig(registryAddress, tokenAddress)
       );
+      if (!isCurrent()) return;
       const poolAddress = tokenConfig.tokenPool;
 
       if (!poolAddress) {
@@ -151,7 +165,9 @@ export function useTokenPoolInfo(
         // Lane not supported
       }
 
+      if (!isCurrent()) return;
       setPoolInfo({
+        forToken: tokenAddress,
         poolAddress,
         typeAndVersion,
         remoteToken,
@@ -160,11 +176,12 @@ export function useTokenPoolInfo(
         outboundRateLimit,
       });
     } catch (err) {
+      if (!isCurrent()) return;
       const message = err instanceof Error ? err.message : "Failed to fetch pool info";
       setError(message);
       setPoolInfo(null);
     } finally {
-      setIsLoading(false);
+      if (isCurrent()) setIsLoading(false);
     }
   }, [sourceNetworkId, destNetworkId, tokenAddress, getChain]);
 

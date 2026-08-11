@@ -121,3 +121,21 @@
 .removeButton:hover {
   color: var(--color-error);
 }
+
+.expandToggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-text-secondary, #6b7280);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.expandToggle:hover {
+  color: var(--color-text-primary, #111827);
+}
+
+.expandedNotice {
+  color: var(--color-text-secondary, #6b7280);
+}

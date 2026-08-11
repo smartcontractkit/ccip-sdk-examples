@@ -320,7 +320,7 @@ This example uses the modern EVM wallet stack:
 
 - **wagmi**: React hooks for wallet state management
 - **viem**: Low-level Ethereum primitives
-- **RainbowKit**: Beautiful wallet connection UI
+- **RainbowKit**: wallet connection UI
 
 ### CCIP SDK Integration
 
@@ -371,7 +371,7 @@ const api = new CCIPAPIClient();
 const result = await api.getMessageById(request.message.messageId);
 console.log(result.metadata.status);
 
-// Error handling — categorizeError leverages SDK error types
+// Error handling — categorizeError uses SDK error types
 try {
   /* ... */
 } catch (err) {

@@ -73,6 +73,7 @@ ccip-sdk-examples/
 │   ├── shared-config/       # Networks, tokens, wagmi, constants
 │   ├── shared-utils/        # Validation, errors, formatting, message build, hooks
 │   └── shared-components/   # Button, Input, Select, Alert, MessageProgress, TransferStatus, ErrorBoundary
+├── e2e/                     # Browser end-to-end suite (Playwright)
 ├── scripts/
 │   └── build-site.sh        # Assembles all browser examples into dist/
 ├── docs/
@@ -124,6 +125,8 @@ pnpm build            # All packages + examples
 pnpm build:packages   # Only packages
 pnpm build:site       # Build combined site into dist/
 pnpm preview:site     # Build + serve combined site locally
+pnpm test             # Unit tests (vitest, in packages/)
+pnpm -F e2e test      # Browser end-to-end suite; see e2e/README.md
 pnpm typecheck
 pnpm lint
 pnpm format           # Prettier write

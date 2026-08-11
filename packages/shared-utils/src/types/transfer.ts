@@ -15,6 +15,8 @@ export interface LastTransferContext {
   tokenAddress: string;
   receiverAddress: string;
   senderAddress: string;
+  /** Symbol on the source chain, so a bucket is labelled with the token it belongs to */
+  tokenSymbol?: string;
   /** Token decimals on the source chain */
   tokenDecimals: number;
   /** Token decimals on the destination chain (may differ, e.g. 9 on Solana vs 18 on EVM) */

@@ -1,7 +1,7 @@
 /**
  * Wallet connection component
  *
- * Uses RainbowKit's ConnectButton for a production-ready wallet UX.
+ * Uses RainbowKit's ConnectButton for wallet connection.
  * Supports multiple wallets (MetaMask, WalletConnect, Coinbase, etc.)
  *
  * RainbowKit handles:

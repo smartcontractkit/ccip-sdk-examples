@@ -25,6 +25,7 @@
     "fix": "pnpm format && pnpm lint:fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
+    "test": "pnpm -F \"./packages/*\" --if-present test",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check",
     "build:site": "pnpm build:packages && bash scripts/build-site.sh",
     "preview:site": "pnpm build:site && pnpm dlx serve dist",

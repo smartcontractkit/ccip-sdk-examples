@@ -43,6 +43,9 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
+      - name: Unit tests
+        run: pnpm test
+
       - name: Build non-site examples
         run: pnpm -F './examples/01-*' -F './examples/04-*' build
 
