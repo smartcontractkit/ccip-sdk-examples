@@ -41,7 +41,8 @@ export function useDestinationBalance(
   const [balance, setBalance] = useState<bigint | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const isMountedRef = useRef(true);
+  // Per-run id rather than a shared mounted flag; see useTransferRateLimits.
+  const fetchIdRef = useRef(0);
 
   // Skip internal pool lookup when caller already provides remoteToken
   const { remoteToken: poolRemoteToken, isLoading: poolLoading } = useTokenPoolInfo(
@@ -52,6 +53,8 @@ export function useDestinationBalance(
   const remoteToken = remoteTokenProp ?? poolRemoteToken;
 
   const fetchBalance = useCallback(async () => {
+    const fetchId = ++fetchIdRef.current;
+    const isCurrent = () => fetchId === fetchIdRef.current;
     if (!destNetworkId || !receiverAddress || !remoteToken) {
       setBalance(null);
       setIsLoading(false);
@@ -83,27 +86,23 @@ export function useDestinationBalance(
         () => chain.getBalance({ holder: receiverAddress, token: remoteToken })
       );
 
-      if (isMountedRef.current) {
+      if (isCurrent()) {
         setBalance(tokenBalance);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to fetch balance";
-      if (isMountedRef.current) {
+      if (isCurrent()) {
         setError(message);
       }
     } finally {
-      if (isMountedRef.current) {
+      if (isCurrent()) {
         setIsLoading(false);
       }
     }
   }, [destNetworkId, receiverAddress, remoteToken, getChain]);
 
   useEffect(() => {
-    isMountedRef.current = true;
     void fetchBalance();
-    return () => {
-      isMountedRef.current = false;
-    };
   }, [fetchBalance]);
 
   const decimals =

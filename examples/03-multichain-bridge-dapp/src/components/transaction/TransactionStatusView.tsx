@@ -1,6 +1,5 @@
 /**
  * Unified "during transfer" view: header, error, message progress, live balances, rate limits, links, actions.
- * Replaces the split between TransferStatus and conditional MessageProgress in App.
  */
 
 import { useCallback } from "react";
@@ -18,6 +17,7 @@ import { getAnnotation } from "../../inspector/annotations.js";
 import { serializeForDisplay } from "@chainlink/ccip-examples-shared-utils/inspector";
 import { TransferBalances } from "./TransferBalances.js";
 import { TransferRateLimits } from "./TransferRateLimits.js";
+import { RateLimitDisplay } from "../bridge/RateLimitDisplay.js";
 import styles from "./TransactionStatusView.module.css";
 
 export interface TransactionStatusViewProps {
@@ -95,6 +95,14 @@ export function TransactionStatusView({
   return (
     <>
       {categorizedError && <ErrorMessage error={categorizedError} onDismiss={onReset} />}
+      {categorizedError?.rateLimit && (
+        <RateLimitDisplay
+          bucket={categorizedError.rateLimit.bucket}
+          label="Outbound"
+          decimals={categorizedError.rateLimit.decimals}
+          symbol={categorizedError.rateLimit.symbol}
+        />
+      )}
       <TransferStatus
         status={status}
         error={categorizedError ? null : error}
@@ -126,6 +134,7 @@ export function TransactionStatusView({
                 destNetworkId={lastTransferContext.destNetworkId}
                 tokenAddress={lastTransferContext.tokenAddress}
                 isActive={!isFinal}
+                tokenSymbol={lastTransferContext.tokenSymbol}
                 tokenDecimals={lastTransferContext.tokenDecimals}
                 destTokenDecimals={lastTransferContext.destTokenDecimals}
               />

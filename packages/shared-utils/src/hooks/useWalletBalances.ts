@@ -107,6 +107,9 @@ export function useWalletBalances(
     setError(null);
 
     setNative(defaultBalanceData(config.nativeCurrency.symbol, config.nativeCurrency.decimals));
+    // Clear the previous token: its decimals would otherwise scale the new
+    // token's rate limits until this fetch lands.
+    setToken(null);
 
     try {
       const chain = await getChain(networkId);

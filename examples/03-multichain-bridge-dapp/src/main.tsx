@@ -7,6 +7,11 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.js";
+import { SUPPORTED_CHAIN_CLASSES } from "./sdkChains.js";
+
+// The array is read so the bundler cannot drop the import; importing it is what
+// registers the chain families.
+if (SUPPORTED_CHAIN_CLASSES.length === 0) throw new Error("No chain families registered.");
 
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Root element not found.");

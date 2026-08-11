@@ -45,7 +45,11 @@ export function PoolInfo({
 
   if (!sourceNetworkId || !destNetworkId || !tokenAddress) return null;
 
-  if (isLoading) {
+  // Belt and braces: never pair one token's numbers with another's label, even
+  // if a future edit reintroduces a race in the hook.
+  const stale = poolInfo != null && poolInfo.forToken !== tokenAddress;
+
+  if (isLoading || stale) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>

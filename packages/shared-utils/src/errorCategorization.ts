@@ -7,6 +7,7 @@ import { CCIPError } from "@chainlink/ccip-sdk";
 import type { ChainFamily } from "@chainlink/ccip-sdk";
 import { parseCCIPError } from "./ccipErrors.js";
 import type { ParsedCCIPError } from "./ccipErrors.js";
+import type { RateLimitBucket } from "./rateLimit.js";
 
 export type ErrorCategory =
   | "WALLET_REJECTION"
@@ -28,6 +29,17 @@ export interface CategorizedError {
   recovery?: string;
   originalError?: unknown;
   rawErrorData?: string;
+  /** Bucket that rejected the transfer, when the SDK reported a rate limit. */
+  rateLimit?: RateLimitErrorDetail;
+}
+
+/** The pool bucket behind a RATE_LIMIT_EXCEEDED, resolved for display. */
+export interface RateLimitErrorDetail {
+  bucket: RateLimitBucket;
+  decimals: number;
+  symbol: string;
+  /** The requested amount, in token units. */
+  requested: string;
 }
 
 const WALLET_REJECTION_PATTERNS = [
@@ -67,7 +79,7 @@ function lowerMessage(err: unknown): string {
   if (err === null || err === undefined) return "";
   if (typeof err === "string") return err.toLowerCase();
   if (err instanceof Error) return err.message.toLowerCase();
-  // Plain objects: try .message for compatibility (null already returned above)
+  // Plain objects: fall back to .message.
   const msg =
     typeof err === "object" && "message" in err ? (err as { message: unknown }).message : err;
   if (typeof msg === "string") return msg.toLowerCase();
@@ -92,13 +104,6 @@ function mapParsedToCategory(parsed: ParsedCCIPError): ErrorCategory {
   ) {
     return "VALIDATION_ERROR";
   }
-  if (
-    name === "RateLimitReached" ||
-    name === "TokenRateLimitReached" ||
-    name === "AggregateValueRateLimitReached"
-  ) {
-    return "SDK_ERROR";
-  }
   return "SDK_ERROR";
 }
 
@@ -113,6 +118,70 @@ function safeStringify(value: unknown): string {
     }
   }
   return String(value);
+}
+
+/** Flattens the SDK's nested-revert object ("error", "err.error", "err.router") into one line. */
+export function formatExecutionError(error: Record<string, unknown>): string {
+  const names: string[] = [];
+  const params: string[] = [];
+
+  for (const [key, value] of Object.entries(error)) {
+    const text = typeof value === "string" ? value : String(value);
+    if (key === "error" || key.endsWith(".error")) {
+      names.push(text.replace(/\(.*$/, ""));
+    } else {
+      const label = key.split(".").pop() ?? key;
+      params.push(`${label}: ${shortenHex(text)}`);
+    }
+  }
+
+  const chain = names.join(" → ") || "Reverted";
+  return params.length > 0 ? `${chain} (${params.join(", ")})` : chain;
+}
+
+/** Long hex reads as noise in a one-line summary. */
+function shortenHex(value: string): string {
+  return /^0x[0-9a-f]{16,}$/i.test(value) ? `${value.slice(0, 10)}…${value.slice(-6)}` : value;
+}
+
+export function isRateLimitError(error: unknown): boolean {
+  return CCIPError.isCCIPError(error) && error.code === "RATE_LIMIT_EXCEEDED";
+}
+
+/** The SDK message carries a raw base-unit amount; the bucket is not on the error at all. */
+export function withRateLimitDetail(
+  categorized: CategorizedError,
+  detail: RateLimitErrorDetail
+): CategorizedError {
+  return {
+    ...categorized,
+    message: categorized.message.replace(
+      /amount=(\d+)/,
+      () => `amount=${detail.requested} ${detail.symbol}`
+    ),
+    rateLimit: detail,
+  };
+}
+
+/** Characters of a long hex blob kept before the ellipsis. */
+const MAX_INLINE_HEX = 24;
+
+/** Pulls the actionable line out of a viem/ethers error; the full text stays in rawErrorData. */
+export function summarizeErrorMessage(raw: string): string {
+  const lines = raw
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  // Wallet libraries label the actionable line; prefer it when present.
+  const labelled = lines.find((l) => /^(Details|Reason|Error|Cause):/i.test(l));
+  const candidate =
+    labelled?.replace(/^(Details|Reason|Error|Cause):\s*/i, "") ??
+    lines.find((l) => !/^0x?[0-9a-f]{25,}$/i.test(l)) ??
+    raw;
+
+  // Collapse any remaining inline blob so the sentence stays readable.
+  return candidate.replace(/0x[0-9a-f]{25,}/gi, (m) => `${m.slice(0, MAX_INLINE_HEX)}…`).trim();
 }
 
 function buildRawErrorData(error: unknown): string {
@@ -183,12 +252,13 @@ export function categorizeError(
 
   // 3. Pattern matching on message (generic Error or string)
   const msg = lowerMessage(error);
-  const displayMessage =
+  const displayMessage = summarizeErrorMessage(
     typeof error === "string"
       ? error
       : error instanceof Error
         ? error.message
-        : safeStringify(error);
+        : safeStringify(error)
+  );
 
   if (WALLET_REJECTION_PATTERNS.some((p) => msg.includes(p))) {
     return {

@@ -1,5 +1,5 @@
 /**
- * Multichain bridge — provider stack and layout.
+ * Multichain bridge: provider stack and layout.
  * Order: ErrorBoundary → QueryClient → Wagmi → RainbowKit → Solana → Aptos → ChainContext → TransactionHistory → App.
  */
 
@@ -24,7 +24,7 @@ import { wagmiConfig } from "@chainlink/ccip-examples-shared-config/wagmi";
 import { createDefaultQueryClient } from "@chainlink/ccip-examples-shared-config/queryClient";
 import { NETWORKS, type FeeTokenOptionItem } from "@chainlink/ccip-examples-shared-config";
 import { networkInfo, NetworkType } from "@chainlink/ccip-sdk";
-import { getWalletAddress, type WalletAddresses } from "@chainlink/ccip-examples-shared-utils";
+import type { WalletAddresses } from "@chainlink/ccip-examples-shared-utils";
 import { ErrorBoundary, Header } from "@chainlink/ccip-examples-shared-components";
 import { SDKInspectorToggle } from "@chainlink/ccip-examples-shared-components/inspector";
 import { useSDKInspector } from "@chainlink/ccip-examples-shared-utils/inspector";
@@ -41,7 +41,7 @@ import styles from "@chainlink/ccip-examples-shared-components/layout/AppLayout.
 import appStyles from "./App.module.css";
 import "@rainbow-me/rainbowkit/styles.css";
 
-// Lazy load the inspector panel — zero cost when inspector is disabled
+// Lazy load the inspector panel: returns immediately when the inspector is disabled
 const SDKInspectorPanel = lazy(() =>
   import("@chainlink/ccip-examples-shared-components/inspector").then((m) => ({
     default: m.SDKInspectorPanel,
@@ -55,7 +55,7 @@ const queryClient = createDefaultQueryClient();
 const SOLANA_RPC = NETWORKS["solana-devnet"]!.rpcUrl;
 
 /**
- * Aptos wallet adapter network — derived from the SDK's networkInfo().
+ * Aptos wallet adapter network, derived from the SDK's networkInfo().
  * Maps the SDK's NetworkType ('MAINNET'|'TESTNET') to the Aptos SDK's Network enum.
  */
 const APTOS_NETWORK =
@@ -78,7 +78,7 @@ function AppContent() {
   };
 
   const transfer = useTransfer();
-  const addTransaction = useContext(TransactionHistoryContext).addTransaction;
+  const onTransferSent = useContext(TransactionHistoryContext).onTransferSent;
   const { enabled: inspectorEnabled } = useSDKInspector();
 
   const isConnected = Boolean(evmAddress ?? solanaAddress ?? aptosAddress);
@@ -118,20 +118,11 @@ function AppContent() {
         remoteToken
       );
       if (result?.messageId == null) return;
-      const sender = getWalletAddress(source, walletAddresses);
-      if (sender)
-        addTransaction({
-          messageId: result.messageId,
-          txHash: result.txHash,
-          sourceNetwork: source,
-          destNetwork: dest,
-          amount,
-          tokenSymbol: token,
-          receiver,
-          sender,
-        });
+      // The API needs a few seconds to index the message, so this schedules a
+      // refresh rather than inserting a row.
+      onTransferSent();
     },
-    [transfer, addTransaction, walletAddresses]
+    [transfer, onTransferSent]
   );
 
   const handleSwitchChain = useCallback(
@@ -218,6 +209,10 @@ export default function App() {
                   <AptosWalletAdapterProvider
                     autoConnect={true}
                     dappConfig={{ network: APTOS_NETWORK }}
+                    // The adapter otherwise injects a Google Analytics tag, which
+                    // sends visitor data to a third party and is blocked by the
+                    // deployment's Content-Security-Policy anyway.
+                    disableTelemetry={true}
                     onError={(error) => console.warn("Aptos wallet error:", error)}
                   >
                     <ChainContextProvider>

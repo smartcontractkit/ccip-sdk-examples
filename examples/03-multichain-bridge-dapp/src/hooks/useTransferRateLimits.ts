@@ -62,10 +62,15 @@ export function useTransferRateLimits({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const mountedRef = useRef(true);
+  // A per-run id, not a shared boolean: the effect cleanup that flips a mounted
+  // flag is undone by the next run, so a superseded fetch still writes.
+  const fetchIdRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchRateLimits = useCallback(async () => {
+    const fetchId = ++fetchIdRef.current;
+    const isCurrent = () => fetchId === fetchIdRef.current;
+
     if (!sourceNetworkId || !destNetworkId || !tokenAddress) {
       setState({
         sourceOutbound: null,
@@ -209,7 +214,7 @@ export function useTransferRateLimits({
         }
       }
 
-      if (mountedRef.current) {
+      if (isCurrent()) {
         setState({
           sourceOutbound,
           sourceInbound,
@@ -219,22 +224,18 @@ export function useTransferRateLimits({
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to fetch rate limits";
-      if (mountedRef.current) {
+      if (isCurrent()) {
         setError(message);
       }
     } finally {
-      if (mountedRef.current) {
+      if (isCurrent()) {
         setIsLoading(false);
       }
     }
   }, [sourceNetworkId, destNetworkId, tokenAddress, getChain]);
 
   useEffect(() => {
-    mountedRef.current = true;
     void fetchRateLimits();
-    return () => {
-      mountedRef.current = false;
-    };
   }, [fetchRateLimits]);
 
   // Sequential polling: wait for fetch to complete, then wait interval, then repeat

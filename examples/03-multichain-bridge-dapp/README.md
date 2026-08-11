@@ -40,7 +40,7 @@ Optional: copy `.env.example` to `.env`. Set `RPC_<NETWORK_ID>` (e.g. `RPC_ETHER
 | 4    | PoolInfo                                              | Pool and rate limits via `useTokenPoolInfo`: `getTokenAdminRegistryFor`, `getRegistryTokenConfig`, `getTokenPoolConfig`, `getTokenPoolRemote` |
 | 5    | useTransfer                                           | Estimate fee (with feeToken param) + lane latency; delegates send to useTransactionExecution                                                  |
 | 6    | useEVMTransfer / useSolanaTransfer / useAptosTransfer | `generateUnsignedSendMessage` + wallet `sendTransaction`                                                                                      |
-| 7    | TransactionHistoryProvider                            | Append tx to history; poll status in parallel with AbortController                                                                            |
+| 7    | TransactionHistoryProvider                            | Wraps useMessageHistory so the badge and drawer share one API fetch; schedules a refresh after a send                                         |
 | 8    | useMessageStatus                                      | Poll CCIP API (`getMessageById`) for message status                                                                                           |
 | 9    | MessageProgress                                       | Stepper UI until success/failed                                                                                                               |
 
@@ -57,7 +57,7 @@ Optional: copy `.env.example` to `.env`. Set `RPC_<NETWORK_ID>` (e.g. `RPC_ETHER
 
 The app includes an SDK Inspector panel (toggle via the `</>` button) that visualizes every CCIP SDK call in real time, grouped into four phases: **Setup**, **Fee Estimation**, **Transfer**, and **Tracking**. Each entry shows the method name, arguments, result, latency, and an educational annotation explaining _what_ the call does and _why_ it happens at that point in the flow.
 
-The inspector is **optional instrumentation** layered on top of the SDK calls -- it does not change the SDK's behavior or API surface. If you are reading the source code to learn how to build your own frontend, here is how to navigate it:
+The inspector is **optional instrumentation** layered on top of the SDK calls; it does not change the SDK's behavior or API surface. If you are reading the source code to learn how to build your own frontend, here is how to navigate it:
 
 ### Reading through the inspector code
 
@@ -94,7 +94,7 @@ To extract the SDK pattern, read the lambda. The config object above it (`method
 | `hooks/useTokenPoolInfo.ts`  | Token pool discovery: registry → pool config → remote token + rate limits                                              |
 | `hooks/ChainContext.tsx`     | Lazy chain instantiation: `EVMChain.fromUrl` / `SolanaChain.fromUrl` / `AptosChain.fromUrl`                            |
 
-Every SDK call in these files follows the same pattern: strip the `logSDKCall` wrapper and you have production-ready code.
+Every SDK call in these files follows the same pattern: strip the `logSDKCall` wrapper and you have the SDK call itself.
 
 ## Concepts
 
@@ -102,5 +102,5 @@ Every SDK call in these files follows the same pattern: strip the `logSDKCall` w
 - **Fee token selection:** Users choose a fee token via `FeeTokenOptions` (native currency, LINK, or other tokens discovered from the router). Each option shows the token name, symbol, balance, and a "Native" badge for native currency. The address is passed to `buildTokenTransferMessage({ ..., feeToken })`.
 - **Balances:** `useWalletBalances` fetches native, LINK (if available), and transfer token balances in parallel. Displayed via `BalancesList` component.
 - **Fees:** `getFee()` and `getLaneLatency()` on source chain. Fee amount depends on the selected fee token.
-- **History:** Stored in localStorage; pending items polled with AbortController; open via header **History** button.
-- **Errors:** User-facing text from `categorizeError` (shared-utils), which leverages `CCIPError.isCCIPError`, `EVMChain.parse`, `SolanaChain.parse`, and `AptosChain.parse` from the SDK, plus pattern matching for wallet rejections and network errors.
+- **History:** Read from the CCIP API per connected sender, paged by cursor; only non-terminal messages are re-polled. Open via the header **History** button.
+- **Errors:** User-facing text from `categorizeError` (shared-utils), which uses `CCIPError.isCCIPError`, `EVMChain.parse`, `SolanaChain.parse`, and `AptosChain.parse` from the SDK, plus pattern matching for wallet rejections and network errors.

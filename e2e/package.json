@@ -1,0 +1,39 @@
+{
+  "name": "@chainlink/ccip-examples-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Browser end-to-end tests for the deployed CCIP SDK example apps",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "serve": "tsx src/csp-server.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests --max-warnings 0",
+    "lint:fix": "eslint src tests --fix",
+    "clean": "rm -rf test-results playwright-report"
+  },
+  "dependencies": {
+    "@chainlink/ccip-examples-shared-config": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^22.15.29",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3",
+    "viem": "^2.21.0",
+    "@solana/web3.js": "catalog:",
+    "@aptos-labs/ts-sdk": "catalog:"
+  },
+  "keywords": [
+    "ccip",
+    "e2e",
+    "playwright"
+  ]
+}

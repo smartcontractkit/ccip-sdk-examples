@@ -27,7 +27,8 @@ All scripts are **chain-family-agnostic** — the same code path works for EVM, 
 │   Chain (abstract base)       CCIPAPIClient                     │
 │   ──────────────────────      ─────────────                     │
 │   • getFee()                  • getMessageById()                │
-│   • sendMessage()             • getLaneLatency()                │
+│   • sendMessage()                                               │
+│   • getLaneLatency()                                            │
 │   • getTokenInfo()                                              │
 │   • getSupportedTokens()                                        │
 │   • getTokenPoolRemote()                                        │
@@ -125,7 +126,7 @@ pnpm fees -s ethereum-testnet-sepolia -d solana-devnet                   # EVM �
 pnpm fees -s aptos-testnet -d ethereum-testnet-sepolia                   # Aptos → EVM
 pnpm fees -s ethereum-testnet-sepolia -d aptos-testnet                   # EVM → Aptos
 
-# Transfer (requires PRIVATE_KEY in .env)
+# Transfer (requires EVM_PRIVATE_KEY / SVM_PRIVATE_KEY / APTOS_PRIVATE_KEY in .env)
 pnpm transfer -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1
 pnpm transfer -s solana-devnet -d ethereum-testnet-sepolia -r <your-evm-address> -y
 pnpm transfer -s aptos-testnet -d ethereum-testnet-sepolia -r <your-evm-address> -y   # Aptos → EVM

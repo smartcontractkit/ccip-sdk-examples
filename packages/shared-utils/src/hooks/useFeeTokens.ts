@@ -83,6 +83,9 @@ export function useFeeTokens(
     }
 
     const fetchId = ++fetchIdRef.current;
+    // Drop the previous chain's options: they are not payable on the new one.
+    setFeeTokens([]);
+    setSelectedTokenState(null);
     setIsLoading(true);
     setError(null);
 

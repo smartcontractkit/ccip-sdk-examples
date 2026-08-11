@@ -55,7 +55,7 @@ const manualExecute = async (
   const apiClient = new CCIPAPIClient();
 
   const request = await withRetry(() => apiClient.getMessageById(messageId), {
-    maxRetries: 5,
+    maxAttempts: 5,
     initialDelayMs: 2000,
     backoffMultiplier: 1.5,
     maxDelayMs: 15000,

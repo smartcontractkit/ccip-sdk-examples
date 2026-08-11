@@ -11,8 +11,8 @@ import { ChainFamily } from "@chainlink/ccip-sdk";
  * External documentation and resource URLs
  */
 export const EXTERNAL_URLS = {
-  /** CCIP Documentation */
-  docs: "https://docs.chain.link/ccip",
+  /** CCIP SDK Tools Documentation */
+  docs: "https://docs.chain.link/ccip/tools",
 
   /** CCIP Explorer - message tracking */
   ccipExplorer: "https://ccip.chain.link",
@@ -116,8 +116,11 @@ export const BALANCE_POLLING_INTERVAL_MS = 15_000;
 /**
  * Polling interval for live rate limits during an in-progress transfer (source + destination pools).
  * Separate from POLLING_CONFIG which is for message-status polling.
+ *
+ * A transfer's drawdown lasts amount/rate seconds. Sampling slower than that
+ * misses the dip entirely and the bar appears not to move.
  */
-export const RATE_LIMIT_POLLING_INTERVAL_MS = 30_000;
+export const RATE_LIMIT_POLLING_INTERVAL_MS = 15_000;
 
 /**
  * Polling configuration for message status
@@ -163,13 +166,10 @@ export function getStatusDescription(status: string): string {
 /**
  * Dummy receiver addresses for fee estimation, keyed by chain family.
  *
- * IMPORTANT: These are REAL, well-known addresses that:
- * - Pass all on-chain validation (including Solana's > 1024 requirement for EVM)
- * - Are publicly documented and verifiable
- * - Are safe to use for fee estimation (no actual funds sent during estimation)
- *
- * These addresses are used when estimating fees without a real receiver address.
- * Using well-known addresses ensures compatibility with all validation rules.
+ * Used when estimating a fee without a real receiver. Apart from Aptos, TON and
+ * Canton, every entry is a real, publicly documented address, which is what makes it pass the
+ * on-chain validation rules (including Solana's `> 1024` check on EVM
+ * addresses). Fee estimation moves no funds, so pointing at them is safe.
  */
 export const DUMMY_ADDRESSES: Record<ChainFamily, string> = {
   /**
@@ -187,7 +187,7 @@ export const DUMMY_ADDRESSES: Record<ChainFamily, string> = {
   [ChainFamily.Solana]: "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
 
   /**
-   * Aptos: well-known Aptos address for fee estimation.
+   * Aptos: format-valid placeholder, not a real account.
    * Must be >= APTOS_PRECOMPILE_SPACE (0x0b) to pass on-chain FeeQuoter
    * validation in the CCIP contracts. Using 0x100 (256) which is safely
    * above the precompile threshold.
@@ -202,10 +202,21 @@ export const DUMMY_ADDRESSES: Record<ChainFamily, string> = {
   [ChainFamily.Sui]: "0x0000000000000000000000000000000000000000000000000000000000000005",
 
   /**
-   * TON: TON Foundation wallet
+   * TON: zero address in workchain 0. Format-valid placeholder for fee estimation, not a real wallet.
    * Well-known address in workchain:hash format
    */
   [ChainFamily.TON]: "0:0000000000000000000000000000000000000000000000000000000000000000",
+
+  /**
+   * Canton: format-valid placeholder, not a real party.
+   *
+   * Canton has no publicly documented well-known party to point at. This value
+   * satisfies the SDK's `hint::1220<64-hex>` party-ID shape so that address
+   * encoding succeeds. NETWORKS lists no Canton network, so these examples never
+   * send to it; use a real party ID before targeting a Canton destination.
+   */
+  [ChainFamily.Canton]:
+    "ccipExample::12200000000000000000000000000000000000000000000000000000000000000000",
 
   /**
    * Unknown: Fallback to Vitalik's address (EVM format)
@@ -236,5 +247,6 @@ export const CHAIN_FAMILY_LABELS: Record<ChainFamily, string> = {
   [ChainFamily.Aptos]: "Aptos Networks",
   [ChainFamily.Sui]: "Sui Networks",
   [ChainFamily.TON]: "TON Networks",
+  [ChainFamily.Canton]: "Canton Networks",
   [ChainFamily.Unknown]: "Other Networks",
 } as const;

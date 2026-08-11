@@ -1,7 +1,7 @@
 /**
  * Custom hooks exports
  *
- * Note: Wallet functionality is now handled by wagmi hooks:
+ * Wallet state comes from wagmi hooks:
  * - useAccount() - Get connected address and status
  * - useConnect() / useDisconnect() - Connect/disconnect wallet
  * - useSwitchChain() - Switch networks

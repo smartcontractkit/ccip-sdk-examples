@@ -2,7 +2,7 @@
  * Solana transaction utilities.
  *
  * Reusable helpers for sending and confirming Solana transactions
- * with robust handling of blockhash expiration.
+ * handles blockhash expiration.
  */
 
 import { type TransactionSignature, type Commitment } from "@solana/web3.js";

@@ -1,160 +1,80 @@
 /**
- * Transaction history provider: localStorage persistence and parallel status polling.
- * Uses Promise.allSettled for pending items and AbortController for cleanup.
+ * Transfer history provider. Wraps {@link useMessageHistory} so the header badge and
+ * the drawer share one fetch.
  */
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { MessageStatus } from "@chainlink/ccip-sdk";
-import { useChains } from "./useChains.js";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useAccount } from "wagmi";
+import { useWallet as useSolanaWallet } from "@solana/wallet-adapter-react";
+import { useWallet as useAptosWallet } from "@aptos-labs/wallet-adapter-react";
+
+import { useMessageHistory } from "./useMessageHistory.js";
 import {
   TransactionHistoryContext as Ctx,
   type TransactionHistoryContextValue,
 } from "./transactionHistoryTypes.js";
-import {
-  getStoredTransactions,
-  addTransaction as addToStorage,
-  updateTransactionStatus,
-  getPendingTransactions,
-  removeTransaction as removeFromStorage,
-  clearAllTransactions,
-  type TransactionStatus as TxStatus,
-} from "../utils/localStorage.js";
 
-const POLLING_INTERVAL = 30_000;
+/** The API indexes a message a few seconds after the source transaction lands. */
+const POST_SEND_REFRESH_DELAY_MS = 8_000;
 
 export function TransactionHistoryProvider({ children }: { children: ReactNode }) {
-  const { getChain } = useChains();
-  const [transactions, setTransactions] = useState(getStoredTransactions());
+  const { address: evmAddress } = useAccount();
+  const { publicKey: solanaPublicKey } = useSolanaWallet();
+  const { account: aptosAccount } = useAptosWallet();
+
+  // Every connected wallet, whatever the user has linked. A message is only
+  // findable under the address that sent it, so querying one family would hide
+  // transfers made from the others.
+  const senders = useMemo(
+    () =>
+      [evmAddress, solanaPublicKey?.toBase58(), aptosAccount?.address.toString()].filter(
+        (a): a is string => Boolean(a)
+      ),
+    [evmAddress, solanaPublicKey, aptosAccount]
+  );
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const triggerElementRef = useRef<HTMLElement | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const refresh = useCallback(() => {
-    setTransactions(getStoredTransactions());
-  }, []);
-
-  const pollPendingTransactions = useCallback(async () => {
-    const pending = getPendingTransactions();
-    if (pending.length === 0) return;
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-    const { signal } = controller;
-
-    const pollOne = async (tx: (typeof pending)[number]) => {
-      if (signal.aborted) return;
-      try {
-        const chain = await getChain(tx.sourceNetwork);
-        // Ref/signal can change during async; runtime checks kept intentionally
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- async timing
-        if (chain == null || signal.aborted) return;
-
-        const message = await chain.getMessageById(tx.messageId);
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- async timing
-        if (signal.aborted) return;
-
-        const status = message.metadata?.status;
-        let newStatus: TxStatus = "pending";
-        let destTxHash: string | undefined;
-
-        if (status === MessageStatus.Success) {
-          newStatus = "success";
-          destTxHash = message.metadata?.receiptTransactionHash;
-        } else if (status === MessageStatus.Failed) {
-          newStatus = "failed";
-          destTxHash = message.metadata?.receiptTransactionHash;
-        }
-
-        if (newStatus !== "pending") {
-          updateTransactionStatus(tx.messageId, newStatus, destTxHash);
-        }
-      } catch (err) {
-        console.debug("Background polling error for", tx.messageId, err);
-      }
-    };
-
-    await Promise.allSettled(pending.map((tx) => pollOne(tx)));
-    abortRef.current = null;
-
-    if (signal.aborted) return;
-    refresh();
-  }, [getChain, refresh]);
-
-  useEffect(() => {
-    void pollPendingTransactions();
-    intervalRef.current = setInterval(() => void pollPendingTransactions(), POLLING_INTERVAL);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      if (abortRef.current) {
-        abortRef.current.abort();
-        abortRef.current = null;
-      }
-    };
-  }, [pollPendingTransactions]);
+  const history = useMessageHistory({ senders });
 
   const openDrawer = useCallback((triggerElement?: HTMLElement | null) => {
-    if (triggerElement) triggerElementRef.current = triggerElement;
+    triggerElementRef.current = triggerElement ?? null;
     setIsDrawerOpen(true);
   }, []);
 
   const closeDrawer = useCallback(() => {
     setIsDrawerOpen(false);
-    if (triggerElementRef.current) {
-      triggerElementRef.current.focus();
-      triggerElementRef.current = null;
-    }
+    // Return focus to whatever opened the drawer.
+    triggerElementRef.current?.focus();
   }, []);
 
-  const toggleDrawer = useCallback(() => setIsDrawerOpen((prev) => !prev), []);
+  const toggleDrawer = useCallback(() => {
+    setIsDrawerOpen((open) => !open);
+  }, []);
 
-  const addTransaction = useCallback(
-    (tx: {
-      messageId: string;
-      txHash: string;
-      sourceNetwork: string;
-      destNetwork: string;
-      amount: string;
-      tokenSymbol: string;
-      receiver: string;
-      sender: string;
-    }) => {
-      addToStorage({ ...tx, status: "pending" });
-      refresh();
-    },
-    [refresh]
-  );
-
-  const removeTransaction = useCallback(
-    (messageId: string) => {
-      removeFromStorage(messageId);
-      refresh();
-    },
-    [refresh]
-  );
-
-  const clearHistory = useCallback(() => {
-    clearAllTransactions();
-    refresh();
+  const { refresh } = history;
+  const onTransferSent = useCallback(() => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = setTimeout(refresh, POST_SEND_REFRESH_DELAY_MS);
   }, [refresh]);
 
-  const pendingCount = transactions.filter((t) => t.status === "pending").length;
+  useEffect(
+    () => () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    },
+    []
+  );
 
   const value: TransactionHistoryContextValue = {
-    transactions,
-    pendingCount,
+    ...history,
+    senders,
     isDrawerOpen,
     openDrawer,
     closeDrawer,
     toggleDrawer,
-    addTransaction,
-    removeTransaction,
-    clearHistory,
-    refresh,
+    onTransferSent,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

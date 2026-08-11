@@ -37,6 +37,9 @@ pnpm build:packages
 ## Run
 
 ```bash
+# 00 – Landing page (dev server http://localhost:5173)
+pnpm dev:00
+
 # 01 – Node scripts (from repo root)
 pnpm -F 01-getting-started chains
 pnpm -F 01-getting-started fees -s ethereum-testnet-sepolia -d ethereum-testnet-sepolia-base-1
@@ -60,6 +63,7 @@ Optional: in 02 or 03, copy `.env.example` to `.env` and set `RPC_<NETWORK_ID>` 
 ```
 ccip-sdk-examples/
 ├── examples/
+│   ├── 00-landing-page/     # Landing page for deployed site
 │   ├── 01-getting-started/   # Node scripts
 │   ├── 02-evm-simple-bridge/ # EVM-only browser app
 │   ├── 03-multichain-bridge-dapp/ # EVM + Solana + Aptos browser app
@@ -69,8 +73,12 @@ ccip-sdk-examples/
 │   ├── shared-config/       # Networks, tokens, wagmi, constants
 │   ├── shared-utils/        # Validation, errors, formatting, message build, hooks
 │   └── shared-components/   # Button, Input, Select, Alert, MessageProgress, TransferStatus, ErrorBoundary
+├── e2e/                     # Browser end-to-end suite (Playwright)
+├── scripts/
+│   └── build-site.sh        # Assembles all browser examples into dist/
 ├── docs/
 │   └── LEARNING_PATH.md     # Progression and concepts
+├── vercel.json               # Vercel deployment config
 ├── pnpm-workspace.yaml
 └── package.json
 ```
@@ -115,12 +123,81 @@ Faucets and test tokens: [CCIP Test Tokens](https://docs.chain.link/ccip/test-to
 pnpm install
 pnpm build            # All packages + examples
 pnpm build:packages   # Only packages
+pnpm build:site       # Build combined site into dist/
+pnpm preview:site     # Build + serve combined site locally
+pnpm test             # Unit tests (vitest, in packages/)
+pnpm -F e2e test      # Browser end-to-end suite; see e2e/README.md
 pnpm typecheck
 pnpm lint
 pnpm format           # Prettier write
 pnpm format:check     # Prettier check (CI)
 pnpm check            # typecheck + lint + format:check
 ```
+
+## Deployment
+
+All browser examples (02, 03) are deployed as a single Vercel project. A landing page at `/` links to each example, served under its directory name (`/02-evm-simple-bridge/`, `/03-multichain-bridge-dapp/`).
+
+`scripts/build-site.sh` builds each browser example with a `VITE_BASE` path prefix, then assembles the outputs into a single `dist/` directory. `vercel.json` configures SPA rewrites so client-side routing works within each sub-app.
+
+**Local testing:**
+
+```bash
+pnpm build:site       # Build packages + all browser examples into dist/
+npx serve dist        # Serve at http://localhost:3000
+```
+
+**Vercel CLI (simulates production, including rewrites):**
+
+```bash
+npx vercel build
+npx vercel dev
+```
+
+## Adding a new example
+
+### Browser example (deployed to Vercel)
+
+1. Create `examples/NN-name/` with a `vite.config.ts` that includes `base: process.env.VITE_BASE || "/"`.
+
+2. Add build and copy lines to `scripts/build-site.sh`:
+
+   ```bash
+   VITE_BASE="/NN-name/" pnpm -F './examples/NN-name' build
+   # and in the assembly section:
+   cp -r "$ROOT/examples/NN-name/dist" "$DIST/NN-name"
+   ```
+
+3. Add a rewrite rule to `vercel.json`:
+
+   ```json
+   { "source": "/NN-name/:path*", "destination": "/NN-name/index.html" }
+   ```
+
+4. Add the verification entry in `scripts/build-site.sh` (the `for entry in` loop):
+
+   ```bash
+   "$DIST/NN-name/index.html" \
+   ```
+
+5. Add a card entry to `examples/00-landing-page/src/data/examples.ts`:
+
+   ```ts
+   {
+     id: "NN-name",
+     number: "NN",
+     title: "Your Title",
+     description: "One-sentence description.",
+     runtime: "Browser",
+     tags: ["relevant", "tags"],
+     appPath: "/NN-name/",
+     sourceUrl: `${GITHUB_BASE}/NN-name`,
+   },
+   ```
+
+### Node.js-only example
+
+No deployment changes needed. Add a card entry to `examples/00-landing-page/src/data/examples.ts` with `runtime: "Node.js"` and a `sourceUrl` (no `appPath`).
 
 ## License
 

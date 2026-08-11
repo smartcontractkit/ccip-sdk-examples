@@ -15,7 +15,10 @@
   line-height: 1.5;
   overflow-x: auto;
   color: var(--color-light);
-  white-space: pre;
+  /* Wrap rather than scroll: the panel is narrow, and a snippet running off the
+     edge has to be scrolled to be read. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .copyButton {

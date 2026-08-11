@@ -62,7 +62,8 @@ export function useTransferBalances({
   const [sourceLoading, setSourceLoading] = useState(false);
   const [sourceError, setSourceError] = useState<string | null>(null);
 
-  const mountedRef = useRef(true);
+  // Per-run id rather than a shared mounted flag; see useTransferRateLimits.
+  const fetchIdRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dest = useDestinationBalance(
@@ -75,6 +76,8 @@ export function useTransferBalances({
   );
 
   const fetchSourceBalance = useCallback(async () => {
+    const fetchId = ++fetchIdRef.current;
+    const isCurrent = () => fetchId === fetchIdRef.current;
     if (!sourceNetworkId || !senderAddress || !tokenAddress) {
       setSourceBalance(null);
       setSourceError(null);
@@ -95,16 +98,16 @@ export function useTransferBalances({
         },
         () => chain.getBalance({ holder: senderAddress, token: tokenAddress })
       );
-      if (mountedRef.current) {
+      if (isCurrent()) {
         setSourceBalance(balance);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to fetch source balance";
-      if (mountedRef.current) {
+      if (isCurrent()) {
         setSourceError(message);
       }
     } finally {
-      if (mountedRef.current) {
+      if (isCurrent()) {
         setSourceLoading(false);
       }
     }
@@ -117,11 +120,7 @@ export function useTransferBalances({
 
   // Initial fetch
   useEffect(() => {
-    mountedRef.current = true;
     void fetchSourceBalance();
-    return () => {
-      mountedRef.current = false;
-    };
   }, [fetchSourceBalance]);
 
   // Sequential polling: wait for fetch to complete, then wait BALANCE_POLLING_INTERVAL_MS, then repeat

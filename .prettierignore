@@ -1,0 +1,13 @@
+# Managed by pnpm, which rewrites it on every install with its own YAML style.
+# Letting Prettier reformat it makes `pnpm install` and `pnpm format:check` fight.
+pnpm-lock.yaml
+
+# Build output.
+dist/
+
+# Hardhat build output. Ignored by examples/04-hardhat-ccip/.gitignore, but
+# Prettier only reads the root .gitignore, so it needs listing again here.
+# Without this, `pnpm format:check` passes in CI (it runs before `hardhat
+# compile`) yet fails locally for anyone who has built the contracts.
+artifacts/
+cache/

@@ -13,7 +13,7 @@ interface CallEntryProps {
 }
 
 /** Keys to show as inline badges in collapsed header (order matters) */
-const BADGE_KEYS = ["side", "token", "type"] as const;
+const BADGE_KEYS = ["side", "token", "type", "label"] as const;
 
 /** Skip raw addresses and long strings — badges should be short human-readable labels */
 function isBadgeWorthy(value: string): boolean {

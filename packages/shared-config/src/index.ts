@@ -36,9 +36,11 @@ export {
   type TokenAddresses,
   TOKEN_ADDRESSES,
   TOKEN_KEYS,
+  TRANSFERABLE_TOKEN_KEYS,
   CCIP_BNM_ADDRESSES,
   LINK_TOKEN_ADDRESSES,
   getTokenAddress,
+  getTokensForLane,
   resolveFeeTokenAddress,
 } from "./tokens.js";
 

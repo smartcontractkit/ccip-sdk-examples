@@ -73,7 +73,7 @@ async function main() {
 
     // Use SDK's built-in retry logic for transient errors (e.g. indexing delay)
     const request = await withRetry(() => apiClient.getMessageById(messageId), {
-      maxRetries: Math.min(POLLING_CONFIG.maxNotFoundRetries, 10), // Cap at 10 for CLI
+      maxAttempts: Math.min(POLLING_CONFIG.maxNotFoundRetries, 10), // Cap at 10 for CLI
       initialDelayMs: POLLING_CONFIG.initialDelay,
       maxDelayMs: POLLING_CONFIG.maxDelay,
       backoffMultiplier: 1.5,

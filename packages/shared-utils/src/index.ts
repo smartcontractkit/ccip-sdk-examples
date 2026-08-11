@@ -10,11 +10,16 @@ export { getErrorMessage } from "./errors.js";
 // Error categorization (for ErrorMessage UX)
 export {
   categorizeError,
+  summarizeErrorMessage,
   isWalletRejection,
   isRecoverableError,
+  isRateLimitError,
+  withRateLimitDetail,
+  formatExecutionError,
   type ErrorCategory,
   type ErrorSeverity,
   type CategorizedError,
+  type RateLimitErrorDetail,
 } from "./errorCategorization.js";
 
 // CCIP error parsing (browser-safe)
@@ -55,6 +60,7 @@ export {
 // Rate limit formatting (pool capacity display)
 export {
   formatRateLimitBucket,
+  refilledBucket,
   type RateLimitBucket,
   type FormatRateLimitBucketResult,
 } from "./rateLimit.js";

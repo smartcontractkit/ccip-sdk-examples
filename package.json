@@ -9,6 +9,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
+    "dev:00": "pnpm -F './examples/00-landing-page' dev",
     "dev:01": "pnpm -F 01-getting-started dev",
     "dev:02": "pnpm -F 02-evm-simple-bridge dev",
     "dev:03": "pnpm -F 03-multichain-bridge-dapp dev",
@@ -24,8 +25,11 @@
     "fix": "pnpm format && pnpm lint:fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
+    "test": "pnpm -F \"./packages/*\" --if-present test",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check",
-    "clean": "pnpm -r clean && rm -rf node_modules .pnpm-store",
+    "build:site": "pnpm build:packages && bash scripts/build-site.sh",
+    "preview:site": "pnpm build:site && pnpm dlx serve dist",
+    "clean": "pnpm -r clean && rm -rf node_modules .pnpm-store dist",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -66,7 +70,8 @@
       "@openzeppelin/contracts@4.7.3": "4.9.6",
       "@openzeppelin/contracts-upgradeable@4.7.3": "4.9.6",
       "@openzeppelin/contracts-4.7.3": "npm:@openzeppelin/contracts@4.9.6",
-      "undici@<6.22.0": ">=6.22.0"
+      "undici@<6.22.0": ">=6.22.0",
+      "axios@<1.15.0": ">=1.15.0"
     }
   },
   "author": "Chainlink",

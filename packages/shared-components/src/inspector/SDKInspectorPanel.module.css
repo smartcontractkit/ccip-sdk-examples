@@ -117,3 +117,31 @@
     resize: none;
   }
 }
+
+.filterRow {
+  padding: 0 var(--spacing-3) var(--spacing-2);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.filterInput {
+  width: 100%;
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+}
+
+.filterInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.noMatches {
+  padding: var(--spacing-4);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-align: center;
+}

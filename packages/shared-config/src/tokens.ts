@@ -53,10 +53,23 @@ export const CCIP_BNM_ADDRESSES: TokenAddresses = {
 } as const;
 
 /**
+ * A CCT deployed across the mesh. One logical token, a different address and
+ * symbol on each chain (CCTDENC on Sepolia, SECCT on Fuji, SECCT2 on Solana).
+ * Not deployed on Base Sepolia.
+ */
+export const SECCT_ADDRESSES: TokenAddresses = {
+  "ethereum-testnet-sepolia": "0x227F0dB66E9Bf42A28E1E38438c5F19D0AdB2dF0",
+  "avalanche-testnet-fuji": "0x4F41762ba8C4e6fE8F8efc95734FDa29e676f3ab",
+  "solana-devnet": "BPympxtoS3GZmNcGiTxqsH6kyRgKiS9QFjfviSLaqxRE",
+  "aptos-testnet": "0xd361291f0516f60a7e3ae01a461a26e6f0f7b1351fb299136a15c6f6bce0a623",
+} as const;
+
+/**
  * All supported token address mappings
  */
 export const TOKEN_ADDRESSES: Record<string, TokenAddresses> = {
   "CCIP-BnM": CCIP_BNM_ADDRESSES,
+  SECCT: SECCT_ADDRESSES,
   LINK: LINK_TOKEN_ADDRESSES,
 } as const;
 
@@ -122,3 +135,20 @@ export function getTokenAddress(tokenKey: string, networkId: string): string | u
  * List of all supported token keys
  */
 export const TOKEN_KEYS = Object.keys(TOKEN_ADDRESSES);
+
+/** Tokens a user can bridge, in menu order. LINK is a fee token, not a transfer one. */
+export const TRANSFERABLE_TOKEN_KEYS = ["CCIP-BnM", "SECCT"] as const;
+
+/**
+ * Transferable tokens deployed on both chains of a lane.
+ *
+ * A token group is one logical token with a different address per chain, so a
+ * lane can only carry it when both ends are configured.
+ */
+export function getTokensForLane(sourceNetworkId: string, destNetworkId: string): string[] {
+  return (TRANSFERABLE_TOKEN_KEYS as readonly string[]).filter(
+    (key) =>
+      getTokenAddress(key, sourceNetworkId) !== undefined &&
+      getTokenAddress(key, destNetworkId) !== undefined
+  );
+}
