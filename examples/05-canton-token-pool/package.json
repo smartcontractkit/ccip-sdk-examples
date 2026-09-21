@@ -1,0 +1,38 @@
+{
+  "name": "@chainlink/ccip-examples-05-canton-token-pool",
+  "private": true,
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "description": "Canton CCT token-pool deploy, validate, and EVM lane wiring using the CCIP SDK",
+  "type": "module",
+  "scripts": {
+    "deploy": "tsx src/deploy-pool.ts",
+    "validate": "tsx src/validate-pool.ts",
+    "apply-evm-chain-updates": "tsx src/apply-evm-chain-updates.ts",
+    "dev": "echo 'Run individual scripts: pnpm deploy, pnpm validate, pnpm apply-evm-chain-updates'",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "lint:fix": "eslint src --fix",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@chainlink/ccip-sdk": "^1.13.1",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "ccip",
+    "sdk",
+    "canton",
+    "cct",
+    "token-pool"
+  ]
+}
