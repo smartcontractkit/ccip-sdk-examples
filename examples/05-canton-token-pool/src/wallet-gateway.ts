@@ -301,6 +301,12 @@ export function createGatewayLedgerFetch(params: {
     }
 
     const resource = targetUrl.href.slice(ledgerPrefix.length)
+
+    // The gateway's ledgerApi proxy errors server-side on /livez and /readyz
+    // (confirmed live) — health checks don't need the ledger, so short-circuit.
+    if (resource === '/livez' || resource === '/readyz') {
+      return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }
     const lowerMethod = method.toLowerCase() as 'get' | 'post' | 'patch' | 'put' | 'delete'
     let body: Record<string, unknown> | undefined
     let rawBody: unknown = init?.body
