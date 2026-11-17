@@ -18,7 +18,11 @@ import {
   normalizeRemoteAddress,
 } from '@chainlink/ccip-sdk/cct/canton'
 import { CantonChain } from '@chainlink/ccip-sdk'
-import { createGatewayLedgerFetch, ensureGatewaySession, fetchGatewayPrimaryParty } from './wallet-gateway.js'
+import {
+  createGatewayCantonProvider,
+  ensureGatewaySession,
+  fetchGatewayPrimaryParty,
+} from './wallet-gateway.js'
 
 function requireEnv(name: string): string {
   const value = process.env[name]
@@ -31,9 +35,6 @@ const accessToken = requireEnv('CANTON_GATEWAY_ACCESS_TOKEN')
 const chainId = process.env['CANTON_CHAIN_ID'] ?? 'canton:TestNet'
 const network = getCantonNetworkConfig(chainId)
 if (!network) throw new Error(`no well-known config for ${chainId}`)
-const ledgerUrl = network.ledgerUrl
-if (!ledgerUrl) throw new Error(`No ledger URL for ${chainId} — this network needs an explicit one`)
-const edsUrl = network.edsUrl
 
 const owner = process.env['CANTON_POOL_OWNER'] || (await fetchGatewayPrimaryParty({ gatewayUrl, accessToken }))
 const ccipOwner = network.ccipOwner
@@ -61,17 +62,11 @@ const rlOut = `${poolInstanceId}-rl-out-${selector}@${owner}`
 const rlInCustom = `${poolInstanceId}-rl-in-custom-${selector}@${owner}`
 
 await ensureGatewaySession({ gatewayUrl, accessToken, networkId: 'canton:chainlink-testnet' })
-const chain = await CantonChain.fromUrl(ledgerUrl, {
-  fetch: createGatewayLedgerFetch({ gatewayUrl, accessToken, ledgerBaseUrl: ledgerUrl }),
-  cantonConfig: {
-    party: owner,
-    ccipParty: ccipOwner,
-    jwt: accessToken,
-    edsUrl: edsUrl ?? 'http://unused-here.local', // unused by these reads
-    transferInstructionUrl: 'http://unused-here.local',
-    chainId,
-  },
-})
+const chain = await CantonChain.fromProvider(
+  createGatewayCantonProvider({ gatewayUrl, accessToken, networkId: chainId, partyId: owner }),
+  // Read-only checks: the built-in per-network EDS/token-standard defaults cover these.
+  { cantonConfig: { ccipParty: ccipOwner } },
+)
 const manager = CantonTokenManager.fromChain(chain)
 
 // ── Checks ─────────────────────────────────────────────────────────────────

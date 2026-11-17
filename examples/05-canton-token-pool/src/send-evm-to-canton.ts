@@ -13,7 +13,7 @@
  */
 import 'dotenv/config'
 
-import { AbiCoder, Contract, JsonRpcProvider, Wallet, formatUnits, getAddress, id as keccak256Utf8, parseUnits } from 'ethers'
+import { Contract, JsonRpcProvider, Wallet, formatUnits, getAddress, id as keccak256Utf8, parseUnits } from 'ethers'
 
 function requireEnv(name: string): string {
   const value = process.env[name]
@@ -50,18 +50,34 @@ const provider = new JsonRpcProvider(rpcUrl)
 const token = new Contract(tokenAddress, ERC20_ABI, provider)
 const router = new Contract(routerAddress, ROUTER_ABI, provider)
 
-const decimals = Number(await token.decimals())
+const decimals = Number(await token.decimals!())
 const amount = parseUnits(amountStr, decimals)
 
-// Token-only transfer: no data, zero gas limit (no receiver contract execution
-// on Canton — the PerPartyRouter resolves the receiver party from the address).
+// Token-only transfer: no data (no receiver contract execution on Canton —
+// the PerPartyRouter resolves the receiver party from the address).
+//
+// GenericExtraArgsV3 (ExtraArgsCodec.sol) — the v1.2 router's Canton lane
+// rejects the legacy V1 tag at getFee:
+//   tag(4) | uint32 gasLimit | uint16 blockConfirmations (0 = full finality)
+//   | uint8 ccvsLength | uint8 executorLength | uint16 executorArgsLength
+//   | uint8 tokenReceiverLength | uint16 tokenArgsLength
+const gasLimit = Number(process.env['EVM_GAS_LIMIT'] ?? '200000')
+const extraArgs =
+  '0xa69dd4aa' +
+  gasLimit.toString(16).padStart(8, '0') +
+  (0).toString(16).padStart(4, '0') +
+  '00' +
+  '00' +
+  '0000' +
+  '00' +
+  '0000'
+
 const message = {
   receiver: receiverAddress,
   data: '0x',
   tokenAmounts: [{ token: tokenAddress, amount }],
   feeToken: '0x0000000000000000000000000000000000000000', // native fee
-  // EVMExtraArgsV1: version tag 0x00 + abi-encoded uint32 gasLimit (token-only → 0)
-  extraArgs: '0x' + '00' + AbiCoder.defaultAbiCoder().encode(['uint32'], [0]).slice(2),
+  extraArgs,
 }
 
 console.error(`EVM → Canton token send`)
@@ -71,7 +87,7 @@ console.error(`  receiver party:   ${receiverParty}`)
 console.error(`  receiver address: ${receiverAddress}`)
 console.error(`  router:           ${routerAddress}`)
 
-const fee = await router.getFee(destChainSelector, message)
+const fee = await router.getFee!(destChainSelector, message)
 console.error(`  fee (native):     ${formatUnits(fee, 18)}`)
 
 const privateKey = process.env['EVM_PRIVATE_KEY']
@@ -84,27 +100,27 @@ const wallet = new Wallet(privateKey, provider)
 const tokenWithSigner = token.connect(wallet) as typeof token
 const routerWithSigner = router.connect(wallet) as typeof router
 
-const allowance: bigint = await tokenWithSigner.allowance(wallet.address, routerAddress)
+const allowance: bigint = await tokenWithSigner.allowance!(wallet.address, routerAddress)
 if (allowance < amount) {
   console.error(`  approving router for ${amountStr}…`)
-  await (await tokenWithSigner.approve(routerAddress, amount)).wait()
+  await (await tokenWithSigner.approve!(routerAddress, amount)).wait()
   console.error(`  ✓ approved`)
 }
 
 console.error(`  sending…`)
-const tx = await routerWithSigner.ccipSend(destChainSelector, message, { value: fee })
+const tx = await routerWithSigner.ccipSend!(destChainSelector, message, { value: fee })
 const rcpt = await tx.wait()
 console.error(`  ✓ submitted in tx ${tx.hash} (block ${rcpt?.blockNumber})`)
 
 const ev = rcpt?.logs
-  .map((l) => {
+  .map((l: { topics: string[]; data: string }) => {
     try {
-      return router.interface.parseLog({ topics: l.topics as string[], data: l.data })
+      return router.interface.parseLog({ topics: l.topics, data: l.data })
     } catch {
       return null
     }
   })
-  .find((e) => e?.name === 'CCIPSendRequested')
+  .find((e: { name?: string } | null) => e?.name === 'CCIPSendRequested')
 if (ev) {
   console.error(`\n✅ MessageID: ${ev.args['messageId']}`)
   console.error(`   sequence: ${ev.args['message']['sequence']}`)

@@ -10,6 +10,7 @@
  * custody service.
  */
 import type { UnsignedCantonTx } from '@chainlink/ccip-sdk'
+import type { CantonRpcProvider } from '@chainlink/ccip-sdk/src/canton/types.ts'
 
 /** Result of {@link submitViaGateway}: the gateway's `prepareExecute` response. */
 export interface GatewaySubmitResult {
@@ -193,6 +194,107 @@ function isDuplicateSessionError(body: unknown): boolean {
   if (!body || typeof body !== 'object') return false
   const err = (body as { error?: { message?: string } }).error
   return typeof err?.message === 'string' && err.message.includes('Failed to add session')
+}
+
+/**
+ * A {@link CantonRpcProvider} backed by the Wallet Gateway (CIP-103) JSON-RPC
+ * endpoint — the construction path for `CantonChain.fromProvider`:
+ * `getActiveNetwork`/`getPrimaryAccount` answer locally, `ledgerApi` calls
+ * proxy through the gateway session (a session token carries daml_ledger_api
+ * scope but isn't mapped to participant read rights, so direct Ledger API
+ * reads 464), and `prepareExecuteAndWait` maps to the gateway's
+ * `prepareExecute` — which only satisfies the synchronous contract under
+ * API-key auth (immediate execution); user-JWT auth returns an approval URL
+ * and throws here instead.
+ *
+ * `networkId` is the CCIP CAIP-2 chain id (e.g. `canton:TestNet`) that
+ * `CantonChain.fromProvider` resolves chain defaults from — NOT the gateway
+ * session network id (`canton:chainlink-testnet`) used by
+ * {@link ensureGatewaySession}.
+ */
+export function createGatewayCantonProvider(params: {
+  gatewayUrl: string
+  accessToken: string
+  networkId: string
+  partyId: string
+}): CantonRpcProvider {
+  const { gatewayUrl, accessToken, networkId, partyId } = params
+  const provider = {
+    async request(args: { method: string; params?: unknown }): Promise<unknown> {
+      switch (args.method) {
+        case 'getActiveNetwork':
+          return { networkId }
+        case 'getPrimaryAccount':
+          return { partyId }
+        case 'ledgerApi':
+          return (await gatewayRpc(gatewayUrl, accessToken, 'ledgerApi', args.params)) ?? {}
+        case 'prepareExecuteAndWait': {
+          const p = (args.params ?? {}) as Record<string, unknown>
+          const result = await gatewayRpc(gatewayUrl, accessToken, 'prepareExecute', p)
+          const r = result as Record<string, unknown> | undefined
+          if (r?.['userUrl']) {
+            throw new GatewaySubmitError(
+              'prepareExecuteAndWait requires API-key auth (immediate execution); got an approval URL instead',
+              result,
+            )
+          }
+          const tx = r?.['transaction'] as Record<string, unknown> | undefined
+          const updateId = r?.['updateId'] ?? tx?.['updateId']
+          if (typeof updateId !== 'string' || !updateId) {
+            throw new GatewaySubmitError(
+              'gateway prepareExecute returned no updateId — cannot confirm execution',
+              result,
+            )
+          }
+          const completionOffset = r?.['completionOffset'] ?? tx?.['offset'] ?? 0
+          return {
+            tx: {
+              status: 'executed',
+              commandId: p['commandId'] ?? '',
+              payload: { updateId, completionOffset },
+            },
+          }
+        }
+        default:
+          throw new GatewaySubmitError(
+            `gateway provider does not support method '${args.method}'`,
+            undefined,
+          )
+      }
+    },
+    on: () => provider,
+    emit: () => true,
+    removeListener: () => provider,
+  }
+  return provider as unknown as CantonRpcProvider
+}
+
+/** One JSON-RPC call against the gateway dApp endpoint, unwrapping errors. */
+async function gatewayRpc(
+  gatewayUrl: string,
+  accessToken: string,
+  method: string,
+  params: unknown,
+): Promise<unknown> {
+  const response = await fetch(gatewayUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: authHeader(accessToken) },
+    body: JSON.stringify({ jsonrpc: '2.0', id: cryptoRandomId(), method, params }),
+  })
+  if (!response.ok) {
+    throw new GatewaySubmitError(
+      `gateway ${method} failed: HTTP ${response.status} ${response.statusText}`,
+      await response.text(),
+    )
+  }
+  const json = (await response.json()) as JsonRpcResponse
+  if (json.error) {
+    throw new GatewaySubmitError(
+      `gateway ${method} JSON-RPC error ${json.error.code}: ${json.error.message}`,
+      json.error.data,
+    )
+  }
+  return json.result
 }
 
 /** Error thrown when a gateway submission fails (HTTP or JSON-RPC level). */

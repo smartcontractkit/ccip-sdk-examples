@@ -35,7 +35,7 @@ import * as readline from 'node:readline'
 import { CantonTokenManager, getCantonNetworkConfig, decodeDamlRecord, extractFieldValue, POOL_TEMPLATE_IDS } from '@chainlink/ccip-sdk/cct/canton'
 import { CantonChain } from '@chainlink/ccip-sdk'
 import {
-  createGatewayLedgerFetch,
+  createGatewayCantonProvider,
   ensureGatewaySession,
   fetchGatewayPrimaryParty,
   submitViaGateway,
@@ -51,7 +51,7 @@ const gatewayUrl = requireEnv('CANTON_GATEWAY_URL')
 const accessToken = requireEnv('CANTON_GATEWAY_ACCESS_TOKEN')
 const chainId = process.env['CANTON_CHAIN_ID'] ?? 'canton:TestNet'
 const network = getCantonNetworkConfig(chainId)
-if (!network?.ledgerUrl) throw new Error(`no ledger URL for ${chainId}`)
+if (!network) throw new Error(`no well-known config for ${chainId}`)
 
 const owner = process.env['CANTON_POOL_OWNER'] || (await fetchGatewayPrimaryParty({ gatewayUrl, accessToken }))
 const instrumentIdRaw = requireEnv('CANTON_INSTRUMENT_ID')
@@ -66,17 +66,10 @@ const limiterAddress = (which: string) =>
   `${poolInstanceId}-rl-${which === 'custom' ? 'in-custom' : which}-${selector}@${owner}`
 
 await ensureGatewaySession({ gatewayUrl, accessToken, networkId: 'canton:chainlink-testnet' })
-const chain = await CantonChain.fromUrl(network.ledgerUrl, {
-  fetch: createGatewayLedgerFetch({ gatewayUrl, accessToken, ledgerBaseUrl: network.ledgerUrl }),
-  cantonConfig: {
-    party: owner,
-    ccipParty: network.ccipOwner,
-    jwt: accessToken,
-    edsUrl: network.edsUrl ?? 'http://unused-here.local',
-    transferInstructionUrl: 'http://unused-here.local',
-    chainId,
-  },
-})
+const chain = await CantonChain.fromProvider(
+  createGatewayCantonProvider({ gatewayUrl, accessToken, networkId: chainId, partyId: owner }),
+  { cantonConfig: { ccipParty: network.ccipOwner } },
+)
 const manager = CantonTokenManager.fromChain(chain)
 
 async function submitAndConfirm(label: string, unsigned: { commands: unknown }) {
@@ -354,7 +347,7 @@ switch (op) {
       (args) => extractFieldValue(decodeDamlRecord(args)['instanceId']) === instanceId,
     )
     const pool = matches.sort((a, b) => (b.createdAtOffset ?? 0) - (a.createdAtOffset ?? 0))[0]
-    if (!pool) throw new Error(`no active ${entity} for ${poolInstanceAddress}`)
+    if (!pool) throw new Error(`no active ${poolType} pool for ${poolInstanceAddress}`)
     await submitAndConfirm('archivePool', {
       commands: {
         commands: [

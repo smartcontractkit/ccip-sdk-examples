@@ -6,10 +6,8 @@
  */
 import 'dotenv/config'
 
-import { getCantonNetworkConfig } from '@chainlink/ccip-sdk/cct/canton'
-import { CantonChain } from '@chainlink/ccip-sdk'
 import {
-  createGatewayLedgerFetch,
+  createGatewayCantonProvider,
   ensureGatewaySession,
   fetchGatewayPrimaryParty,
 } from './wallet-gateway.js'
@@ -26,25 +24,21 @@ if (!updateId) throw new Error('usage: tsx src/check-tx.ts <updateId>')
 const gatewayUrl = requireEnv('CANTON_GATEWAY_URL')
 const accessToken = requireEnv('CANTON_GATEWAY_ACCESS_TOKEN')
 const chainId = process.env['CANTON_CHAIN_ID'] ?? 'canton:TestNet'
-const network = getCantonNetworkConfig(chainId)
-if (!network?.ledgerUrl) throw new Error(`no ledger URL for ${chainId}`)
 
 const owner = process.env['CANTON_POOL_OWNER'] || (await fetchGatewayPrimaryParty({ gatewayUrl, accessToken }))
 
 await ensureGatewaySession({ gatewayUrl, accessToken, networkId: 'canton:chainlink-testnet' })
-const chain = await CantonChain.fromUrl(network.ledgerUrl, {
-  fetch: createGatewayLedgerFetch({ gatewayUrl, accessToken, ledgerBaseUrl: network.ledgerUrl }),
-  cantonConfig: {
-    party: owner,
-    ccipParty: network.ccipOwner,
-    jwt: accessToken,
-    edsUrl: network.edsUrl ?? 'http://unused-here.local',
-    transferInstructionUrl: 'http://unused-here.local',
-    chainId,
-  },
+const provider = createGatewayCantonProvider({
+  gatewayUrl,
+  accessToken,
+  networkId: chainId,
+  partyId: owner,
 })
 
-const tx = (await chain.provider.getUpdateById(updateId, owner)) as Record<string, unknown>
+const tx = (await provider.request({
+  method: 'ledgerApi',
+  params: { requestMethod: 'post', resource: '/v2/updates/update-by-id', body: { updateId } },
+})) as Record<string, unknown>
 if (process.env['DEBUG_RAW']) {
   console.log(JSON.stringify(tx))
   process.exit(0)
