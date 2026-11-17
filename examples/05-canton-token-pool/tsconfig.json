@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // The SDK is consumed via a `link:` to its source (its own tsconfig compiles
+    // it with these settings), so mirror them here for typechecking the program.
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "types": ["node"],
+    "allowImportingTsExtensions": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
