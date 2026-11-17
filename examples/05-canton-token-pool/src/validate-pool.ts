@@ -14,7 +14,6 @@ import 'dotenv/config'
 
 import {
   CantonTokenManager,
-  deriveTokenConfigInstanceAddress,
   getCantonNetworkConfig,
   normalizeRemoteAddress,
 } from '@chainlink/ccip-sdk/cct/canton'
@@ -41,7 +40,6 @@ const ccipOwner = network.ccipOwner
 
 const instrumentIdRaw = requireEnv('CANTON_INSTRUMENT_ID')
 const instrumentId = { admin: owner, id: instrumentIdRaw }
-const poolType = (process.env['CANTON_POOL_TYPE'] ?? 'burnMint') as 'burnMint' | 'lockRelease'
 const poolInstanceId = process.env['CANTON_POOL_INSTANCE_ID'] || `${instrumentIdRaw.toLowerCase()}-pool-001`
 const poolInstanceAddress = `${poolInstanceId}@${owner}`
 const observers = requireEnv('CANTON_OBSERVERS')
@@ -58,7 +56,6 @@ const decimals = Number(process.env['CANTON_DECIMALS'] ?? '10')
 const rlScale = 10n ** BigInt(decimals)
 const wantCapacity = (BigInt(process.env['CANTON_RL_CAPACITY'] ?? '1000000') * rlScale).toString()
 const wantRate = (BigInt(process.env['CANTON_RL_RATE'] ?? '100') * rlScale).toString()
-const tokenConfigAddress = deriveTokenConfigInstanceAddress(instrumentId, ccipOwner)
 const rlIn = `${poolInstanceId}-rl-in-${selector}@${owner}`
 const rlOut = `${poolInstanceId}-rl-out-${selector}@${owner}`
 const rlInCustom = `${poolInstanceId}-rl-in-custom-${selector}@${owner}`
@@ -91,10 +88,10 @@ async function check(name: string, run: () => Promise<{ pass: boolean; detail: s
   }
 }
 
-const getPool = () => manager.getTokenPoolState({ poolInstanceAddress, poolType, poolOwner: owner })
+const getPool = () => manager.getTokenPoolState({ poolInstanceAddress, poolOwner: owner })
 const getTar = () =>
   manager.getTokenAdminRegistry({
-    tokenConfigInstanceAddress: tokenConfigAddress,
+    instrumentId,
     adminParty: owner,
   })
 
@@ -134,13 +131,13 @@ await check(`Remote chain ${selector} wired`, async () => {
   if (!lane) return { pass: false, detail: `no remoteChainConfigs entry for ${selector}` }
   const bad: string[] = []
   const wantTokenAddress = process.env['CANTON_REMOTE_TOKEN_ADDRESS']
-  if (wantTokenAddress && lane.remoteTokenAddress !== normalizeRemoteAddress(wantTokenAddress))
+  if (wantTokenAddress && lane.remoteTokenAddress !== normalizeRemoteAddress(wantTokenAddress, BigInt(selector)))
     bad.push(
-      `remoteTokenAddress: got ${lane.remoteTokenAddress}, want ${normalizeRemoteAddress(wantTokenAddress)}`,
+      `remoteTokenAddress: got ${lane.remoteTokenAddress}, want ${normalizeRemoteAddress(wantTokenAddress, BigInt(selector))}`,
     )
   const wantPoolsRaw = process.env['CANTON_REMOTE_POOLS']
   if (wantPoolsRaw) {
-    const wantPools = wantPoolsRaw.split(',').map((s) => normalizeRemoteAddress(s.trim()))
+    const wantPools = wantPoolsRaw.split(',').map((s) => normalizeRemoteAddress(s.trim(), BigInt(selector)))
     if (JSON.stringify(lane.remotePools) !== JSON.stringify(wantPools))
       bad.push(
         `remotePools: got ${JSON.stringify(lane.remotePools)}, want ${JSON.stringify(wantPools)}`,

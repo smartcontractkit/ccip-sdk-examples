@@ -17,7 +17,6 @@ import * as readline from 'node:readline'
 
 import {
   CantonTokenManager,
-  deriveTokenConfigInstanceAddress,
   getCantonNetworkConfig,
 } from '@chainlink/ccip-sdk/cct/canton'
 import { CantonChain } from '@chainlink/ccip-sdk'
@@ -83,13 +82,9 @@ const observers = requireEnv('CANTON_OBSERVERS')
 const unsigned = await manager.generateUnsignedDeployTokenPool({
   poolType,
   instanceId: poolInstanceId,
-  poolOwner: owner,
-  ccipOwner,
   instrumentId: { admin: owner, id: instrumentId },
   decimals,
   observers: observers.split(','),
-  admin: owner,
-  tokenAdminRegistryInstanceAddress: network.tokenAdminRegistry,
   lanes: [
     {
       remoteChainSelector: selector,
@@ -131,17 +126,23 @@ await new Promise<void>((r) =>
 )
 
 // ── Validate: reads only, no wallet ────────────────────────────────────────
+// The gateway executes asynchronously after approval — poll until the pool is
+// visible instead of reading once (a single read races execution).
 const poolInstanceAddress = `${poolInstanceId}@${owner}`
-const pool = await manager.getTokenPoolState({
-  poolInstanceAddress,
-  poolType,
-  poolOwner: owner,
-})
+console.error('waiting for the pool to appear on-ledger…')
+let pool
+for (let attempt = 1; attempt <= 30; attempt++) {
+  try {
+    pool = await manager.getTokenPoolState({ poolInstanceAddress, poolOwner: owner })
+    break
+  } catch (err) {
+    if (attempt === 30) throw err
+    await new Promise((r) => setTimeout(r, 2000))
+  }
+}
+if (!pool) throw new Error('unreachable')
 const tar = await manager.getTokenAdminRegistry({
-  tokenConfigInstanceAddress: deriveTokenConfigInstanceAddress(
-    { admin: owner, id: instrumentId },
-    ccipOwner,
-  ),
+  instrumentId: { admin: owner, id: instrumentId },
   adminParty: owner,
 })
 const rlIn = await manager.getRateLimiterState({
@@ -153,6 +154,8 @@ console.error('\n── deployment state ──')
 console.error(
   'pool:',
   pool.poolInstanceId,
+  '| type:',
+  pool.poolType,
   '| instrument:',
   pool.instrumentId.id,
   '| decimals:',

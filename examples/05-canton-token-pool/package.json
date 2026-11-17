@@ -11,6 +11,8 @@
     "deploy": "tsx src/deploy-pool.ts",
     "validate": "tsx src/validate-pool.ts",
     "apply-evm-chain-updates": "tsx src/apply-evm-chain-updates.ts",
+    "ops": "tsx src/one-off-ops.ts",
+    "register-evm-token": "tsx src/register-evm-token.ts",
     "dev": "echo 'Run individual scripts: pnpm deploy, pnpm validate, pnpm apply-evm-chain-updates'",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
@@ -19,7 +21,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@chainlink/ccip-sdk": "^1.13.1",
+    "@chainlink/ccip-sdk": "link:../../../ccip-tools-ts/ccip-sdk",
     "dotenv": "^16.4.5",
     "ethers": "^6.13.4"
   },

@@ -22,6 +22,8 @@ import 'dotenv/config'
 
 import { Contract, JsonRpcProvider, Wallet, id as keccak256Utf8, parseUnits } from 'ethers'
 
+import { fetchGatewayPrimaryParty } from './wallet-gateway.js'
+
 const TOKEN_POOL_ABI = [
   'function applyChainUpdates(uint64[] remoteChainSelectorsToRemove, tuple(uint64 remoteChainSelector, bytes[] remotePoolAddresses, bytes remoteTokenAddress, tuple(bool isEnabled, uint128 capacity, uint128 rate) outboundRateLimiterConfig, tuple(bool isEnabled, uint128 capacity, uint128 rate) inboundRateLimiterConfig)[] chainsToAdd) external',
   'function getRemoteChains() view returns (uint64[])',
@@ -40,8 +42,17 @@ function requireEnv(name: string): string {
 async function main(): Promise<void> {
   const rpcUrl = requireEnv('EVM_RPC_URL')
   const poolAddress = requireEnv('EVM_POOL_ADDRESS')
-  const remoteChainSelector = requireEnv('CANTON_REMOTE_CHAIN_SELECTOR')
-  const owner = process.env['CANTON_POOL_OWNER']
+  // The EVM pool's lane is keyed by the REMOTE chain = Canton. NOT
+  // CANTON_REMOTE_CHAIN_SELECTOR — that's the remote from the Canton pool's
+  // perspective (the EVM chain). Canton's own selector lives in
+  // EVM_REMOTE_CHAIN_SELECTOR (testnet: 9268731218649498074).
+  const remoteChainSelector = requireEnv('EVM_REMOTE_CHAIN_SELECTOR')
+  const owner =
+    process.env['CANTON_POOL_OWNER'] ||
+    (await fetchGatewayPrimaryParty({
+      gatewayUrl: requireEnv('CANTON_GATEWAY_URL'),
+      accessToken: requireEnv('CANTON_GATEWAY_ACCESS_TOKEN'),
+    }))
   const instrumentId = process.env['CANTON_INSTRUMENT_ID']
   const poolInstanceId =
     process.env['CANTON_POOL_INSTANCE_ID'] || `${instrumentId?.toLowerCase()}-pool-001`
@@ -59,7 +70,9 @@ async function main(): Promise<void> {
     remoteTokenAddress ??= keccak256Utf8(`${instrumentId}@${owner}`).toLowerCase()
   }
 
-  const decimals = Number(process.env['CANTON_DECIMALS'] ?? '18')
+  // Rate limits live on the EVM pool — scale by the EVM token's decimals (TKN = 18),
+  // NOT the Canton-side decimals.
+  const decimals = Number(process.env['EVM_DECIMALS'] ?? '18')
   const enabled = process.env['CANTON_RATE_LIMITS_ENABLED'] !== 'false'
   const rateLimit = {
     isEnabled: enabled,
