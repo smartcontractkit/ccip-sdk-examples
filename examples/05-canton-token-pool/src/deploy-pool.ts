@@ -21,7 +21,7 @@ import {
 } from '@chainlink/ccip-sdk/cct/canton'
 import { CantonChain } from '@chainlink/ccip-sdk'
 import {
-  createGatewayLedgerFetch,
+  createGatewayCantonProvider,
   ensureGatewaySession,
   fetchGatewayPrimaryParty,
   submitViaGateway,
@@ -38,8 +38,6 @@ const accessToken = requireEnv('CANTON_GATEWAY_ACCESS_TOKEN')
 const chainId = process.env['CANTON_CHAIN_ID'] ?? 'canton:TestNet'
 const network = getCantonNetworkConfig(chainId)
 if (!network) throw new Error(`no well-known config for ${chainId}`)
-const ledgerUrl = network.ledgerUrl
-if (!ledgerUrl) throw new Error(`No ledger URL for ${chainId} — this network needs an explicit one`)
 const edsUrl = network.edsUrl
 if (!edsUrl) throw new Error(`No EDS URL for ${chainId} — this network needs an explicit one`)
 const owner = process.env['CANTON_POOL_OWNER'] || (await fetchGatewayPrimaryParty({ gatewayUrl, accessToken }))
@@ -47,21 +45,19 @@ const ccipOwner = network.ccipOwner
 
 // ── Setup: chain + manager (all ledger access via the wallet gateway) ──────
 await ensureGatewaySession({ gatewayUrl, accessToken, networkId: 'canton:chainlink-testnet' })
-const chain = await CantonChain.fromUrl(ledgerUrl, {
-  fetch: createGatewayLedgerFetch({ gatewayUrl, accessToken, ledgerBaseUrl: ledgerUrl }),
-  cantonConfig: {
-    party: owner,
-    ccipParty: ccipOwner,
-    jwt: accessToken,
-    // The EDS disclosure service — REQUIRED for external parties: the deploy
-    // resolves the TAR contract through it (TAR is signatory-only to ccipOwner,
-    // so no external party can ACS-read it; the EDS disclosure endpoint is
-    // public and unauthenticated by design).
-    edsUrl,
-    transferInstructionUrl: 'http://unused-here.local', // unused by this flow
-    chainId,
+const chain = await CantonChain.fromProvider(
+  createGatewayCantonProvider({ gatewayUrl, accessToken, networkId: chainId, partyId: owner }),
+  {
+    cantonConfig: {
+      ccipParty: ccipOwner,
+      // The EDS disclosure service — REQUIRED for external parties: the deploy
+      // resolves the TAR contract through it (TAR is signatory-only to ccipOwner,
+      // so no external party can ACS-read it; the EDS disclosure endpoint is
+      // public and unauthenticated by design).
+      externalEdsUrlsByOwner: { '*': edsUrl },
+    },
   },
-})
+)
 const manager = CantonTokenManager.fromChain(chain)
 
 // ── Deploy: one atomic tx (create pool + Initialize: TAR registration, lane
@@ -112,18 +108,27 @@ const unsigned = await manager.generateUnsignedDeployTokenPool({
       },
     },
   ],
+  // LR needs the CIP-112 receiver label so the pool can accept incoming
+  // transfers; CANTON_POOL_RECEIVE_METADATA (JSON) overrides the default.
+  poolReceiveMetadata:
+    poolType === 'lockRelease'
+      ? (JSON.parse(process.env['CANTON_POOL_RECEIVE_METADATA'] ?? '{"cip-112/receiver.id":"ccip-public"}') as Record<string, string>)
+      : undefined,
   sender: owner,
 })
 
 const { approveUrl } = await submitViaGateway({ gatewayUrl, accessToken, unsigned })
 console.error('Approve at:', approveUrl)
-const rl = readline.createInterface({ input: process.stdin, output: process.stderr })
-await new Promise<void>((r) =>
-  rl.question('press Enter after approving… ', () => {
-    rl.close()
-    r()
-  }),
-)
+// Headless mode: poll for the pool instead of waiting for an Enter keypress.
+if (!process.env['CANTON_HEADLESS']) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stderr })
+  await new Promise<void>((r) =>
+    rl.question('press Enter after approving… ', () => {
+      rl.close()
+      r()
+    }),
+  )
+}
 
 // ── Validate: reads only, no wallet ────────────────────────────────────────
 // The gateway executes asynchronously after approval — poll until the pool is

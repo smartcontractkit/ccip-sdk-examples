@@ -18,7 +18,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --max-warnings 0",
     "lint:fix": "eslint src --fix",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "list-pools": "tsx src/list-pools.ts",
+    "get-tar": "tsx src/get-tar.ts"
   },
   "dependencies": {
     "@chainlink/ccip-sdk": "link:../../../ccip-tools-ts/ccip-sdk",
