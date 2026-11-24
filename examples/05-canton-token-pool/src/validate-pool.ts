@@ -14,7 +14,9 @@ import 'dotenv/config'
 
 import {
   CantonTokenManager,
+  TRANSFER_PREAPPROVAL_CONTEXT_KEY,
   getCantonNetworkConfig,
+  listTransferPreapprovalCids,
   normalizeRemoteAddress,
 } from '@chainlink/ccip-sdk/cct/canton'
 import { CantonChain } from '@chainlink/ccip-sdk'
@@ -72,7 +74,9 @@ const manager = CantonTokenManager.fromChain(chain)
 // ── Checks ─────────────────────────────────────────────────────────────────
 
 let failures = 0
+let total = 0
 async function check(name: string, run: () => Promise<{ pass: boolean; detail: string }>) {
+  total++
   try {
     const { pass, detail } = await run()
     console.error(` ${pass ? '✓' : '✗'} ${name}\n   ${detail}`)
@@ -198,6 +202,38 @@ await check('Token factories wired in TAR', async () => {
     : { pass: false, detail: `not set: ${missing.join(', ')}` }
 })
 
+// Lock-release only: without a pinned, active TransferPreapproval the pool is NOT
+// ready — locks from any party other than the pool owner fail. The deploy only warns,
+// so this check is what makes a missing or stale preapproval show up as unhealthy.
+if ((await getPool()).poolType === 'lockRelease') {
+  await check('Owner transfer preapproval pinned and active (lock-release)', async () => {
+    const pinned = (await getPool()).poolReceiveContext[TRANSFER_PREAPPROVAL_CONTEXT_KEY]
+    const active = await listTransferPreapprovalCids(chain, owner, instrumentId)
+    const fix =
+      'SETUP REQUIRED: the pool owner must have a TransferPreapproval and pin it, e.g. ' +
+      `OPS_CTX_KEY=${TRANSFER_PREAPPROVAL_CONTEXT_KEY} OPS_CTX_CONTRACT=<preapproval cid> pnpm ops ctx-add-contract. ` +
+      'Until then, locks from parties other than the pool owner fail.'
+    if (!pinned) {
+      return {
+        pass: false,
+        detail:
+          `no "${TRANSFER_PREAPPROVAL_CONTEXT_KEY}" entry pinned in the pool's receive context ` +
+          `(owner has ${active.length} active preapproval(s)). ${fix}`,
+      }
+    }
+    if (!active.includes(pinned)) {
+      return {
+        pass: false,
+        detail:
+          `pinned preapproval ${pinned.slice(0, 12)}… is not an active preapproval of the owner ` +
+          `(stale; owner has ${active.length} active: ${active.map((c) => `${c.slice(0, 12)}…`).join(', ') || 'none'}). ` +
+          'Re-pin the current one with ctx-add-contract.',
+      }
+    }
+    return { pass: true, detail: `pinned ${pinned.slice(0, 12)}… is active` }
+  })
+}
+
 for (const [label, addr] of [
   ['inbound rate limiter', rlIn],
   ['outbound rate limiter', rlOut],
@@ -218,5 +254,7 @@ for (const [label, addr] of [
   })
 }
 
-console.error(failures === 0 ? '\n✓ All 9 checks passed' : `\n✗ ${failures} check(s) failed`)
+console.error(
+  failures === 0 ? `\n✓ All ${total} checks passed` : `\n✗ ${failures} of ${total} check(s) failed`,
+)
 process.exitCode = failures === 0 ? 0 : 1

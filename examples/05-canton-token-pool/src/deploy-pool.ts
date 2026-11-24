@@ -17,6 +17,7 @@ import * as readline from 'node:readline'
 
 import {
   CantonTokenManager,
+  TRANSFER_PREAPPROVAL_CONTEXT_KEY,
   getCantonNetworkConfig,
 } from '@chainlink/ccip-sdk/cct/canton'
 import { CantonChain } from '@chainlink/ccip-sdk'
@@ -181,3 +182,18 @@ console.error(
   `capacity=${rlIn.capacity}`,
   `rate=${rlIn.rate}`,
 )
+
+// Lock-release: a pool without a pinned owner preapproval is deployed but NOT ready.
+if (pool.poolType === 'lockRelease') {
+  const pinned = pool.poolReceiveContext[TRANSFER_PREAPPROVAL_CONTEXT_KEY]
+  if (pinned) {
+    console.error('transfer preapproval pinned:', pinned)
+  } else {
+    console.error(
+      '\n⚠ SETUP REQUIRED: no transfer preapproval is pinned in this pool. Locks from parties other than\n' +
+        '  the pool owner will fail. Create a TransferPreapproval for the owner, then pin it:\n' +
+        `  OPS_CTX_KEY=${TRANSFER_PREAPPROVAL_CONTEXT_KEY} OPS_CTX_CONTRACT=<preapproval cid> pnpm ops ctx-add-contract\n` +
+        '  then run `pnpm validate` to confirm.',
+    )
+  }
+}
