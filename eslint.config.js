@@ -14,6 +14,12 @@ export default tseslint.config(
       "**/coverage/**",
       "**/*.min.js",
       "**/vite.config.ts.timestamp-*",
+      // Example 05 utilities that exercise SDK manager methods not yet
+      // published (they exist only on an SDK feature branch) — excluded from
+      // typecheck in examples/05-canton-token-pool/tsconfig.json too.
+      "examples/05-canton-token-pool/src/one-off-ops.ts",
+      "examples/05-canton-token-pool/src/cleanup-registry-pools.ts",
+      "examples/05-canton-token-pool/src/debug-*.ts",
     ],
   },
 
@@ -41,11 +47,9 @@ export default tseslint.config(
     },
   },
 
-  // TypeScript-specific rules
   {
     files: ["**/*.ts", "**/*.tsx"],
     rules: {
-      // Strict type checking
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": [
         "error",
@@ -82,6 +86,24 @@ export default tseslint.config(
 
       // Disabled due to ESLint 10 compatibility issue with typescript-eslint 8.55.0
       "@typescript-eslint/consistent-generic-constructors": "off",
+    },
+  },
+
+  // Example 05 scripts predate the repo-wide strict lint config; its
+  // JSON-RPC/gateway plumbing is intentionally loosely typed. Keep the
+  // type-safety rules from failing CI on it until it is migrated.
+  {
+    files: ["examples/05-canton-token-pool/src/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/restrict-template-expressions": "off",
+      "@typescript-eslint/no-base-to-string": "off",
+      "@typescript-eslint/prefer-nullish-coalescing": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
     },
   },
 

@@ -21,66 +21,67 @@
  * Usage: pnpm tsx src/archive-orphan-configs.ts          # archive Sept-era configs
  *        pnpm tsx src/archive-orphan-configs.ts --dry    # list only
  */
-import 'dotenv/config'
-import * as readline from 'node:readline'
+import "dotenv/config";
+import * as readline from "node:readline";
 
-import { CantonChain } from '@chainlink/ccip-sdk'
-import { decodeDamlRecord, extractFieldValue } from '@chainlink/ccip-sdk/cct/canton'
-import { TOKEN_CONFIG_TEMPLATE_ID } from '@chainlink/ccip-sdk/src/cct/canton/constants.ts'
+import { CantonChain } from "@chainlink/ccip-sdk";
+import { decodeDamlRecord, extractFieldValue } from "@chainlink/ccip-sdk/cct/canton";
+import { TOKEN_CONFIG_TEMPLATE_ID } from "@chainlink/ccip-sdk/dist/cct/canton/constants.js";
 import {
   createGatewayCantonProvider,
   ensureGatewaySession,
   fetchGatewayPrimaryParty,
   submitViaGateway,
-} from './wallet-gateway.js'
+} from "./wallet-gateway.js";
 
 /** September-era ccip-core-v2 2.1.1 package id (superseded by 7a08ead9…). */
-const SEPT_CORE_PACKAGE_ID = '35086e11b8984749fa11117698187768af4550987924602e33e78624ba4b50e3'
+const SEPT_CORE_PACKAGE_ID = "35086e11b8984749fa11117698187768af4550987924602e33e78624ba4b50e3";
 
 function requireEnv(name: string): string {
-  const value = process.env[name]
-  if (!value) throw new Error(`missing required env var ${name}`)
-  return value
+  const value = process.env[name];
+  if (!value) throw new Error(`missing required env var ${name}`);
+  return value;
 }
 
-const gatewayUrl = requireEnv('CANTON_GATEWAY_URL')
-const accessToken = requireEnv('CANTON_GATEWAY_ACCESS_TOKEN')
-const chainId = process.env['CANTON_CHAIN_ID'] ?? 'canton:TestNet'
-const owner = process.env['CANTON_POOL_OWNER'] || (await fetchGatewayPrimaryParty({ gatewayUrl, accessToken }))
+const gatewayUrl = requireEnv("CANTON_GATEWAY_URL");
+const accessToken = requireEnv("CANTON_GATEWAY_ACCESS_TOKEN");
+const chainId = process.env.CANTON_CHAIN_ID ?? "canton:TestNet";
+const owner =
+  process.env.CANTON_POOL_OWNER || (await fetchGatewayPrimaryParty({ gatewayUrl, accessToken }));
 
-await ensureGatewaySession({ gatewayUrl, accessToken, networkId: 'canton:chainlink-testnet' })
+await ensureGatewaySession({ gatewayUrl, accessToken, networkId: "canton:chainlink-testnet" });
 const chain = await CantonChain.fromProvider(
   createGatewayCantonProvider({ gatewayUrl, accessToken, networkId: chainId, partyId: owner }),
-  { cantonConfig: { ccipParty: undefined } },
-)
+  { cantonConfig: { ccipParty: undefined } }
+);
 
 const configs = (
   await chain.findActiveContractsByTemplate(TOKEN_CONFIG_TEMPLATE_ID, [owner])
-).filter((c) => c.templateId.startsWith(SEPT_CORE_PACKAGE_ID))
+).filter((c) => c.templateId.startsWith(SEPT_CORE_PACKAGE_ID));
 console.error(
-  `found ${configs.length} active Sept-era TokenConfig(s) (core ${SEPT_CORE_PACKAGE_ID.slice(0, 8)}…) for ${owner}`,
-)
+  `found ${configs.length} active Sept-era TokenConfig(s) (core ${SEPT_CORE_PACKAGE_ID.slice(0, 8)}…) for ${owner}`
+);
 for (const c of configs) {
-  const f = decodeDamlRecord(c.createArgument)
-  const instrument = decodeDamlRecord(f['instrumentId'])
+  const f = decodeDamlRecord(c.createArgument);
+  const instrument = decodeDamlRecord(f.instrumentId);
   console.error(
-    `  ${extractFieldValue(instrument['id'])}@${extractFieldValue(instrument['admin'])}  cid=${c.contractId}`,
-  )
+    `  ${extractFieldValue(instrument.id)}@${extractFieldValue(instrument.admin)}  cid=${c.contractId}`
+  );
 }
 
-if (process.argv.includes('--dry') || configs.length === 0) {
-  console.error(configs.length === 0 ? 'nothing to archive' : 'dry run — no submission')
-  process.exit(0)
+if (process.argv.includes("--dry") || configs.length === 0) {
+  console.error(configs.length === 0 ? "nothing to archive" : "dry run — no submission");
+  process.exit(0);
 }
 
-const runId = Date.now()
-const approvals: string[] = []
+const runId = Date.now();
+const approvals: string[] = [];
 for (const [i, c] of configs.entries()) {
   const { approveUrl } = await submitViaGateway({
     gatewayUrl,
     accessToken,
     unsigned: {
-      family: 'CANTON',
+      family: "CANTON",
       commands: {
         commands: [
           {
@@ -89,7 +90,7 @@ for (const [i, c] of configs.entries()) {
               // package-name form)
               templateId: c.templateId,
               contractId: c.contractId,
-              choice: 'Archive',
+              choice: "Archive",
               choiceArgument: {},
             },
           },
@@ -98,21 +99,21 @@ for (const [i, c] of configs.entries()) {
         actAs: [owner],
       },
     },
-  })
+  });
   if (approveUrl) {
-    approvals.push(approveUrl)
-    console.error(`  [${i + 1}/${configs.length}] approve: ${approveUrl}`)
+    approvals.push(approveUrl);
+    console.error(`  [${i + 1}/${configs.length}] approve: ${approveUrl}`);
   } else {
-    console.error(`  [${i + 1}/${configs.length}] executed (API-key auth)`)
+    console.error(`  [${i + 1}/${configs.length}] executed (API-key auth)`);
   }
 }
 if (approvals.length > 0) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stderr })
+  const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
   await new Promise<void>((r) =>
     rl.question(`press Enter after approving all ${approvals.length}… `, () => {
-      rl.close()
-      r()
-    }),
-  )
+      rl.close();
+      r();
+    })
+  );
 }
-console.error(`archived ${configs.length} Sept-era TokenConfig(s) ✓`)
+console.error(`archived ${configs.length} Sept-era TokenConfig(s) ✓`);

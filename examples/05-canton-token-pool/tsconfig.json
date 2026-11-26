@@ -14,5 +14,20 @@
     "noFallthroughCasesInSwitch": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  // These utilities exercise SDK manager methods that are not yet published
+  // (they exist only on an SDK feature branch) — excluded so the example
+  // typechecks against the published @chainlink/ccip-sdk. They still run via
+  // tsx against a linked SDK checkout that has the methods.
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/one-off-ops.ts",
+    "src/cleanup-registry-pools.ts",
+    "src/debug-acs-shape.ts",
+    "src/debug-execute.ts",
+    "src/debug-metadata.ts",
+    "src/debug-pool-meta.ts",
+    "src/debug-preapproval.ts",
+    "src/debug-templateid-forms.ts"
+  ]
 }

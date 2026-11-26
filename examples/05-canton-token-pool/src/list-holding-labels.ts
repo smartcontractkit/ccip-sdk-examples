@@ -10,68 +10,69 @@
  * Usage: CANTON_INSTRUMENT_ID=TESTLINK7LR pnpm tsx src/list-holding-labels.ts
  *        pnpm tsx src/list-holding-labels.ts                # all instruments
  */
-import 'dotenv/config'
+import "dotenv/config";
 
-import { CantonChain } from '@chainlink/ccip-sdk'
-import { decodeDamlRecord, extractFieldValue } from '@chainlink/ccip-sdk/cct/canton'
+import { CantonChain } from "@chainlink/ccip-sdk";
+import { decodeDamlRecord, extractFieldValue } from "@chainlink/ccip-sdk/cct/canton";
 import {
   createGatewayCantonProvider,
   ensureGatewaySession,
   fetchGatewayPrimaryParty,
-} from './wallet-gateway.js'
+} from "./wallet-gateway.js";
 
 /** Registry holding template, package-name form (ACS filters reject package ids). */
 const HOLDING_TEMPLATE_ID =
-  '#utility-registry-holding-v0:Utility.Registry.Holding.V0.Holding:Holding'
+  "#utility-registry-holding-v0:Utility.Registry.Holding.V0.Holding:Holding";
 
 function requireEnv(name: string): string {
-  const value = process.env[name]
-  if (!value) throw new Error(`missing required env var ${name}`)
-  return value
+  const value = process.env[name];
+  if (!value) throw new Error(`missing required env var ${name}`);
+  return value;
 }
 
-const gatewayUrl = requireEnv('CANTON_GATEWAY_URL')
-const accessToken = requireEnv('CANTON_GATEWAY_ACCESS_TOKEN')
-const chainId = process.env['CANTON_CHAIN_ID'] ?? 'canton:TestNet'
-const instrument = process.env['CANTON_INSTRUMENT_ID']
-const owner = process.env['CANTON_POOL_OWNER'] || (await fetchGatewayPrimaryParty({ gatewayUrl, accessToken }))
+const gatewayUrl = requireEnv("CANTON_GATEWAY_URL");
+const accessToken = requireEnv("CANTON_GATEWAY_ACCESS_TOKEN");
+const chainId = process.env.CANTON_CHAIN_ID ?? "canton:TestNet";
+const instrument = process.env.CANTON_INSTRUMENT_ID;
+const owner =
+  process.env.CANTON_POOL_OWNER || (await fetchGatewayPrimaryParty({ gatewayUrl, accessToken }));
 
-await ensureGatewaySession({ gatewayUrl, accessToken, networkId: 'canton:chainlink-testnet' })
+await ensureGatewaySession({ gatewayUrl, accessToken, networkId: "canton:chainlink-testnet" });
 const chain = await CantonChain.fromProvider(
   createGatewayCantonProvider({ gatewayUrl, accessToken, networkId: chainId, partyId: owner }),
-  { cantonConfig: { ccipParty: undefined } },
-)
+  { cantonConfig: { ccipParty: undefined } }
+);
 
 const holdings = await chain.findActiveContractsByTemplate(HOLDING_TEMPLATE_ID, [owner], (arg) => {
-  if (!instrument) return true
+  if (!instrument) return true;
   try {
-    return JSON.stringify(arg).includes(instrument)
+    return JSON.stringify(arg).includes(instrument);
   } catch {
-    return false
+    return false;
   }
-})
+});
 
 /** Render a decoded Daml value on one line. */
 function show(value: unknown): string {
-  const v = extractFieldValue(value)
-  if (v && typeof v === 'object') {
+  const v = extractFieldValue(value);
+  if (v && typeof v === "object") {
     try {
-      return JSON.stringify(v)
+      return JSON.stringify(v);
     } catch {
-      return String(v)
+      return String(v);
     }
   }
-  return String(v)
+  return String(v);
 }
 
 console.error(
-  `found ${holdings.length} holding(s) visible to ${owner}${instrument ? ` for ${instrument}` : ''}\n`,
-)
+  `found ${holdings.length} holding(s) visible to ${owner}${instrument ? ` for ${instrument}` : ""}\n`
+);
 for (const h of holdings) {
-  const fields = decodeDamlRecord(h.createArgument)
-  console.error(h.contractId)
+  const fields = decodeDamlRecord(h.createArgument);
+  console.error(h.contractId);
   for (const [key, value] of Object.entries(fields)) {
-    console.error(`    ${key}: ${show(value)}`)
+    console.error(`    ${key}: ${show(value)}`);
   }
-  console.error('')
+  console.error("");
 }

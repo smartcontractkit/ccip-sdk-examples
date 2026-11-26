@@ -18,67 +18,67 @@
  * calldata instead of sending (dry run). If the selector is already wired,
  * it's removed and re-added in the same tx (the pool rejects re-adding).
  */
-import 'dotenv/config'
+import "dotenv/config";
 
-import { Contract, JsonRpcProvider, Wallet, id as keccak256Utf8, parseUnits } from 'ethers'
+import { Contract, JsonRpcProvider, Wallet, id as keccak256Utf8, parseUnits } from "ethers";
 
-import { fetchGatewayPrimaryParty } from './wallet-gateway.js'
+import { fetchGatewayPrimaryParty } from "./wallet-gateway.js";
 
 const TOKEN_POOL_ABI = [
-  'function applyChainUpdates(uint64[] remoteChainSelectorsToRemove, tuple(uint64 remoteChainSelector, bytes[] remotePoolAddresses, bytes remoteTokenAddress, tuple(bool isEnabled, uint128 capacity, uint128 rate) outboundRateLimiterConfig, tuple(bool isEnabled, uint128 capacity, uint128 rate) inboundRateLimiterConfig)[] chainsToAdd) external',
-  'function getRemoteChains() view returns (uint64[])',
-  'function getSupportedChains() view returns (uint64[])',
-  'function getRemotePools(uint64) view returns (bytes[])',
-  'function getRemoteToken(uint64) view returns (bytes)',
-  'function owner() view returns (address)',
-]
+  "function applyChainUpdates(uint64[] remoteChainSelectorsToRemove, tuple(uint64 remoteChainSelector, bytes[] remotePoolAddresses, bytes remoteTokenAddress, tuple(bool isEnabled, uint128 capacity, uint128 rate) outboundRateLimiterConfig, tuple(bool isEnabled, uint128 capacity, uint128 rate) inboundRateLimiterConfig)[] chainsToAdd) external",
+  "function getRemoteChains() view returns (uint64[])",
+  "function getSupportedChains() view returns (uint64[])",
+  "function getRemotePools(uint64) view returns (bytes[])",
+  "function getRemoteToken(uint64) view returns (bytes)",
+  "function owner() view returns (address)",
+];
 
 function requireEnv(name: string): string {
-  const value = process.env[name]
-  if (!value) throw new Error(`missing required env var ${name} — see .env.example`)
-  return value
+  const value = process.env[name];
+  if (!value) throw new Error(`missing required env var ${name} — see .env.example`);
+  return value;
 }
 
 async function main(): Promise<void> {
-  const rpcUrl = requireEnv('EVM_RPC_URL')
-  const poolAddress = requireEnv('EVM_POOL_ADDRESS')
+  const rpcUrl = requireEnv("EVM_RPC_URL");
+  const poolAddress = requireEnv("EVM_POOL_ADDRESS");
   // The EVM pool's lane is keyed by the REMOTE chain = Canton. NOT
   // CANTON_REMOTE_CHAIN_SELECTOR — that's the remote from the Canton pool's
   // perspective (the EVM chain). Canton's own selector lives in
   // EVM_REMOTE_CHAIN_SELECTOR (testnet: 9268731218649498074).
-  const remoteChainSelector = requireEnv('EVM_REMOTE_CHAIN_SELECTOR')
+  const remoteChainSelector = requireEnv("EVM_REMOTE_CHAIN_SELECTOR");
   const owner =
-    process.env['CANTON_POOL_OWNER'] ||
+    process.env.CANTON_POOL_OWNER ||
     (await fetchGatewayPrimaryParty({
-      gatewayUrl: requireEnv('CANTON_GATEWAY_URL'),
-      accessToken: requireEnv('CANTON_GATEWAY_ACCESS_TOKEN'),
-    }))
-  const instrumentId = process.env['CANTON_INSTRUMENT_ID']
+      gatewayUrl: requireEnv("CANTON_GATEWAY_URL"),
+      accessToken: requireEnv("CANTON_GATEWAY_ACCESS_TOKEN"),
+    }));
+  const instrumentId = process.env.CANTON_INSTRUMENT_ID;
   const poolInstanceId =
-    process.env['CANTON_POOL_INSTANCE_ID'] || `${instrumentId?.toLowerCase()}-pool-001`
+    process.env.CANTON_POOL_INSTANCE_ID || `${instrumentId?.toLowerCase()}-pool-001`;
 
-  let remotePoolAddress = process.env['EVM_REMOTE_POOL_ADDRESS']
-  let remoteTokenAddress = process.env['EVM_REMOTE_TOKEN_ADDRESS']
+  let remotePoolAddress = process.env.EVM_REMOTE_POOL_ADDRESS;
+  let remoteTokenAddress = process.env.EVM_REMOTE_TOKEN_ADDRESS;
   if (!remotePoolAddress || !remoteTokenAddress) {
     if (!owner || !instrumentId) {
       throw new Error(
-        'provide either CANTON_POOL_OWNER+CANTON_INSTRUMENT_ID (to derive) or explicit ' +
-          'EVM_REMOTE_POOL_ADDRESS+EVM_REMOTE_TOKEN_ADDRESS',
-      )
+        "provide either CANTON_POOL_OWNER+CANTON_INSTRUMENT_ID (to derive) or explicit " +
+          "EVM_REMOTE_POOL_ADDRESS+EVM_REMOTE_TOKEN_ADDRESS"
+      );
     }
-    remotePoolAddress ??= keccak256Utf8(`${poolInstanceId}@${owner}`).toLowerCase()
-    remoteTokenAddress ??= keccak256Utf8(`${instrumentId}@${owner}`).toLowerCase()
+    remotePoolAddress ??= keccak256Utf8(`${poolInstanceId}@${owner}`).toLowerCase();
+    remoteTokenAddress ??= keccak256Utf8(`${instrumentId}@${owner}`).toLowerCase();
   }
 
   // Rate limits live on the EVM pool — scale by the EVM token's decimals (TKN = 18),
   // NOT the Canton-side decimals.
-  const decimals = Number(process.env['EVM_DECIMALS'] ?? '18')
-  const enabled = process.env['CANTON_RATE_LIMITS_ENABLED'] !== 'false'
+  const decimals = Number(process.env.EVM_DECIMALS ?? "18");
+  const enabled = process.env.CANTON_RATE_LIMITS_ENABLED !== "false";
   const rateLimit = {
     isEnabled: enabled,
-    capacity: parseUnits(process.env['CANTON_RL_CAPACITY'] ?? '1000000', decimals),
-    rate: parseUnits(process.env['CANTON_RL_RATE'] ?? '100', decimals),
-  }
+    capacity: parseUnits(process.env.CANTON_RL_CAPACITY ?? "1000000", decimals),
+    rate: parseUnits(process.env.CANTON_RL_RATE ?? "100", decimals),
+  };
 
   const update = {
     remoteChainSelector: BigInt(remoteChainSelector),
@@ -86,73 +86,87 @@ async function main(): Promise<void> {
     remoteTokenAddress,
     outboundRateLimiterConfig: rateLimit,
     inboundRateLimiterConfig: rateLimit,
-  }
+  };
 
-  console.error('applyChainUpdates on EVM pool:')
-  console.error('  pool                ', poolAddress)
-  console.error('  remoteChainSelector ', remoteChainSelector)
-  console.error('  remotePoolAddress   ', remotePoolAddress, ` (keccak of "${poolInstanceId}@<owner>")`)
-  console.error('  remoteTokenAddress  ', remoteTokenAddress, ` (keccak of "${instrumentId}@<owner>")`)
-  console.error('  rate limits         ', `enabled=${enabled} capacity=${rateLimit.capacity} rate=${rateLimit.rate}`)
+  console.error("applyChainUpdates on EVM pool:");
+  console.error("  pool                ", poolAddress);
+  console.error("  remoteChainSelector ", remoteChainSelector);
+  console.error(
+    "  remotePoolAddress   ",
+    remotePoolAddress,
+    ` (keccak of "${poolInstanceId}@<owner>")`
+  );
+  console.error(
+    "  remoteTokenAddress  ",
+    remoteTokenAddress,
+    ` (keccak of "${instrumentId}@<owner>")`
+  );
+  console.error(
+    "  rate limits         ",
+    `enabled=${enabled} capacity=${rateLimit.capacity} rate=${rateLimit.rate}`
+  );
 
-  const privateKey = process.env['EVM_PRIVATE_KEY']
-  const provider = new JsonRpcProvider(rpcUrl)
-  const pool = new Contract(poolAddress, TOKEN_POOL_ABI, provider)
+  const privateKey = process.env.EVM_PRIVATE_KEY;
+  const provider = new JsonRpcProvider(rpcUrl);
+  const pool = new Contract(poolAddress, TOKEN_POOL_ABI, provider);
 
-  const poolOwner = (await pool.owner!()) as string
-  console.error('  pool owner          ', poolOwner)
+  const poolOwner = (await pool.owner!()) as string;
+  console.error("  pool owner          ", poolOwner);
 
   // The EVM pool rejects adding a chain that already has a config — if this
   // selector is already wired, remove it first (same tx) to replace it.
   // 2.0 pools call it getRemoteChains; 1.5.x pools call it getSupportedChains.
-  let existingChains: bigint[]
+  let existingChains: bigint[];
   try {
-    existingChains = (await pool.getRemoteChains!()) as bigint[]
+    existingChains = (await pool.getRemoteChains!()) as bigint[];
   } catch {
-    existingChains = (await pool.getSupportedChains!()) as bigint[]
+    existingChains = (await pool.getSupportedChains!()) as bigint[];
   }
   const removals = existingChains.includes(update.remoteChainSelector)
     ? [update.remoteChainSelector]
-    : []
+    : [];
   if (removals.length > 0) {
-    console.error('  note                ', 'selector already wired — removing first, then re-adding')
+    console.error(
+      "  note                ",
+      "selector already wired — removing first, then re-adding"
+    );
   }
 
   if (!privateKey) {
-    console.error('\nEVM_PRIVATE_KEY not set — dry run, encoded calldata:')
-    console.error(pool.interface.encodeFunctionData('applyChainUpdates', [removals, [update]]))
-    return
+    console.error("\nEVM_PRIVATE_KEY not set — dry run, encoded calldata:");
+    console.error(pool.interface.encodeFunctionData("applyChainUpdates", [removals, [update]]));
+    return;
   }
 
-  const wallet = new Wallet(privateKey, provider)
+  const wallet = new Wallet(privateKey, provider);
   if (wallet.address.toLowerCase() !== poolOwner.toLowerCase()) {
-    throw new Error(`key ${wallet.address} is not the pool owner (${poolOwner})`)
+    throw new Error(`key ${wallet.address} is not the pool owner (${poolOwner})`);
   }
 
-  const tx = (await (pool.connect(wallet) as Contract).applyChainUpdates!(
-    removals,
-    [update],
-  )) as { hash: string; wait(): Promise<{ blockNumber: number }> }
-  console.error(`\n⏳ sent: ${tx.hash}`)
-  const receipt = await tx.wait()
-  console.error(`✓ mined in block ${receipt.blockNumber}`)
+  const tx = (await (pool.connect(wallet) as Contract).applyChainUpdates!(removals, [update])) as {
+    hash: string;
+    wait(): Promise<{ blockNumber: number }>;
+  };
+  console.error(`\n⏳ sent: ${tx.hash}`);
+  const receipt = await tx.wait();
+  console.error(`✓ mined in block ${receipt.blockNumber}`);
 
   // Read back to confirm
-  const remoteToken = (await pool.getRemoteToken!(update.remoteChainSelector)) as string
-  const remotePools = (await pool.getRemotePools!(update.remoteChainSelector)) as string[]
+  const remoteToken = (await pool.getRemoteToken!(update.remoteChainSelector)) as string;
+  const remotePools = (await pool.getRemotePools!(update.remoteChainSelector)) as string[];
   console.error(
-    `  on-chain now: remoteToken=${remoteToken.toLowerCase()} remotePools=[${remotePools.map((p) => p.toLowerCase()).join(', ')}]`,
-  )
+    `  on-chain now: remoteToken=${remoteToken.toLowerCase()} remotePools=[${remotePools.map((p) => p.toLowerCase()).join(", ")}]`
+  );
   if (
     remoteToken.toLowerCase() !== remoteTokenAddress.toLowerCase() ||
-    !remotePools.some((p) => p.toLowerCase() === remotePoolAddress!.toLowerCase())
+    !remotePools.some((p) => p.toLowerCase() === remotePoolAddress.toLowerCase())
   ) {
-    throw new Error('on-chain readback does not match what was sent — check the pool state')
+    throw new Error("on-chain readback does not match what was sent — check the pool state");
   }
-  console.error('✓ readback matches')
+  console.error("✓ readback matches");
 }
 
 main().catch((err) => {
-  console.error('Fatal:', err instanceof Error ? err.message : err)
-  process.exitCode = 1
-})
+  console.error("Fatal:", err instanceof Error ? err.message : err);
+  process.exitCode = 1;
+});
