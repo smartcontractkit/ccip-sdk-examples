@@ -13,7 +13,7 @@
  *   CANTON_POOL_INSTANCE_ID        optional — defaults to <instrumentId>-pool-001
  *   CANTON_POOL_OWNER              optional — defaults to gateway primary party
  *   CANTON_REMOTE_CHAIN_SELECTOR   e.g. 16015286601757825753 (Sepolia)
- *   OPS_FINALITY                   'finality' | 'safe' | 'depth:N' (default depth:1)
+ *   OPS_FINALITY                   'finality' | 'safe' | 'depth:N' (default depth:32)
  */
 import "dotenv/config";
 import * as readline from "node:readline";
@@ -48,7 +48,7 @@ const poolInstanceId =
 const poolInstanceAddress = `${poolInstanceId}@${owner}`;
 const selector = BigInt(requireEnv("CANTON_REMOTE_CHAIN_SELECTOR"));
 
-const f = process.env.OPS_FINALITY ?? "depth:1";
+const f = process.env.OPS_FINALITY ?? "depth:32";
 const finalityConfig = f.startsWith("depth:")
   ? { type: "BlockDepth" as const, blockConfirmations: Number(f.slice(6)) }
   : f === "safe"

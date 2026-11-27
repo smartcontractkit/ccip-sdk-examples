@@ -9,7 +9,7 @@
  * Env (see .env.example):
  *   EVM_RPC_URL / EVM_POOL_ADDRESS     the EVM pool
  *   EVM_PRIVATE_KEY                    the pool owner's key (unset = dry run)
- *   OPS_FINALITY                       'finalized' | 'safe' | 'depth:N' (default depth:1)
+ *   OPS_FINALITY                       'finalized' | 'safe' | 'depth:N' (default depth:32)
  *
  * `setAllowedFinalityConfig` is owner-only. The config is the pool's bytes4
  * FinalityCodec value: bit 0 of the high half-word enables FCR (safe), the
@@ -46,7 +46,7 @@ function encodeFinalityConfig(spec: string): number {
   return depth;
 }
 
-const spec = process.env.OPS_FINALITY ?? "depth:1";
+const spec = process.env.OPS_FINALITY ?? "depth:32";
 const encoded = encodeFinalityConfig(spec);
 const target = toBeHex(encoded, 4);
 
