@@ -9,30 +9,30 @@
  * sign with a raw participant key, a different wallet's SDK, or their own
  * custody service.
  */
-import type { UnsignedCantonTx } from '@chainlink/ccip-sdk'
-import type { CantonRpcProvider } from '@chainlink/ccip-sdk/src/canton/types.ts'
+import type { UnsignedCantonTx } from "@chainlink/ccip-sdk";
+import type { CantonRpcProvider } from "@chainlink/ccip-sdk/dist/canton/types.js";
 
 /** Result of {@link submitViaGateway}: the gateway's `prepareExecute` response. */
 export interface GatewaySubmitResult {
   /** Gateway `/approve/` URL (user-JWT auth) — open it to approve + execute. */
-  approveUrl: string
+  approveUrl: string;
   /** Raw JSON-RPC result object. */
-  response: Record<string, unknown>
+  response: Record<string, unknown>;
 }
 
 /** Inputs to {@link submitViaGateway}. */
 export interface SubmitViaGatewayParams {
   /** Wallet Gateway dApp RPC URL, e.g. `http://localhost:8400/api/v0/dapp`. */
-  gatewayUrl: string
+  gatewayUrl: string;
   /** Gateway credential — session token or API key (not the raw Okta JWT). */
-  accessToken: string
+  accessToken: string;
   /** The unsigned Canton tx from a CCT `generateUnsigned<Op>` call. */
-  unsigned: UnsignedCantonTx
-  readAs?: string[]
-  synchronizerId?: string
-  packageIdSelectionPreference?: string[]
-  fetchFn?: typeof fetch
-  signal?: AbortSignal
+  unsigned: UnsignedCantonTx;
+  readAs?: string[];
+  synchronizerId?: string;
+  packageIdSelectionPreference?: string[];
+  fetchFn?: typeof fetch;
+  signal?: AbortSignal;
 }
 
 /**
@@ -41,7 +41,9 @@ export interface SubmitViaGatewayParams {
  * an `approveUrl` for a human to approve, after which the gateway signs +
  * executes asynchronously.
  */
-export async function submitViaGateway(params: SubmitViaGatewayParams): Promise<GatewaySubmitResult> {
+export async function submitViaGateway(
+  params: SubmitViaGatewayParams
+): Promise<GatewaySubmitResult> {
   const {
     gatewayUrl,
     accessToken,
@@ -51,78 +53,84 @@ export async function submitViaGateway(params: SubmitViaGatewayParams): Promise<
     packageIdSelectionPreference,
     fetchFn = globalThis.fetch.bind(globalThis),
     signal,
-  } = params
+  } = params;
 
-  const requestParams: Record<string, unknown> = { ...unsigned.commands }
-  if (readAs) requestParams['readAs'] = readAs
-  if (synchronizerId) requestParams['synchronizerId'] = synchronizerId
+  const requestParams: Record<string, unknown> = { ...unsigned.commands };
+  if (readAs) requestParams.readAs = readAs;
+  if (synchronizerId) requestParams.synchronizerId = synchronizerId;
   if (packageIdSelectionPreference) {
-    requestParams['packageIdSelectionPreference'] = packageIdSelectionPreference
+    requestParams.packageIdSelectionPreference = packageIdSelectionPreference;
   }
 
   const response = await fetchFn(gatewayUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: authHeader(accessToken) },
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: authHeader(accessToken) },
     body: JSON.stringify({
-      jsonrpc: '2.0',
+      jsonrpc: "2.0",
       id: cryptoRandomId(),
-      method: 'prepareExecute',
+      method: "prepareExecute",
       params: requestParams,
     }),
     signal,
-  })
+  });
 
   if (!response.ok) {
-    const errorBody = await response.json().catch(() => response.text().catch(() => ''))
-    throw new GatewaySubmitError(`gateway HTTP ${response.status} ${response.statusText}`, errorBody)
+    const errorBody = await response.json().catch(() => response.text().catch(() => ""));
+    throw new GatewaySubmitError(
+      `gateway HTTP ${response.status} ${response.statusText}`,
+      errorBody
+    );
   }
 
-  const json = (await response.json()) as JsonRpcResponse
+  const json = (await response.json()) as JsonRpcResponse;
   if (json.error) {
     throw new GatewaySubmitError(
       `gateway JSON-RPC error ${json.error.code}: ${json.error.message}`,
-      json.error.data,
-    )
+      json.error.data
+    );
   }
 
-  const result = (json.result ?? {}) as { userUrl?: string }
-  return { approveUrl: result.userUrl ?? '', response: json.result as Record<string, unknown> }
+  const result = (json.result ?? {}) as { userUrl?: string };
+  return { approveUrl: result.userUrl ?? "", response: json.result as Record<string, unknown> };
 }
 
 /** Fetch the primary wallet's party ID from the gateway (`getPrimaryAccount`). */
 export async function fetchGatewayPrimaryParty(params: {
-  gatewayUrl: string
-  accessToken: string
-  fetchFn?: typeof fetch
-  signal?: AbortSignal
+  gatewayUrl: string;
+  accessToken: string;
+  fetchFn?: typeof fetch;
+  signal?: AbortSignal;
 }): Promise<string> {
-  const { gatewayUrl, accessToken, fetchFn = globalThis.fetch.bind(globalThis), signal } = params
+  const { gatewayUrl, accessToken, fetchFn = globalThis.fetch.bind(globalThis), signal } = params;
 
   const response = await fetchFn(gatewayUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: authHeader(accessToken) },
-    body: JSON.stringify({ jsonrpc: '2.0', id: cryptoRandomId(), method: 'getPrimaryAccount' }),
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: authHeader(accessToken) },
+    body: JSON.stringify({ jsonrpc: "2.0", id: cryptoRandomId(), method: "getPrimaryAccount" }),
     signal,
-  })
+  });
 
   if (!response.ok) {
-    const errorBody = await response.text().catch(() => '')
-    throw new GatewaySubmitError(`gateway HTTP ${response.status} ${response.statusText}`, errorBody)
+    const errorBody = await response.text().catch(() => "");
+    throw new GatewaySubmitError(
+      `gateway HTTP ${response.status} ${response.statusText}`,
+      errorBody
+    );
   }
 
-  const json = (await response.json()) as JsonRpcResponse
+  const json = (await response.json()) as JsonRpcResponse;
   if (json.error) {
     throw new GatewaySubmitError(
       `gateway JSON-RPC error ${json.error.code}: ${json.error.message}`,
-      json.error.data,
-    )
+      json.error.data
+    );
   }
 
-  const partyId = (json.result as { partyId?: unknown } | undefined)?.partyId
-  if (typeof partyId !== 'string' || !partyId) {
-    throw new GatewaySubmitError('gateway getPrimaryAccount returned no partyId', json.result)
+  const partyId = (json.result as { partyId?: unknown } | undefined)?.partyId;
+  if (typeof partyId !== "string" || !partyId) {
+    throw new GatewaySubmitError("gateway getPrimaryAccount returned no partyId", json.result);
   }
-  return partyId
+  return partyId;
 }
 
 /**
@@ -133,12 +141,12 @@ export async function fetchGatewayPrimaryParty(params: {
  * found". Tolerates an already-existing session. Safe to call at every run.
  */
 export async function ensureGatewaySession(params: {
-  gatewayUrl: string
-  accessToken: string
-  networkId: string
-  origin?: string
-  fetchFn?: typeof fetch
-  signal?: AbortSignal
+  gatewayUrl: string;
+  accessToken: string;
+  networkId: string;
+  origin?: string;
+  fetchFn?: typeof fetch;
+  signal?: AbortSignal;
 }): Promise<void> {
   const {
     gatewayUrl,
@@ -147,53 +155,53 @@ export async function ensureGatewaySession(params: {
     origin = `example-${Math.random().toString(36).slice(2, 10)}`,
     fetchFn = globalThis.fetch.bind(globalThis),
     signal,
-  } = params
+  } = params;
 
-  const userApiUrl = gatewayUrl.replace(/\/api\/v0\/dapp$/, '/api/v0/user')
+  const userApiUrl = gatewayUrl.replace(/\/api\/v0\/dapp$/, "/api/v0/user");
   if (userApiUrl === gatewayUrl) {
     throw new GatewaySubmitError(
       `ensureGatewaySession: gatewayUrl must end with /api/v0/dapp (got ${gatewayUrl})`,
-      undefined,
-    )
+      undefined
+    );
   }
 
   const response = await fetchFn(userApiUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: authHeader(accessToken) },
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: authHeader(accessToken) },
     body: JSON.stringify({
-      jsonrpc: '2.0',
+      jsonrpc: "2.0",
       id: cryptoRandomId(),
-      method: 'addSession',
+      method: "addSession",
       params: { origin, networkId },
     }),
     signal,
-  })
+  });
 
   if (!response.ok) {
-    const errorBody = await response.json().catch(() => response.text().catch(() => ''))
+    const errorBody = await response.json().catch(() => response.text().catch(() => ""));
     // The gateway 500s with "Failed to add session" when one already exists —
     // that satisfies the precondition, so treat it as success.
-    if (isDuplicateSessionError(errorBody)) return
+    if (isDuplicateSessionError(errorBody)) return;
     throw new GatewaySubmitError(
       `ensureGatewaySession: gateway HTTP ${response.status} ${response.statusText}`,
-      errorBody,
-    )
+      errorBody
+    );
   }
 
-  const json = (await response.json()) as JsonRpcResponse
+  const json = (await response.json()) as JsonRpcResponse;
   if (json.error) {
-    if (isDuplicateSessionError(json)) return
+    if (isDuplicateSessionError(json)) return;
     throw new GatewaySubmitError(
       `ensureGatewaySession: gateway JSON-RPC error ${json.error.code}: ${json.error.message}`,
-      json.error.data,
-    )
+      json.error.data
+    );
   }
 }
 
 function isDuplicateSessionError(body: unknown): boolean {
-  if (!body || typeof body !== 'object') return false
-  const err = (body as { error?: { message?: string } }).error
-  return typeof err?.message === 'string' && err.message.includes('Failed to add session')
+  if (!body || typeof body !== "object") return false;
+  const err = (body as { error?: { message?: string } }).error;
+  return typeof err?.message === "string" && err.message.includes("Failed to add session");
 }
 
 /**
@@ -213,60 +221,60 @@ function isDuplicateSessionError(body: unknown): boolean {
  * {@link ensureGatewaySession}.
  */
 export function createGatewayCantonProvider(params: {
-  gatewayUrl: string
-  accessToken: string
-  networkId: string
-  partyId: string
+  gatewayUrl: string;
+  accessToken: string;
+  networkId: string;
+  partyId: string;
 }): CantonRpcProvider {
-  const { gatewayUrl, accessToken, networkId, partyId } = params
+  const { gatewayUrl, accessToken, networkId, partyId } = params;
   const provider = {
     async request(args: { method: string; params?: unknown }): Promise<unknown> {
       switch (args.method) {
-        case 'getActiveNetwork':
-          return { networkId }
-        case 'getPrimaryAccount':
-          return { partyId }
-        case 'ledgerApi':
-          return (await gatewayRpc(gatewayUrl, accessToken, 'ledgerApi', args.params)) ?? {}
-        case 'prepareExecuteAndWait': {
-          const p = (args.params ?? {}) as Record<string, unknown>
-          const result = await gatewayRpc(gatewayUrl, accessToken, 'prepareExecute', p)
-          const r = result as Record<string, unknown> | undefined
-          if (r?.['userUrl']) {
+        case "getActiveNetwork":
+          return { networkId };
+        case "getPrimaryAccount":
+          return { partyId };
+        case "ledgerApi":
+          return (await gatewayRpc(gatewayUrl, accessToken, "ledgerApi", args.params)) ?? {};
+        case "prepareExecuteAndWait": {
+          const p = (args.params ?? {}) as Record<string, unknown>;
+          const result = await gatewayRpc(gatewayUrl, accessToken, "prepareExecute", p);
+          const r = result as Record<string, unknown> | undefined;
+          if (r?.userUrl) {
             throw new GatewaySubmitError(
-              'prepareExecuteAndWait requires API-key auth (immediate execution); got an approval URL instead',
-              result,
-            )
+              "prepareExecuteAndWait requires API-key auth (immediate execution); got an approval URL instead",
+              result
+            );
           }
-          const tx = r?.['transaction'] as Record<string, unknown> | undefined
-          const updateId = r?.['updateId'] ?? tx?.['updateId']
-          if (typeof updateId !== 'string' || !updateId) {
+          const tx = r?.transaction as Record<string, unknown> | undefined;
+          const updateId = r?.updateId ?? tx?.updateId;
+          if (typeof updateId !== "string" || !updateId) {
             throw new GatewaySubmitError(
-              'gateway prepareExecute returned no updateId — cannot confirm execution',
-              result,
-            )
+              "gateway prepareExecute returned no updateId — cannot confirm execution",
+              result
+            );
           }
-          const completionOffset = r?.['completionOffset'] ?? tx?.['offset'] ?? 0
+          const completionOffset = r?.completionOffset ?? tx?.offset ?? 0;
           return {
             tx: {
-              status: 'executed',
-              commandId: p['commandId'] ?? '',
+              status: "executed",
+              commandId: p.commandId ?? "",
               payload: { updateId, completionOffset },
             },
-          }
+          };
         }
         default:
           throw new GatewaySubmitError(
             `gateway provider does not support method '${args.method}'`,
-            undefined,
-          )
+            undefined
+          );
       }
     },
     on: () => provider,
     emit: () => true,
     removeListener: () => provider,
-  }
-  return provider as unknown as CantonRpcProvider
+  };
+  return provider as unknown as CantonRpcProvider;
 }
 
 /** One JSON-RPC call against the gateway dApp endpoint, unwrapping errors. */
@@ -274,44 +282,44 @@ async function gatewayRpc(
   gatewayUrl: string,
   accessToken: string,
   method: string,
-  params: unknown,
+  params: unknown
 ): Promise<unknown> {
   const response = await fetch(gatewayUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: authHeader(accessToken) },
-    body: JSON.stringify({ jsonrpc: '2.0', id: cryptoRandomId(), method, params }),
-  })
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: authHeader(accessToken) },
+    body: JSON.stringify({ jsonrpc: "2.0", id: cryptoRandomId(), method, params }),
+  });
   if (!response.ok) {
     throw new GatewaySubmitError(
       `gateway ${method} failed: HTTP ${response.status} ${response.statusText}`,
-      await response.text(),
-    )
+      await response.text()
+    );
   }
-  const json = (await response.json()) as JsonRpcResponse
+  const json = (await response.json()) as JsonRpcResponse;
   if (json.error) {
     throw new GatewaySubmitError(
       `gateway ${method} JSON-RPC error ${json.error.code}: ${json.error.message}`,
-      json.error.data,
-    )
+      json.error.data
+    );
   }
-  return json.result
+  return json.result;
 }
 
 /** Error thrown when a gateway submission fails (HTTP or JSON-RPC level). */
 export class GatewaySubmitError extends Error {
-  readonly data: unknown
+  readonly data: unknown;
   constructor(message: string, data: unknown) {
-    super(message)
-    this.name = 'GatewaySubmitError'
-    this.data = data
+    super(message);
+    this.name = "GatewaySubmitError";
+    this.data = data;
   }
 }
 
 interface JsonRpcResponse {
-  jsonrpc: '2.0'
-  id: string
-  result?: unknown
-  error?: { code: number; message: string; data?: unknown }
+  jsonrpc: "2.0";
+  id: string;
+  result?: unknown;
+  error?: { code: number; message: string; data?: unknown };
 }
 
 /**
@@ -320,14 +328,14 @@ interface JsonRpcResponse {
  * `Bearer <token>`) sent verbatim.
  */
 export function authHeader(accessToken: string): string {
-  if (accessToken.startsWith('ApiKey ') || accessToken.startsWith('Bearer ')) return accessToken
-  return `Bearer ${accessToken}`
+  if (accessToken.startsWith("ApiKey ") || accessToken.startsWith("Bearer ")) return accessToken;
+  return `Bearer ${accessToken}`;
 }
 
 function cryptoRandomId(): string {
-  const c = globalThis.crypto as { randomUUID?: () => string } | undefined
-  if (c?.randomUUID) return c.randomUUID()
-  return 'cct-' + Math.random().toString(36).slice(2, 10)
+  const c = globalThis.crypto as { randomUUID?: () => string } | undefined;
+  if (c?.randomUUID) return c.randomUUID();
+  return "cct-" + Math.random().toString(36).slice(2, 10);
 }
 
 /**
@@ -338,95 +346,103 @@ function cryptoRandomId(): string {
  * targeting `ledgerBaseUrl` pass through to the real `fetch` unchanged.
  */
 export function createGatewayLedgerFetch(params: {
-  gatewayUrl: string
-  accessToken: string
-  ledgerBaseUrl: string
-  signal?: AbortSignal
-  fetchFn?: typeof fetch
+  gatewayUrl: string;
+  accessToken: string;
+  ledgerBaseUrl: string;
+  signal?: AbortSignal;
+  fetchFn?: typeof fetch;
 }): typeof fetch {
-  const { gatewayUrl, accessToken, ledgerBaseUrl, signal, fetchFn = globalThis.fetch.bind(globalThis) } =
-    params
-  const ledgerPrefix = new URL(ledgerBaseUrl).href.replace(/\/$/, '')
-  let jsonRpcId = 0
+  const {
+    gatewayUrl,
+    accessToken,
+    ledgerBaseUrl,
+    signal,
+    fetchFn = globalThis.fetch.bind(globalThis),
+  } = params;
+  const ledgerPrefix = new URL(ledgerBaseUrl).href.replace(/\/$/, "");
+  let jsonRpcId = 0;
 
   const callLedgerApi = async (
-    requestMethod: 'get' | 'post' | 'patch' | 'put' | 'delete',
+    requestMethod: "get" | "post" | "patch" | "put" | "delete",
     resource: string,
     body?: Record<string, unknown>,
     query?: Record<string, string>,
-    requestSignal?: AbortSignal,
+    requestSignal?: AbortSignal
   ): Promise<Response> => {
     const response = await fetchFn(gatewayUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: authHeader(accessToken) },
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: authHeader(accessToken) },
       body: JSON.stringify({
-        jsonrpc: '2.0',
+        jsonrpc: "2.0",
         id: `gw-ledger-${jsonRpcId++}`,
-        method: 'ledgerApi',
+        method: "ledgerApi",
         params: { requestMethod, resource, body, query: query ?? {} },
       }),
       signal: signal ?? requestSignal,
-    })
+    });
 
     if (!response.ok) {
       return new Response(await response.text(), {
         status: response.status,
-        headers: { 'Content-Type': 'application/json' },
-      })
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const text = await response.text()
+    const text = await response.text();
     const json = text
-      ? (JSON.parse(text) as { result?: unknown; error?: { code: number; message: string; data?: unknown } })
-      : {}
+      ? (JSON.parse(text) as {
+          result?: unknown;
+          error?: { code: number; message: string; data?: unknown };
+        })
+      : {};
     if (json.error) {
       return new Response(JSON.stringify(json.error), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      })
+        headers: { "Content-Type": "application/json" },
+      });
     }
     return new Response(JSON.stringify(json.result ?? {}), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+      headers: { "Content-Type": "application/json" },
+    });
+  };
 
   return async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
-    const isRequest = typeof input !== 'string' && !(input instanceof URL) && 'method' in input
+    const isRequest = typeof input !== "string" && !(input instanceof URL) && "method" in input;
     const targetUrl = new URL(
-      typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
-    )
-    const method = (isRequest ? (input as Request).method : init?.method) ?? 'GET'
+      typeof input === "string" ? input : input instanceof URL ? input.href : input.url
+    );
+    const method = (isRequest ? input.method : init?.method) ?? "GET";
 
     if (!targetUrl.href.startsWith(ledgerPrefix)) {
-      return fetchFn(input, init)
+      return fetchFn(input, init);
     }
 
-    const resource = targetUrl.href.slice(ledgerPrefix.length)
+    const resource = targetUrl.href.slice(ledgerPrefix.length);
 
     // The gateway's ledgerApi proxy errors server-side on /livez and /readyz
     // (confirmed live) — health checks don't need the ledger, so short-circuit.
-    if (resource === '/livez' || resource === '/readyz') {
-      return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } })
+    if (resource === "/livez" || resource === "/readyz") {
+      return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
     }
-    const lowerMethod = method.toLowerCase() as 'get' | 'post' | 'patch' | 'put' | 'delete'
-    let body: Record<string, unknown> | undefined
-    let rawBody: unknown = init?.body
-    if (!rawBody && isRequest && (input as Request).body) {
-      rawBody = await new Response((input as Request).body).text()
+    const lowerMethod = method.toLowerCase() as "get" | "post" | "patch" | "put" | "delete";
+    let body: Record<string, unknown> | undefined;
+    let rawBody: unknown = init?.body;
+    if (!rawBody && isRequest && input.body) {
+      rawBody = await new Response(input.body).text();
     }
-    if (rawBody && lowerMethod !== 'get' && lowerMethod !== 'delete') {
+    if (rawBody && lowerMethod !== "get" && lowerMethod !== "delete") {
       try {
-        body = JSON.parse(rawBody as string) as Record<string, unknown>
+        body = JSON.parse(rawBody as string) as Record<string, unknown>;
       } catch {
-        body = undefined
+        body = undefined;
       }
     }
-    const query: Record<string, string> = {}
+    const query: Record<string, string> = {};
     targetUrl.searchParams.forEach((value, key) => {
-      query[key] = value
-    })
+      query[key] = value;
+    });
 
-    return callLedgerApi(lowerMethod, resource, body, query, init?.signal ?? undefined)
-  }
+    return callLedgerApi(lowerMethod, resource, body, query, init?.signal ?? undefined);
+  };
 }
