@@ -87,6 +87,20 @@ const unsigned = await manager.generateUnsignedDeployTokenPool({
       remoteTokenAddress,
       inboundCCVs: ccv.split(","),
       outboundCCVs: ccv.split(","),
+      // Optional lane finality policy: 'finality' (default) | 'safe' | 'depth:N'.
+      // FTF modes (safe/depth) use the inboundCustomFinality limiter deployed below.
+      ...(process.env.OPS_FINALITY
+        ? {
+            finalityConfig: process.env.OPS_FINALITY.startsWith("depth:")
+              ? {
+                  type: "BlockDepth" as const,
+                  blockConfirmations: Number(process.env.OPS_FINALITY.slice("depth:".length)),
+                }
+              : process.env.OPS_FINALITY === "safe"
+                ? { type: "WaitForSafe" as const }
+                : { type: "WaitForFinality" as const },
+          }
+        : {}),
       inbound: {
         instanceId: `${poolInstanceId}-rl-in-${selector}`,
         isEnabled: true,
