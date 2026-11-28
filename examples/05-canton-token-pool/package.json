@@ -11,7 +11,6 @@
     "deploy": "tsx src/deploy-pool.ts",
     "validate": "tsx src/validate-pool.ts",
     "apply-evm-chain-updates": "tsx src/apply-evm-chain-updates.ts",
-    "ops": "tsx src/one-off-ops.ts",
     "set-canton-pool-finality-config": "tsx src/set-canton-pool-finality-config.ts",
     "set-evm-pool-finality-config": "tsx src/set-evm-pool-finality-config.ts",
     "register-evm-token": "tsx src/register-evm-token.ts",

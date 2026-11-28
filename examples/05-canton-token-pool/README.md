@@ -16,11 +16,11 @@ CIP-103 dApp API) signs and submits it. `deploy-pool.ts` demonstrates that full 
 
 ## Scripts
 
-| Script | Description |
-| --- | --- |
-| `pnpm deploy` | Deploy a token pool in one atomic transaction (create + `Initialize`: TAR registration, lane wiring, 3 rate limiters, `SetPool`), then print the deployed state. |
-| `pnpm validate` | Read-only, no wallet: 9 checks against a deployed pool — config, TAR registration, lane addresses + CCVs + limiter references, factory wiring, all 3 rate limiters. |
-| `pnpm apply-evm-chain-updates` | Wire the reverse lane on the EVM-side TokenPool: `applyChainUpdates` with the Canton pool's derived remote address and instrument ID. |
+| Script                         | Description                                                                                                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm deploy`                  | Deploy a token pool in one atomic transaction (create + `Initialize`: TAR registration, lane wiring, 3 rate limiters, `SetPool`), then print the deployed state.    |
+| `pnpm validate`                | Read-only, no wallet: 9 checks against a deployed pool — config, TAR registration, lane addresses + CCVs + limiter references, factory wiring, all 3 rate limiters. |
+| `pnpm apply-evm-chain-updates` | Wire the reverse lane on the EVM-side TokenPool: `applyChainUpdates` with the Canton pool's derived remote address and instrument ID.                               |
 
 ## Setup
 

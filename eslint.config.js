@@ -14,12 +14,6 @@ export default tseslint.config(
       "**/coverage/**",
       "**/*.min.js",
       "**/vite.config.ts.timestamp-*",
-      // Example 05 utilities that exercise SDK manager methods not yet
-      // published (they exist only on an SDK feature branch) — excluded from
-      // typecheck in examples/05-canton-token-pool/tsconfig.json too.
-      "examples/05-canton-token-pool/src/one-off-ops.ts",
-      "examples/05-canton-token-pool/src/cleanup-registry-pools.ts",
-      "examples/05-canton-token-pool/src/debug-*.ts",
     ],
   },
 
